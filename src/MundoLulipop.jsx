@@ -5,6 +5,7 @@ import JuegoArte from './JuegoArte'
 import JuegoLetras from './JuegoLetras'
 import JuegoTrazo from './JuegoTrazo'
 import AlbumPegatinas from './AlbumPegatinas'
+import JuegoMemoria from './JuegoMemoria'
 import fondoImg from './fondo-lulipop.png'
 
 export default function MundoLulipop({ perfil, onVolver }) {
@@ -27,6 +28,9 @@ export default function MundoLulipop({ perfil, onVolver }) {
   }
   if (juegoActivo === 'album') {
     return <AlbumPegatinas perfil={perfil} onVolver={() => setJuegoActivo(null)} />
+  }
+  if (juegoActivo === 'memoria') {
+    return <JuegoMemoria perfil={perfil} onVolver={() => setJuegoActivo(null)} />
   }
 
   return (
@@ -53,10 +57,10 @@ export default function MundoLulipop({ perfil, onVolver }) {
         @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap');
         
         .menu-btn-3d {
-          width: 80px;
-          height: 80px;
-          border-radius: 26px;
-          font-size: 38px;
+          width: 75px;
+          height: 75px;
+          border-radius: 24px;
+          font-size: 35px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -110,16 +114,16 @@ export default function MundoLulipop({ perfil, onVolver }) {
       {/* ESPACIO CENTRAL LIBRE */}
       <div style={{ flex: 1 }} />
 
-      {/* BARRA INFERIOR (DOCK) CON LOS JUEGOS Y EL ÁLBUM */}
+      {/* BARRA INFERIOR (DOCK) CON TODOS LOS MÓDULOS */}
       <div style={{
         backgroundColor: 'rgba(255, 255, 255, 0.75)',
-        padding: '15px 25px',
+        padding: '15px 20px',
         borderRadius: '35px',
         backdropFilter: 'blur(10px)',
         border: '4px solid white',
         boxShadow: '0 15px 30px rgba(0,0,0,0.2)',
         display: 'flex',
-        gap: '14px',
+        gap: '12px',
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 20,
@@ -127,6 +131,19 @@ export default function MundoLulipop({ perfil, onVolver }) {
         flexWrap: 'wrap'
       }}>
         
+        {/* Memoria */}
+        <div 
+          className="menu-btn-3d" 
+          onClick={() => setJuegoActivo('memoria')}
+          style={{ 
+            backgroundColor: '#FF758C', 
+            boxShadow: 'inset 0px 5px 0px #FF96A7, 0px 8px 0px #C73E5B, 0px 12px 15px rgba(0,0,0,0.2)' 
+          }}
+          title="Juego de Memoria"
+        >
+          🧠
+        </div>
+
         {/* Álbum de Pegatinas */}
         <div 
           className="menu-btn-3d" 
@@ -182,7 +199,6 @@ export default function MundoLulipop({ perfil, onVolver }) {
           className="menu-btn-3d" 
           onClick={() => setJuegoActivo('puzzles')}
           style={{ 
-            position: 'relative',
             backgroundColor: '#FF9966', 
             boxShadow: 'inset 0px 5px 0px #FFC299, 0px 8px 0px #D9534F, 0px 12px 15px rgba(0,0,0,0.2)' 
           }}
