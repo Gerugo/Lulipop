@@ -11,50 +11,55 @@ export default function JuegoNumeros({ perfil, onVolver }) {
   const [guardando, setGuardando] = useState(false)
 
   const emojisDisponibles = ['🍎', '⭐️', '🎈', '🚗', '🐟', '🐱', '🍌', '⚽']
-  const totalRondasMaximas = 5 // Número de rondas para completar el juego
+  const totalRondasMaximas = 5
 
   useEffect(() => {
     generarNuevoReto()
   }, [])
 
   const generarNuevoReto = () => {
-    // 1. Cantidad aleatoria entre 1 y 6
-    const cantidad = Math.floor(Math.random() * 6) + 1
-    // 2. Emoji aleatorio
+    const cantidad = Math.floor(Math.random() * 5) + 1 // Entre 1 y 5
     const emoji = emojisDisponibles[Math.floor(Math.random() * emojisDisponibles.length)]
     
-    // 3. Generar opciones de respuesta (la correcta + 2 incorrectas cercanas)
-    const incorrecta1 = Math.max(1, cantidad + (Math.random() > 0.5 ? 1 : -1))
-    let incorrecta2 = Math.floor(Math.random() * 6) + 1
-    while (incorrecta2 === cantidad || incorrecta2 === incorrecta1) {
-      incorrecta2 = Math.floor(Math.random() * 6) + 1
+    // Generar opciones únicas (sin números repetidos)
+    const opcionesSet = new Set([cantidad])
+    while (opcionesSet.size < 3) {
+      const aleatorio = Math.floor(Math.random() * 5) + 1
+      opcionesSet.add(aleatorio)
     }
-
-    const opciones = [cantidad, incorrecta1, incorrecta2].sort(() => Math.random() - 0.5)
+    const opciones = Array.from(opcionesSet).sort(() => Math.random() - 0.5)
 
     setRetoActual({
       cantidad,
       emoji,
       opciones,
       correcto: cantidad,
-      titulo: `¡Busca el número correcto!`
+      titulo: '¡Busca el número correcto!'
     })
   }
 
   const verificarRespuesta = (opcion) => {
+    if (seleccionado !== null || victoria) return // Evitar doble clic
     setSeleccionado(opcion)
+
     if (opcion === retoActual.correcto) {
       setMensaje('¡Increíble! 🎉')
       setTimeout(() => {
         setSeleccionado(null)
         setMensaje('')
-        if (ronda < totalRondasMaximas) {
-          setRonda(prev => prev + 1)
-          generarNuevoReto()
-        } else {
-          setVictoria(true)
-          guardarProgreso()
-        }
+        
+        // Actualización segura de ronda usando el estado anterior (evita el fallo de "Ronda 7 de 5")
+        setRonda(prevRonda => {
+          const siguienteRonda = prevRonda + 1
+          if (siguienteRonda <= totalRondasMaximas) {
+            generarNuevoReto()
+            return siguienteRonda
+          } else {
+            setVictoria(true)
+            guardarProgreso()
+            return prevRonda
+          }
+        })
       }, 1000)
     } else {
       setMensaje('¡Casi, prueba otra! 💪')
@@ -145,7 +150,7 @@ export default function JuegoNumeros({ perfil, onVolver }) {
             <h2 style={{ color: '#2D3748', fontSize: '1.5rem', margin: 0 }}>{retoActual.titulo}</h2>
           </div>
 
-          {/* Lienzo central con objetos aleatorios */}
+          {/* Lienzo central con objetos */}
           <div style={{
             backgroundColor: 'rgba(255, 255, 255, 0.8)',
             width: '100%',
@@ -186,7 +191,7 @@ export default function JuegoNumeros({ perfil, onVolver }) {
             </div>
           )}
 
-          {/* Opciones aleatorias */}
+          {/* Opciones únicas (3 botones) */}
           <div style={{ display: 'flex', gap: '20px' }}>
             {retoActual.opciones.map((opcion) => (
               <button 
@@ -217,7 +222,7 @@ export default function JuegoNumeros({ perfil, onVolver }) {
             ¡Excelente Conteo!
           </h1>
           <p style={{ color: 'white', fontSize: '1.4rem', margin: 0, textShadow: '0 2px 6px rgba(0,0,0,0.3)' }}>
-            ¡Has completado todas las rondas aleatorias con maestría!
+            ¡Has completado todas las rondas con maestría!
           </p>
           <button 
             onClick={onVolver}
