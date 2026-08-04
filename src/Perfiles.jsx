@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 import fondoImg from './fondo-lulipop.png'
 import logoImg from './Logosinfondo.png'
+import DashboardPadres from './DashboardPadres'
 
 export default function Perfiles({ session, onSeleccionarPerfil }) {
   const [perfiles, setPerfiles] = useState([])
   const [nombre, setNombre] = useState('')
   const [edad, setEdad] = useState('')
+  const [perfilEstadisticas, setPerfilEstadisticas] = useState(null)
   
   const avataresDisponibles = ['👦', '👧', '🦊', '🐱', '🦖', '🦄']
   const [avatarSeleccionado, setAvatarSeleccionado] = useState(avataresDisponibles[0])
@@ -41,6 +43,10 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
       setEdad('')
       obtenerPerfiles()
     }
+  }
+
+  if (perfilEstadisticas) {
+    return <DashboardPadres perfil={perfilEstadisticas} onVolver={() => setPerfilEstadisticas(null)} />
   }
 
   return (
@@ -79,7 +85,7 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
         }
       `}</style>
 
-      {/* CABECERA: Logotipo centrado o arriba + Botón cerrar sesión */}
+      {/* CABECERA: Logotipo + Botón cerrar sesión */}
       <div style={{ width: '100%', maxWidth: '650px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', zIndex: 10 }}>
         <img 
           src={logoImg} 
@@ -98,10 +104,7 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
             fontWeight: '600',
             color: '#FF5E62',
             boxShadow: '0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.1)',
-            transition: 'transform 0.1s'
           }}
-          onMouseDown={e => e.currentTarget.style.transform = 'translateY(4px)'}
-          onMouseUp={e => e.currentTarget.style.transform = 'translateY(0)'}
         >
           Cerrar Sesión 🚪
         </button>
@@ -152,8 +155,7 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
                       padding: '8px', 
                       backgroundColor: avatarSeleccionado === emoji ? '#F0E6FF' : '#F9F9F9',
                       border: avatarSeleccionado === emoji ? '3px solid #8E2DE2' : '3px solid transparent', 
-                      borderRadius: '16px',
-                      transition: 'all 0.1s'
+                      borderRadius: '16px'
                     }}
                   >
                     {emoji}
@@ -174,11 +176,8 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
                 fontSize: '1.1rem',
                 fontWeight: '700',
                 boxShadow: '0 6px 0 #388e3c, 0 10px 15px rgba(0,0,0,0.1)',
-                transition: 'transform 0.1s',
                 marginTop: '5px'
               }}
-              onMouseDown={e => e.currentTarget.style.transform = 'translateY(4px)'}
-              onMouseUp={e => e.currentTarget.style.transform = 'translateY(0)'}
             >
               Guardar Perfil
             </button>
@@ -194,7 +193,8 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
           border: '4px solid white',
           backdropFilter: 'blur(10px)'
         }}>
-          <h3 style={{ color: '#333', fontSize: '1.3rem', marginBottom: '20px', marginTop: 0 }}>¿Quién va a jugar hoy?</h3>
+          <h3 style={{ color: '#333', fontSize: '1.3rem', marginBottom: '8px', marginTop: 0 }}>¿Quién va a jugar hoy?</h3>
+          <p style={{ color: '#666', fontSize: '0.95rem', marginBottom: '20px' }}>Toca el avatar para entrar a jugar, o pulsa el botón de abajo para ver el progreso.</p>
           
           {perfiles.length === 0 ? (
             <p style={{ color: '#666', margin: 0 }}>Aún no hay perfiles creados. ¡Crea uno arriba!</p>
@@ -203,30 +203,49 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
               {perfiles.map((perfil) => (
                 <div 
                   key={perfil.id} 
-                  onClick={() => onSeleccionarPerfil(perfil)} 
                   style={{ 
-                    textAlign: 'center', 
-                    padding: '22px 18px', 
                     backgroundColor: 'white', 
                     borderRadius: '25px', 
                     boxShadow: '0 8px 20px rgba(0,0,0,0.08)', 
-                    minWidth: '120px', 
-                    cursor: 'pointer', 
-                    transition: 'transform 0.2s, box-shadow 0.2s',
-                    border: '3px solid #F0F2F5'
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.transform = 'scale(1.05)'
-                    e.currentTarget.style.boxShadow = '0 12px 25px rgba(0,0,0,0.12)'
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.transform = 'scale(1)'
-                    e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.08)'
+                    width: '160px', 
+                    border: '3px solid #F0F2F5',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    padding: '15px',
+                    gap: '12px',
+                    boxSizing: 'border-box'
                   }}
                 >
-                  <div style={{ fontSize: '50px' }}>{perfil.avatar}</div>
-                  <h4 style={{ margin: '10px 0 4px 0', color: '#333', fontSize: '1.1rem' }}>{perfil.nombre}</h4>
-                  <p style={{ margin: '0', color: '#777', fontSize: '0.9rem' }}>{perfil.edad} años</p>
+                  {/* Zona superior para entrar a jugar */}
+                  <div 
+                    onClick={() => onSeleccionarPerfil(perfil)}
+                    style={{ cursor: 'pointer', textAlign: 'center', width: '100%' }}
+                  >
+                    <div style={{ fontSize: '50px' }}>{perfil.avatar}</div>
+                    <h4 style={{ margin: '8px 0 2px 0', color: '#333', fontSize: '1.1rem' }}>{perfil.nombre}</h4>
+                    <p style={{ margin: '0', color: '#777', fontSize: '0.9rem' }}>{perfil.edad} años</p>
+                  </div>
+
+                  {/* Botón de estadísticas para padres bien visible */}
+                  <button 
+                    onClick={() => setPerfilEstadisticas(perfil)}
+                    style={{
+                      backgroundColor: '#4A5568',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '14px',
+                      padding: '8px 12px',
+                      fontSize: '0.9rem',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      width: '100%',
+                      boxShadow: '0 4px 0 #2D3748',
+                      fontFamily: '"Fredoka", sans-serif'
+                    }}
+                  >
+                    📊 Progreso
+                  </button>
                 </div>
               ))}
             </div>
