@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import JuegoNumeros from './JuegoNumeros'
 import JuegoPuzzles from './JuegoPuzzles'
-import fondoImg from './fondo-lulipop.png' // Importamos la imagen de fondo
+import JuegoArte from './JuegoArte'
+import fondoImg from './fondo-lulipop.png'
 
 export default function MundoLulipop({ perfil, onVolver }) {
   const [juegoActivo, setJuegoActivo] = useState(null)
@@ -11,6 +12,9 @@ export default function MundoLulipop({ perfil, onVolver }) {
   }
   if (juegoActivo === 'puzzles') {
     return <JuegoPuzzles perfil={perfil} onVolver={() => setJuegoActivo(null)} />
+  }
+  if (juegoActivo === 'arte') {
+    return <JuegoArte perfil={perfil} onVolver={() => setJuegoActivo(null)} />
   }
 
   return (
@@ -91,7 +95,7 @@ export default function MundoLulipop({ perfil, onVolver }) {
         </div>
       </div>
 
-      {/* ESPACIO CENTRAL LIBRE (Para que se aprecie el logo y la ilustración) */}
+      {/* ESPACIO CENTRAL LIBRE */}
       <div style={{ flex: 1 }} />
 
       {/* BARRA INFERIOR (DOCK) CON LOS JUEGOS */}
@@ -110,15 +114,14 @@ export default function MundoLulipop({ perfil, onVolver }) {
         marginBottom: '10px'
       }}>
         
-        {/* Arte (Próximamente) */}
+        {/* Arte */}
         <div 
           className="menu-btn-3d" 
+          onClick={() => setJuegoActivo('arte')}
           style={{ 
             backgroundColor: '#FF6B6B', 
-            boxShadow: 'inset 0px 5px 0px #FF9999, 0px 8px 0px #C0392B, 0px 12px 15px rgba(0,0,0,0.2)',
-            opacity: 0.85
+            boxShadow: 'inset 0px 5px 0px #FF9999, 0px 8px 0px #C0392B, 0px 12px 15px rgba(0,0,0,0.2)'
           }}
-          title="Próximamente"
         >
           🎨
         </div>
