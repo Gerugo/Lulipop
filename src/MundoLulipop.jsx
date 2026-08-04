@@ -1,0 +1,154 @@
+import React, { useState } from 'react'
+import JuegoNumeros from './JuegoNumeros'
+import JuegoPuzzles from './JuegoPuzzles'
+import fondoImg from './fondo-lulipop.png' // Importamos la imagen de fondo
+
+export default function MundoLulipop({ perfil, onVolver }) {
+  const [juegoActivo, setJuegoActivo] = useState(null)
+
+  if (juegoActivo === 'numeros') {
+    return <JuegoNumeros perfil={perfil} onVolver={() => setJuegoActivo(null)} />
+  }
+  if (juegoActivo === 'puzzles') {
+    return <JuegoPuzzles perfil={perfil} onVolver={() => setJuegoActivo(null)} />
+  }
+
+  return (
+    <div style={{ 
+      minHeight: '100vh', 
+      width: '100vw',
+      backgroundImage: `url(${fondoImg})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+      display: 'flex', 
+      flexDirection: 'column', 
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      fontFamily: '"Fredoka", sans-serif',
+      position: 'absolute',
+      top: 0, left: 0, zIndex: 10,
+      boxSizing: 'border-box',
+      padding: '25px',
+      overflow: 'hidden'
+    }}>
+      
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap');
+        
+        .menu-btn-3d {
+          width: 100px;
+          height: 100px;
+          border-radius: 30px;
+          font-size: 50px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          user-select: none;
+          transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .menu-btn-3d:active {
+          transform: translateY(8px) scale(0.95);
+        }
+
+        @keyframes floatAvatar {
+          0% { transform: translateY(0px); }
+          50% { transform: translateY(-5px); }
+          100% { transform: translateY(0px); }
+        }
+      `}</style>
+
+      {/* CABECERA: Botón volver + Tarjeta de bienvenida del niño */}
+      <div style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center', zIndex: 20 }}>
+        <button 
+          onClick={onVolver}
+          style={{ 
+            width: '50px', height: '50px', borderRadius: '16px',
+            backgroundColor: '#FFFFFF', color: '#FF5E62', 
+            border: 'none', fontSize: '20px', cursor: 'pointer',
+            boxShadow: '0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}
+        >
+          ❮
+        </button>
+
+        <div style={{
+          backgroundColor: 'rgba(255, 255, 255, 0.85)',
+          padding: '8px 25px',
+          borderRadius: '25px',
+          backdropFilter: 'blur(8px)',
+          border: '3px solid white',
+          boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px'
+        }}>
+          <span style={{ fontSize: '30px', animation: 'floatAvatar 2s ease-in-out infinite' }}>{perfil.avatar}</span>
+          <span style={{ color: '#333', fontSize: '1.4rem', fontWeight: '700' }}>¡Hola, {perfil.nombre}!</span>
+        </div>
+      </div>
+
+      {/* ESPACIO CENTRAL LIBRE (Para que se aprecie el logo y la ilustración) */}
+      <div style={{ flex: 1 }} />
+
+      {/* BARRA INFERIOR (DOCK) CON LOS JUEGOS */}
+      <div style={{
+        backgroundColor: 'rgba(255, 255, 255, 0.75)',
+        padding: '15px 30px',
+        borderRadius: '35px',
+        backdropFilter: 'blur(10px)',
+        border: '4px solid white',
+        boxShadow: '0 15px 30px rgba(0,0,0,0.2)',
+        display: 'flex',
+        gap: '20px',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 20,
+        marginBottom: '10px'
+      }}>
+        
+        {/* Arte (Próximamente) */}
+        <div 
+          className="menu-btn-3d" 
+          style={{ 
+            backgroundColor: '#FF6B6B', 
+            boxShadow: 'inset 0px 5px 0px #FF9999, 0px 8px 0px #C0392B, 0px 12px 15px rgba(0,0,0,0.2)',
+            opacity: 0.85
+          }}
+          title="Próximamente"
+        >
+          🎨
+        </div>
+        
+        {/* Puzzles */}
+        <div 
+          className="menu-btn-3d" 
+          onClick={() => setJuegoActivo('puzzles')}
+          style={{ 
+            backgroundColor: '#FF9966', 
+            boxShadow: 'inset 0px 5px 0px #FFC299, 0px 8px 0px #D9534F, 0px 12px 15px rgba(0,0,0,0.2)' 
+          }}
+        >
+          🧩
+        </div>
+        
+        {/* Números */}
+        <div 
+          className="menu-btn-3d" 
+          onClick={() => setJuegoActivo('numeros')}
+          style={{ 
+            backgroundColor: '#FFD166', 
+            boxShadow: 'inset 0px 5px 0px #FFE599, 0px 8px 0px #CCAC00, 0px 12px 15px rgba(0,0,0,0.2)' 
+          }}
+        >
+          🔢
+        </div>
+
+      </div>
+
+    </div>
+  )
+}
