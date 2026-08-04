@@ -1,21 +1,45 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 import fondoImg from './fondo-lulipop.png'
 
 export default function JuegoNumeros({ perfil, onVolver }) {
-  const [nivel, setNivel] = useState(1)
+  const [ronda, setRonda] = useState(1)
+  const [retoActual, setRetoActual] = useState(null)
   const [seleccionado, setSeleccionado] = useState(null)
   const [mensaje, setMensaje] = useState('')
   const [victoria, setVictoria] = useState(false)
   const [guardando, setGuardando] = useState(false)
 
-  const retos = [
-    { id: 1, cantidad: 3, emoji: '🍎', opciones: [2, 3, 5], correcto: 3, titulo: '¡Busca el número de manzanas!' },
-    { id: 2, cantidad: 4, emoji: '⭐️', opciones: [4, 6, 2], correcto: 4, titulo: '¡Busca el número de estrellas!' },
-    { id: 3, cantidad: 5, emoji: '🎈', opciones: [3, 5, 7], correcto: 5, titulo: '¡Busca el número de globos!' }
-  ]
+  const emojisDisponibles = ['🍎', '⭐️', '🎈', '🚗', '🐟', '🐱', '🍌', '⚽']
+  const totalRondasMaximas = 5 // Número de rondas para completar el juego
 
-  const retoActual = retos[nivel - 1]
+  useEffect(() => {
+    generarNuevoReto()
+  }, [])
+
+  const generarNuevoReto = () => {
+    // 1. Cantidad aleatoria entre 1 y 6
+    const cantidad = Math.floor(Math.random() * 6) + 1
+    // 2. Emoji aleatorio
+    const emoji = emojisDisponibles[Math.floor(Math.random() * emojisDisponibles.length)]
+    
+    // 3. Generar opciones de respuesta (la correcta + 2 incorrectas cercanas)
+    const incorrecta1 = Math.max(1, cantidad + (Math.random() > 0.5 ? 1 : -1))
+    let incorrecta2 = Math.floor(Math.random() * 6) + 1
+    while (incorrecta2 === cantidad || incorrecta2 === incorrecta1) {
+      incorrecta2 = Math.floor(Math.random() * 6) + 1
+    }
+
+    const opciones = [cantidad, incorrecta1, incorrecta2].sort(() => Math.random() - 0.5)
+
+    setRetoActual({
+      cantidad,
+      emoji,
+      opciones,
+      correcto: cantidad,
+      titulo: `¡Busca el número correcto!`
+    })
+  }
 
   const verificarRespuesta = (opcion) => {
     setSeleccionado(opcion)
@@ -24,8 +48,9 @@ export default function JuegoNumeros({ perfil, onVolver }) {
       setTimeout(() => {
         setSeleccionado(null)
         setMensaje('')
-        if (nivel < retos.length) {
-          setNivel(prev => prev + 1)
+        if (ronda < totalRondasMaximas) {
+          setRonda(prev => prev + 1)
+          generarNuevoReto()
         } else {
           setVictoria(true)
           guardarProgreso()
@@ -47,6 +72,8 @@ export default function JuegoNumeros({ perfil, onVolver }) {
     ])
     setGuardando(false)
   }
+
+  if (!retoActual) return null
 
   return (
     <div style={{ 
@@ -104,7 +131,7 @@ export default function JuegoNumeros({ perfil, onVolver }) {
       {!victoria ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '500px', zIndex: 20 }}>
           
-          {/* Tarjeta de Pregunta con Glassmorphism */}
+          {/* Tarjeta de Título */}
           <div style={{
             backgroundColor: 'rgba(255, 255, 255, 0.88)',
             padding: '16px 30px',
@@ -118,7 +145,7 @@ export default function JuegoNumeros({ perfil, onVolver }) {
             <h2 style={{ color: '#2D3748', fontSize: '1.5rem', margin: 0 }}>{retoActual.titulo}</h2>
           </div>
 
-          {/* Lienzo central con efecto translúcido */}
+          {/* Lienzo central con objetos aleatorios */}
           <div style={{
             backgroundColor: 'rgba(255, 255, 255, 0.8)',
             width: '100%',
@@ -148,7 +175,7 @@ export default function JuegoNumeros({ perfil, onVolver }) {
             ))}
           </div>
 
-          {/* Feedback visual */}
+          {/* Feedback */}
           {mensaje && (
             <div style={{ 
               marginBottom: '15px', backgroundColor: '#FFFFFF', padding: '10px 25px', borderRadius: '20px',
@@ -159,7 +186,7 @@ export default function JuegoNumeros({ perfil, onVolver }) {
             </div>
           )}
 
-          {/* Opciones */}
+          {/* Opciones aleatorias */}
           <div style={{ display: 'flex', gap: '20px' }}>
             {retoActual.opciones.map((opcion) => (
               <button 
@@ -179,7 +206,7 @@ export default function JuegoNumeros({ perfil, onVolver }) {
           </div>
 
           <p style={{ color: 'white', marginTop: '25px', fontSize: '1.1rem', fontWeight: '700', textShadow: '0 2px 6px rgba(0,0,0,0.4)' }}>
-            Nivel {nivel} de {retos.length} 🌟
+            Ronda {ronda} de {totalRondasMaximas} 🌟
           </p>
 
         </div>
@@ -190,7 +217,7 @@ export default function JuegoNumeros({ perfil, onVolver }) {
             ¡Excelente Conteo!
           </h1>
           <p style={{ color: 'white', fontSize: '1.4rem', margin: 0, textShadow: '0 2px 6px rgba(0,0,0,0.3)' }}>
-            ¡Has completado todos los retos con maestría!
+            ¡Has completado todas las rondas aleatorias con maestría!
           </p>
           <button 
             onClick={onVolver}
