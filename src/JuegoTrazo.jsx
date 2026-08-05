@@ -8,7 +8,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
   const [inputPersonalizado, setInputPersonalizado] = useState('')
   
   const canvasRef = useRef(null)
-  const brushSizeRef = useRef(60) // Tamaño dinámico del pincel
+  const brushSizeRef = useRef(60)
   const [isDrawing, setIsDrawing] = useState(false)
   const [dimensiones, setDimensiones] = useState({ w: window.innerWidth, h: window.innerHeight })
 
@@ -21,14 +21,12 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     { id: '#a18cd1', shadow: '#6b4c9a' }  // Morado
   ]
 
-  // Ajustar tamaño de pantalla si se gira el móvil o tablet
   useEffect(() => {
     const handleResize = () => setDimensiones({ w: window.innerWidth, h: window.innerHeight })
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Inicializar el Canvas asegurando que la fuente esté cargada
   useEffect(() => {
     document.fonts.ready.then(() => {
       inicializarCanvas()
@@ -41,12 +39,10 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     const ctx = canvas.getContext('2d')
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     
-    // Cálculo inteligente del tamaño: Letra gigante si es 1 sola, más pequeña si es palabra
     const isWord = textoActual.length > 1
-    const maxFontSize = isWord ? (canvas.width * 0.8) / textoActual.length : canvas.height * 0.5
+    const maxFontSize = isWord ? (canvas.width * 0.85) / textoActual.length : canvas.height * 0.5
     const fontSize = Math.min(maxFontSize, 450) 
     
-    // Guardamos un tamaño de pincel proporcional a la letra para que sea perfecto
     brushSizeRef.current = fontSize * 0.35
 
     ctx.font = `900 ${fontSize}px 'Fredoka', sans-serif`
@@ -54,21 +50,19 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     ctx.textBaseline = 'middle'
     
     const centerX = canvas.width / 2
-    const centerY = canvas.height / 2 - 30 // Subimos un pelín para compensar el menú
+    const centerY = canvas.height / 2 - 20 
 
-    // MODO NORMAL PARA DIBUJAR LA BASE
     ctx.globalCompositeOperation = 'source-over'
 
-    // 1. Dibujar el fondo de la letra (Plantilla blanca semitransparente)
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)'
+    // 1. Fondo de la letra (Burbuja semitransparente)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)'
     ctx.fillText(textoActual, centerX, centerY)
 
-    // 2. Dibujar el borde punteado (Guía visual)
-    ctx.lineWidth = Math.max(fontSize * 0.02, 3)
+    // 2. Borde de la letra (Sólido, brillante y suave)
+    ctx.lineWidth = Math.max(fontSize * 0.015, 4)
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)'
-    ctx.setLineDash([fontSize * 0.05, fontSize * 0.05])
+    ctx.lineJoin = 'round'
     ctx.strokeText(textoActual, centerX, centerY)
-    ctx.setLineDash([])
   }
 
   const getCoordinates = (e, canvas) => {
@@ -91,7 +85,6 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     ctx.beginPath()
     ctx.moveTo(x, y)
     
-    // EL TRUCO DE MAGIA: 'source-atop' hace que el trazo SOLO pinte donde ya hay letra dibujada
     ctx.globalCompositeOperation = 'source-atop'
     ctx.strokeStyle = colorTrazo
     ctx.lineWidth = brushSizeRef.current
@@ -106,12 +99,10 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     const ctx = canvas.getContext('2d')
     const { x, y } = getCoordinates(e, canvas)
     
-    // Dibuja la línea de color (se quedará dentro de la letra)
     ctx.globalCompositeOperation = 'source-atop'
     ctx.lineTo(x, y)
     ctx.stroke()
 
-    // Efecto de Partículas (estas sí queremos que salgan fuera de la letra)
     if (Math.random() > 0.6) {
       ctx.globalCompositeOperation = 'source-over'
       ctx.beginPath()
@@ -122,18 +113,15 @@ export default function JuegoTrazo({ perfil, onVolver }) {
       ctx.shadowBlur = 10
       ctx.shadowColor = colorTrazo
       ctx.fill()
-      ctx.shadowBlur = 0 // Resetear sombra para la línea
+      ctx.shadowBlur = 0 
       
-      // Restaurar el pincel para no cortar el trazo
       ctx.globalCompositeOperation = 'source-atop'
       ctx.beginPath()
       ctx.moveTo(x, y)
     }
   }
 
-  const stopDrawing = () => {
-    setIsDrawing(false)
-  }
+  const stopDrawing = () => setIsDrawing(false)
 
   const guardarPersonalizada = (e) => {
     e.preventDefault()
@@ -146,130 +134,120 @@ export default function JuegoTrazo({ perfil, onVolver }) {
 
   return (
     <div style={{
-      minHeight: '100vh',
-      width: '100vw',
+      minHeight: '100vh', width: '100vw',
       backgroundImage: `url(${fondoImg})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
+      backgroundSize: 'cover', backgroundPosition: 'center',
       fontFamily: '"Fredoka", sans-serif',
-      position: 'absolute',
-      top: 0, left: 0, zIndex: 10,
+      position: 'absolute', top: 0, left: 0, zIndex: 10,
       overflow: 'hidden'
     }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;900&display=swap');
         .anim-pop { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
       `}</style>
 
-      {/* LIENZO DE DIBUJO (Ocupa toda la pantalla real) */}
+      {/* LIENZO DE DIBUJO */}
       <canvas
         ref={canvasRef}
-        width={dimensiones.w}
-        height={dimensiones.h}
-        onMouseDown={startDrawing}
-        onMouseMove={draw}
-        onMouseUp={stopDrawing}
-        onMouseLeave={stopDrawing}
-        onTouchStart={startDrawing}
-        onTouchMove={draw}
-        onTouchEnd={stopDrawing}
-        style={{
-          position: 'absolute', top: 0, left: 0,
-          width: '100%', height: '100%',
-          cursor: 'crosshair', touchAction: 'none', zIndex: 1
-        }}
+        width={dimensiones.w} height={dimensiones.h}
+        onMouseDown={startDrawing} onMouseMove={draw} onMouseUp={stopDrawing} onMouseLeave={stopDrawing}
+        onTouchStart={startDrawing} onTouchMove={draw} onTouchEnd={stopDrawing}
+        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', cursor: 'crosshair', touchAction: 'none', zIndex: 1 }}
       />
 
-      {/* CABECERA (Controles Superiores) */}
+      {/* CABECERA (Controles Superiores Responsivos) */}
       <div style={{ 
-        position: 'absolute', top: '40px', left: '25px', right: '25px', 
+        position: 'absolute', top: '20px', left: '20px', right: '20px', 
         display: 'flex', justifyContent: 'space-between', zIndex: 10, pointerEvents: 'none' 
       }}>
         <button onClick={onVolver} style={{
-          width: '60px', height: '60px', borderRadius: '20px',
+          width: '50px', height: '50px', borderRadius: '16px',
           backgroundColor: '#FFFFFF', color: '#FF5E62', border: 'none', 
-          fontSize: '26px', cursor: 'pointer', pointerEvents: 'auto',
-          boxShadow: '0 8px 0 #E0E0E0, 0 15px 20px rgba(0,0,0,0.15)',
+          fontSize: '22px', cursor: 'pointer', pointerEvents: 'auto',
+          boxShadow: '0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)',
           display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>❮</button>
 
         <button onClick={inicializarCanvas} style={{
-          height: '60px', padding: '0 25px', borderRadius: '20px',
+          height: '50px', padding: '0 20px', borderRadius: '16px',
           backgroundColor: '#FFFFFF', color: '#333', border: 'none', 
-          fontSize: '20px', fontWeight: '900', cursor: 'pointer', pointerEvents: 'auto',
-          boxShadow: '0 8px 0 #E0E0E0, 0 15px 20px rgba(0,0,0,0.15)',
-          display: 'flex', alignItems: 'center', gap: '10px'
+          fontSize: '18px', fontWeight: '900', cursor: 'pointer', pointerEvents: 'auto',
+          boxShadow: '0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)',
+          display: 'flex', alignItems: 'center', gap: '8px'
         }}>🧹 <span style={{ color: '#FF6B6B' }}>Borrar</span></button>
       </div>
 
-      {/* DOCK INFERIOR (Colores y Menú de Palabras) */}
+      {/* DOCK INFERIOR (Responsivo y Adaptable) */}
       <div style={{
-        position: 'absolute', bottom: '40px', left: '50%', transform: 'translateX(-50%)',
-        backgroundColor: 'rgba(255, 255, 255, 0.9)', padding: '15px 25px',
-        borderRadius: '40px', backdropFilter: 'blur(20px)', border: '4px solid white',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', 
-        gap: '20px', zIndex: 10, animation: 'float 4s ease-in-out infinite'
+        position: 'absolute', bottom: '25px', left: '50%', transform: 'translateX(-50%)',
+        backgroundColor: 'rgba(255, 255, 255, 0.9)', padding: '12px 15px',
+        borderRadius: '25px', backdropFilter: 'blur(20px)', border: '4px solid white',
+        boxShadow: '0 15px 30px rgba(0,0,0,0.2)', display: 'flex', flexWrap: 'wrap',
+        justifyContent: 'center', alignItems: 'center', gap: '12px', zIndex: 10,
+        width: '90%', maxWidth: '450px' // Garantiza que nunca se salga de la pantalla
       }}>
-        <div style={{ display: 'flex', gap: '12px' }}>
+        
+        {/* Contenedor de colores */}
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
           {colores.map(c => (
             <div key={c.id} onClick={() => setColorTrazo(c.id)} style={{
-              width: '45px', height: '45px', borderRadius: '50%', backgroundColor: c.id, 
-              cursor: 'pointer', border: colorTrazo === c.id ? '5px solid white' : '3px solid rgba(255,255,255,0.8)',
-              boxShadow: colorTrazo === c.id ? `0 0 20px ${c.id}` : `0 6px 0 ${c.shadow}`,
-              transform: colorTrazo === c.id ? 'translateY(-5px) scale(1.1)' : 'scale(1)',
+              width: '38px', height: '38px', borderRadius: '50%', backgroundColor: c.id, 
+              cursor: 'pointer', border: colorTrazo === c.id ? '4px solid white' : '3px solid rgba(255,255,255,0.8)',
+              boxShadow: colorTrazo === c.id ? `0 0 15px ${c.id}` : `0 4px 0 ${c.shadow}`,
+              transform: colorTrazo === c.id ? 'translateY(-3px) scale(1.1)' : 'scale(1)',
               transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)'
             }} />
           ))}
         </div>
-        <div style={{ width: '3px', height: '45px', backgroundColor: '#E2E8F0', borderRadius: '2px' }} />
+
+        {/* Botón de Menú con tamaño adaptado */}
         <button onClick={() => setMostrarMenu(true)} style={{
           backgroundColor: '#FFD166', color: '#7A5C00', border: 'none',
-          padding: '12px 20px', borderRadius: '25px', fontSize: '22px',
-          fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
-          boxShadow: '0 6px 0 #CCAC00, 0 10px 15px rgba(0,0,0,0.15)'
+          padding: '10px 18px', borderRadius: '20px', fontSize: '18px',
+          fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
+          boxShadow: '0 5px 0 #CCAC00'
         }}>✨ A-B-C</button>
       </div>
 
-      {/* MENÚ DE SELECCIÓN DE PALABRA (CRISTAL) */}
+      {/* MENÚ MODAL */}
       {mostrarMenu && (
         <div className="anim-pop" style={{
           position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-          backgroundColor: 'rgba(255, 255, 255, 0.5)', backdropFilter: 'blur(25px)',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 100
+          backgroundColor: 'rgba(255, 255, 255, 0.6)', backdropFilter: 'blur(15px)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '20px', boxSizing: 'border-box'
         }}>
           <div style={{
-            backgroundColor: '#FFFFFF', padding: '40px', borderRadius: '40px',
-            boxShadow: '0 25px 50px rgba(0,0,0,0.2)', border: '6px solid #F8FAFC',
-            width: '90%', maxWidth: '600px', display: 'flex', flexDirection: 'column', gap: '30px', position: 'relative'
+            backgroundColor: '#FFFFFF', padding: '30px 20px', borderRadius: '35px',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)', border: '5px solid #F8FAFC',
+            width: '100%', maxWidth: '450px', display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative', boxSizing: 'border-box'
           }}>
             <button onClick={() => setMostrarMenu(false)} style={{
-              position: 'absolute', top: '-20px', right: '-20px', width: '50px', height: '50px',
+              position: 'absolute', top: '-15px', right: '-15px', width: '45px', height: '45px',
               borderRadius: '50%', backgroundColor: '#FF6B6B', color: 'white', border: 'none',
-              fontSize: '24px', fontWeight: '900', cursor: 'pointer', boxShadow: '0 6px 0 #C0392B'
+              fontSize: '20px', fontWeight: '900', cursor: 'pointer', boxShadow: '0 5px 0 #C0392B'
             }}>X</button>
-            <h2 style={{ textAlign: 'center', color: '#333', fontSize: '2rem', margin: 0 }}>¿Qué trazamos ahora?</h2>
+            <h2 style={{ textAlign: 'center', color: '#333', fontSize: '1.6rem', margin: 0 }}>¿Qué trazamos ahora?</h2>
             
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
               {palabrasPreset.map(p => (
                 <button key={p} onClick={() => { setTextoActual(p); setMostrarMenu(false); }} style={{ 
-                  backgroundColor: '#F1F5F9', border: 'none', padding: '15px 25px', borderRadius: '20px',
-                  fontSize: '1.5rem', fontWeight: '900', color: '#475569', cursor: 'pointer',
-                  boxShadow: '0 6px 0 #CBD5E1', transition: 'transform 0.1s'
+                  backgroundColor: '#F1F5F9', border: 'none', padding: '12px 20px', borderRadius: '18px',
+                  fontSize: '1.2rem', fontWeight: '900', color: '#475569', cursor: 'pointer',
+                  boxShadow: '0 5px 0 #CBD5E1'
                 }}>{p}</button>
               ))}
             </div>
-            <div style={{ height: '4px', backgroundColor: '#F1F5F9', borderRadius: '2px', width: '100%' }} />
-            <form onSubmit={guardarPersonalizada} style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
+            
+            <form onSubmit={guardarPersonalizada} style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '10px' }}>
               <input type="text" placeholder="Tu palabra..." value={inputPersonalizado} onChange={(e) => setInputPersonalizado(e.target.value)} maxLength={7} style={{
-                padding: '15px 25px', borderRadius: '20px', border: '4px solid #E2E8F0',
-                fontFamily: 'Fredoka', fontSize: '1.5rem', outline: 'none', width: '200px',
+                padding: '12px 15px', borderRadius: '16px', border: '3px solid #E2E8F0',
+                fontFamily: 'Fredoka', fontSize: '1.2rem', outline: 'none', width: '140px',
                 textAlign: 'center', color: '#333', textTransform: 'uppercase'
               }} />
               <button type="submit" style={{
-                backgroundColor: '#43e97b', color: 'white', border: 'none', padding: '0 30px',
-                borderRadius: '20px', fontSize: '1.2rem', fontWeight: '900', cursor: 'pointer', boxShadow: '0 6px 0 #27ae60'
+                backgroundColor: '#43e97b', color: 'white', border: 'none', padding: '0 20px',
+                borderRadius: '16px', fontSize: '1.2rem', fontWeight: '900', cursor: 'pointer', boxShadow: '0 5px 0 #27ae60'
               }}>¡Vale!</button>
             </form>
           </div>
