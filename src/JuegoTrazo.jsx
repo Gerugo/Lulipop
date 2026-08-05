@@ -3,25 +3,35 @@ import fondoImg from './fondo-lulipop.png'
 
 export default function JuegoTrazo({ perfil, onVolver }) {
   const [textoActual, setTextoActual] = useState('A')
-  const [modoPersonalizado, setModoPersonalizado] = useState(false)
-  const [inputPersonalizado, setInputPersonalizado] = useState('')
   const [colorTrazo, setColorTrazo] = useState('#FF5E62')
-  
+  const [mostrarMenu, setMostrarMenu] = useState(false)
+  const [inputPersonalizado, setInputPersonalizado] = useState('')
   const canvasRef = useRef(null)
   const [isDrawing, setIsDrawing] = useState(false)
+  const [dimensiones, setDimensiones] = useState({ w: window.innerWidth, h: window.innerHeight })
 
   const palabrasPreset = ['A', 'B', 'C', 'MAMA', 'PAPA', 'SOL', 'LULU', '123']
   const colores = [
-    { id: '#FF5E62', shadow: '#C0392B' },
-    { id: '#4facfe', shadow: '#005580' },
-    { id: '#43e97b', shadow: '#27ae60' },
-    { id: '#FFD166', shadow: '#CCAC00' },
-    { id: '#ff758c', shadow: '#C73E5B' }
+    { id: '#FF5E62', shadow: '#C0392B' }, // Rojo/Rosa
+    { id: '#4facfe', shadow: '#005580' }, // Azul
+    { id: '#43e97b', shadow: '#27ae60' }, // Verde
+    { id: '#FFD166', shadow: '#CCAC00' }, // Amarillo
+    { id: '#a18cd1', shadow: '#6b4c9a' }  // Morado
   ]
 
+  // Ajustar el canvas al tamaño real de la pantalla
+  useEffect(() => {
+    const handleResize = () => {
+      setDimensiones({ w: window.innerWidth, h: window.innerHeight })
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // Redibujar la palabra gigante cada vez que cambia el texto o el tamaño de pantalla
   useEffect(() => {
     inicializarCanvas()
-  }, [textoActual])
+  }, [textoActual, dimensiones])
 
   const inicializarCanvas = () => {
     const canvas = canvasRef.current
@@ -29,12 +39,25 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     const ctx = canvas.getContext('2d')
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     
-    // Guía visual de fondo suave y elegante
-    ctx.font = 'bold 110px Fredoka, sans-serif'
-    ctx.fillStyle = '#E2E8F0'
+    // Calcular un tamaño de letra gigante pero que quepa en pantalla
+    const fontSize = Math.min(canvas.width / (textoActual.length * 0.7), canvas.height * 0.5, 300)
+    
+    ctx.font = "900 " + fontSize + "px 'Fredoka', sans-serif"
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    ctx.fillText(textoActual, canvas.width / 2, canvas.height / 2)
+    
+    const centerX = canvas.width / 2
+    const centerY = canvas.height / 2
+
+    // Dibujar la "Pista" (Letra gigante translúcida con borde punteado)
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)'
+    ctx.fillText(textoActual, centerX, centerY)
+
+    ctx.lineWidth = 6
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)'
+    ctx.setLineDash([15, 20]) // Borde punteado
+    ctx.strokeText(textoActual, centerX, centerY)
+    ctx.setLineDash([]) // Resetear para el pincel del usuario
   }
 
   const getCoordinates = (e, canvas) => {
@@ -56,10 +79,14 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     setIsDrawing(true)
     ctx.beginPath()
     ctx.moveTo(x, y)
+    
+    // Configurar el Pincel Mágico
     ctx.strokeStyle = colorTrazo
-    ctx.lineWidth = 32
+    ctx.lineWidth = 45 // Pincel bien gordo y suave
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
+    ctx.shadowBlur = 15 // Efecto de brillo (Glow)
+    ctx.shadowColor = colorTrazo
   }
 
   const draw = (e) => {
@@ -71,6 +98,24 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     
     ctx.lineTo(x, y)
     ctx.stroke()
+
+    // EFECTO DE DIVERSIÓN: Soltar chispitas blancas aleatorias al dibujar
+    if (Math.random() > 0.6) {
+      ctx.save()
+      ctx.beginPath()
+      const offsetX = x + (Math.random() - 0.5) * 80
+      const offsetY = y + (Math.random() - 0.5) * 80
+      ctx.arc(offsetX, offsetY, Math.random() * 6 + 2, 0, Math.PI * 2)
+      ctx.fillStyle = '#FFFFFF'
+      ctx.shadowBlur = 10
+      ctx.shadowColor = '#FFFFFF'
+      ctx.fill()
+      ctx.restore()
+      
+      // Restaurar el pincel principal para que no se corte la línea
+      ctx.beginPath()
+      ctx.moveTo(x, y)
+    }
   }
 
   const stopDrawing = () => {
@@ -80,8 +125,8 @@ export default function JuegoTrazo({ perfil, onVolver }) {
   const guardarPersonalizada = (e) => {
     e.preventDefault()
     if (inputPersonalizado.trim() !== '') {
-      setTextoActual(inputPersonalizado.toUpperCase())
-      setModoPersonalizado(false)
+      setTextoActual(inputPersonalizado.toUpperCase().substring(0, 7))
+      setMostrarMenu(false)
       setInputPersonalizado('')
     }
   }
@@ -90,225 +135,166 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     <div style={{
       minHeight: '100vh',
       width: '100vw',
-      backgroundImage: `url(${fondoImg})`,
+      backgroundImage: "url(" + fondoImg + ")",
       backgroundSize: 'cover',
       backgroundPosition: 'center',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'space-between',
       fontFamily: '"Fredoka", sans-serif',
       position: 'absolute',
       top: 0, left: 0, zIndex: 10,
-      boxSizing: 'border-box',
-      padding: '20px',
-      overflowX: 'hidden'
+      overflow: 'hidden' // Evita scroll
     }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;900&display=swap');
         
-        .btn-clay {
-          background: white;
-          border: none;
-          padding: 10px 20px;
-          border-radius: 18px;
-          font-weight: 700;
-          font-size: 1rem;
-          cursor: pointer;
-          font-family: 'Fredoka', sans-serif;
-          transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
-          box-shadow: 0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.1);
+        .anim-pop {
+          animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .btn-clay:active {
-          transform: translateY(4px);
-          box-shadow: 0 2px 0 #E0E0E0, 0 5px 8px rgba(0,0,0,0.1);
+        @keyframes popIn {
+          0% { transform: scale(0.8); opacity: 0; }
+          100% { transform: scale(1); opacity: 1; }
         }
-
-        @keyframes floatAvatar {
-          0% { transform: translateY(0px); }
-          50% { transform: translateY(-4px); }
-          100% { transform: translateY(0px); }
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-5px); }
         }
       `}</style>
 
-      {/* CABECERA FLOTANTE CON GLASSMORPHISM */}
-      <div style={{ display: 'flex', width: '100%', maxWidth: '600px', justifyContent: 'space-between', alignItems: 'center', zIndex: 20 }}>
-        <button 
-          onClick={onVolver}
-          style={{
-            width: '50px', height: '50px', borderRadius: '18px',
-            backgroundColor: '#FFFFFF', color: '#FF5E62', 
-            border: 'none', fontSize: '22px', cursor: 'pointer',
-            boxShadow: '0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700'
-          }}
-        >
+      {/* LIENZO A PANTALLA COMPLETA (Fondo Transparente) */}
+      <canvas
+        ref={canvasRef}
+        width={dimensiones.w}
+        height={dimensiones.h}
+        onMouseDown={startDrawing}
+        onMouseMove={draw}
+        onMouseUp={stopDrawing}
+        onMouseLeave={stopDrawing}
+        onTouchStart={startDrawing}
+        onTouchMove={draw}
+        onTouchEnd={stopDrawing}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          cursor: 'crosshair',
+          touchAction: 'none',
+          zIndex: 1 // Por encima del fondo, por debajo de los botones
+        }}
+      />
+
+      {/* UI SUPERIOR FLOTANTE */}
+      <div style={{ 
+        position: 'absolute', top: '25px', left: '25px', right: '25px', 
+        display: 'flex', justifyContent: 'space-between', zIndex: 10, pointerEvents: 'none' 
+      }}>
+        <button onClick={onVolver} style={{
+          width: '60px', height: '60px', borderRadius: '20px',
+          backgroundColor: '#FFFFFF', color: '#FF5E62', border: 'none', 
+          fontSize: '26px', cursor: 'pointer', pointerEvents: 'auto',
+          boxShadow: '0 8px 0 #E0E0E0, 0 15px 20px rgba(0,0,0,0.2)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
           ❮
         </button>
 
-        <div style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.85)',
-          padding: '10px 25px',
-          borderRadius: '25px',
-          backdropFilter: 'blur(10px)',
-          border: '3px solid white',
-          boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
-          fontSize: '1.3rem',
-          fontWeight: '700',
-          color: '#333',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
+        <button onClick={inicializarCanvas} style={{
+          height: '60px', padding: '0 25px', borderRadius: '20px',
+          backgroundColor: '#FFFFFF', color: '#333', border: 'none', 
+          fontSize: '20px', fontWeight: '900', cursor: 'pointer', pointerEvents: 'auto',
+          boxShadow: '0 8px 0 #E0E0E0, 0 15px 20px rgba(0,0,0,0.2)',
+          display: 'flex', alignItems: 'center', gap: '10px'
         }}>
-          <span>✍️ Trazando:</span>
-          <span style={{ color: '#FF5E62', fontSize: '1.5rem', background: '#FFF0F1', padding: '2px 14px', borderRadius: '14px', border: '2px solid #FFD1D3' }}>
-            {textoActual}
-          </span>
-        </div>
-
-        <div style={{ width: '50px' }} />
+          🧹 <span style={{ color: '#FF6B6B' }}>Borrar</span>
+        </button>
       </div>
 
-      {/* CONTENEDOR CENTRAL DEL LIENZO ESTILO CLAYMORPHISM */}
+      {/* DOCK INFERIOR (Colores y Menú Mágico) */}
       <div style={{
-        backgroundColor: 'rgba(255, 255, 255, 0.85)',
-        padding: '24px',
-        borderRadius: '35px',
-        backdropFilter: 'blur(14px)',
-        border: '4px solid white',
-        boxShadow: '0 20px 45px rgba(0,0,0,0.2)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '18px',
-        width: '100%',
-        maxWidth: '480px',
-        zIndex: 20
+        position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)',
+        backgroundColor: 'rgba(255, 255, 255, 0.85)', padding: '15px 25px',
+        borderRadius: '40px', backdropFilter: 'blur(15px)', border: '4px solid white',
+        boxShadow: '0 20px 40px rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', 
+        gap: '20px', zIndex: 10, animation: 'float 4s ease-in-out infinite'
       }}>
-        {/* Lienzo con bordes redondeados y sombra interior */}
-        <canvas
-          ref={canvasRef}
-          width={440}
-          height={260}
-          onMouseDown={startDrawing}
-          onMouseMove={draw}
-          onMouseUp={stopDrawing}
-          onMouseLeave={stopDrawing}
-          onTouchStart={startDrawing}
-          onTouchMove={draw}
-          onTouchEnd={stopDrawing}
-          style={{
-            width: '100%',
-            height: 'auto',
-            backgroundColor: '#FFFFFF',
-            borderRadius: '24px',
-            border: '4px solid #F1F5F9',
-            boxShadow: 'inset 0 4px 8px rgba(0,0,0,0.06)',
-            cursor: 'crosshair',
-            touchAction: 'none'
-          }}
-        />
+        
+        {/* Selector de Colores */}
+        <div style={{ display: 'flex', gap: '12px' }}>
+          {colores.map(c => (
+            <div key={c.id} onClick={() => setColorTrazo(c.id)} style={{
+              width: '45px', height: '45px', borderRadius: '50%', backgroundColor: c.id, 
+              cursor: 'pointer', border: colorTrazo === c.id ? '5px solid white' : '3px solid rgba(255,255,255,0.8)',
+              boxShadow: colorTrazo === c.id ? "0 0 20px " + c.id : "0 6px 0 " + c.shadow,
+              transform: colorTrazo === c.id ? 'translateY(-5px) scale(1.1)' : 'scale(1)',
+              transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)'
+            }} />
+          ))}
+        </div>
 
-        {/* CONTROLES DEL LIENZO (BORRAR Y COLORES 3D) */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-          <button
-            onClick={inicializarCanvas}
-            style={{
-              backgroundColor: '#FF6B6B', color: 'white', border: 'none',
-              padding: '10px 22px', borderRadius: '16px', fontWeight: '700',
-              cursor: 'pointer', fontFamily: 'Fredoka', fontSize: '1rem',
-              boxShadow: '0 6px 0 #C0392B, 0 8px 12px rgba(0,0,0,0.15)',
-              transition: 'transform 0.1s'
-            }}
-          >
-            🧹 Limpiar
-          </button>
+        <div style={{ width: '2px', height: '40px', backgroundColor: '#E2E8F0', borderRadius: '2px' }} />
 
-          {/* Selector de Colores 3D */}
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', background: 'rgba(241, 245, 249, 0.8)', padding: '8px 12px', borderRadius: '20px', border: '2px solid white' }}>
-            {colores.map(c => (
-              <div
-                key={c.id}
-                onClick={() => setColorTrazo(c.id)}
-                style={{
-                  width: '28px', height: '28px', borderRadius: '50%',
-                  backgroundColor: c.id, cursor: 'pointer',
-                  border: colorTrazo === c.id ? '3px solid white' : '2px solid rgba(255,255,255,0.6)',
-                  boxShadow: colorTrazo === c.id ? `0 0 10px ${c.id}` : `0 4px 0 ${c.shadow}`,
-                  transform: colorTrazo === c.id ? 'scale(1.2) translateY(-2px)' : 'scale(1)',
-                  transition: 'all 0.15s ease'
-                }}
-              />
-            ))}
+        {/* Botón Abrir Menú Palabras */}
+        <button onClick={() => setMostrarMenu(true)} style={{
+          backgroundColor: '#FFD166', color: '#7A5C00', border: 'none',
+          padding: '12px 20px', borderRadius: '25px', fontSize: '24px',
+          fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
+          boxShadow: '0 6px 0 #CCAC00, 0 10px 15px rgba(0,0,0,0.15)'
+        }}>
+          ✨ A-B-C
+        </button>
+      </div>
+
+      {/* MENÚ MODAL DE PALABRAS (Pantalla Completa Cristalina) */}
+      {mostrarMenu && (
+        <div className="anim-pop" style={{
+          position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+          backgroundColor: 'rgba(255, 255, 255, 0.4)', backdropFilter: 'blur(20px)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          zIndex: 100
+        }}>
+          <div style={{
+            backgroundColor: '#FFFFFF', padding: '40px', borderRadius: '40px',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.3)', border: '6px solid #F8FAFC',
+            width: '90%', maxWidth: '600px', display: 'flex', flexDirection: 'column', gap: '30px',
+            position: 'relative'
+          }}>
+            <button onClick={() => setMostrarMenu(false)} style={{
+              position: 'absolute', top: '-20px', right: '-20px', width: '50px', height: '50px',
+              borderRadius: '50%', backgroundColor: '#FF6B6B', color: 'white', border: 'none',
+              fontSize: '24px', fontWeight: '900', cursor: 'pointer', boxShadow: '0 6px 0 #C0392B'
+            }}>X</button>
+            
+            <h2 style={{ textAlign: 'center', color: '#333', fontSize: '2rem', margin: 0 }}>¿Qué vamos a dibujar?</h2>
+            
+            <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              {palabrasPreset.map(p => (
+                <button key={p} onClick={() => { setTextoActual(p); setMostrarMenu(false); }} style={{ 
+                  backgroundColor: '#F1F5F9', border: 'none', padding: '15px 25px', borderRadius: '20px',
+                  fontSize: '1.5rem', fontWeight: '900', color: '#475569', cursor: 'pointer',
+                  boxShadow: '0 6px 0 #CBD5E1', transition: 'transform 0.1s'
+                }}>
+                  {p}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ height: '4px', backgroundColor: '#F1F5F9', borderRadius: '2px', width: '100%' }} />
+
+            <form onSubmit={guardarPersonalizada} style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
+              <input type="text" placeholder="Tu palabra..." value={inputPersonalizado} onChange={(e) => setInputPersonalizado(e.target.value)} maxLength={7} style={{
+                padding: '15px 25px', borderRadius: '20px', border: '4px solid #E2E8F0',
+                fontFamily: 'Fredoka', fontSize: '1.5rem', outline: 'none', width: '250px',
+                textAlign: 'center', color: '#333', textTransform: 'uppercase'
+              }} />
+              <button type="submit" style={{
+                backgroundColor: '#43e97b', color: 'white', border: 'none', padding: '0 30px',
+                borderRadius: '20px', fontSize: '1.2rem', fontWeight: '900', cursor: 'pointer',
+                boxShadow: '0 6px 0 #27ae60'
+              }}>¡Vale!</button>
+            </form>
           </div>
         </div>
-      </div>
-
-      {/* SELECTOR INFERIOR DE PALABRAS Y CREACIÓN PERSONALIZADA */}
-      <div style={{
-        backgroundColor: 'rgba(255, 255, 255, 0.85)',
-        padding: '16px 22px',
-        borderRadius: '30px',
-        backdropFilter: 'blur(12px)',
-        border: '4px solid white',
-        boxShadow: '0 15px 30px rgba(0,0,0,0.15)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '12px',
-        width: '100%',
-        maxWidth: '550px',
-        alignItems: 'center',
-        zIndex: 20,
-        marginBottom: '10px'
-      }}>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
-          {palabrasPreset.map(p => (
-            <button
-              key={p}
-              className="btn-clay"
-              onClick={() => { setTextoActual(p); setModoPersonalizado(false); }}
-              style={{ 
-                backgroundColor: textoActual === p ? '#FFD166' : 'white',
-                color: textoActual === p ? '#7A5C00' : '#333',
-                boxShadow: textoActual === p ? '0 6px 0 #CCAC00, 0 8px 12px rgba(0,0,0,0.15)' : '0 6px 0 #E0E0E0, 0 8px 12px rgba(0,0,0,0.1)'
-              }}
-            >
-              {p}
-            </button>
-          ))}
-          <button
-            className="btn-clay"
-            onClick={() => setModoPersonalizado(!modoPersonalizado)}
-            style={{ backgroundColor: '#4facfe', color: 'white', boxShadow: '0 6px 0 #005580, 0 8px 12px rgba(0,0,0,0.15)' }}
-          >
-            ✏️ Otra palabra
-          </button>
-        </div>
-
-        {modoPersonalizado && (
-          <form onSubmit={guardarPersonalizada} style={{ display: 'flex', gap: '10px', width: '100%', justifyContent: 'center', animation: 'floatAvatar 0.3s ease-in-out' }}>
-            <input
-              type="text"
-              placeholder="Escribe la palabra..."
-              value={inputPersonalizado}
-              onChange={(e) => setInputPersonalizado(e.target.value)}
-              maxLength={8}
-              style={{
-                padding: '10px 16px', borderRadius: '16px', border: '3px solid #E2E8F0',
-                fontFamily: 'Fredoka', fontSize: '1.1rem', outline: 'none', width: '200px',
-                backgroundColor: 'white', color: '#333', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)'
-              }}
-            />
-            <button
-              type="submit"
-              className="btn-clay"
-              style={{ backgroundColor: '#43e97b', color: 'white', boxShadow: '0 6px 0 #27ae60, 0 8px 12px rgba(0,0,0,0.15)' }}
-            >
-              ¡Aceptar!
-            </button>
-          </form>
-        )}
-      </div>
+      )}
     </div>
   )
 }
