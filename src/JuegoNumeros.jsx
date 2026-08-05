@@ -10,7 +10,19 @@ export default function JuegoNumeros({ perfil, onVolver }) {
   const [victoria, setVictoria] = useState(false)
   const [guardando, setGuardando] = useState(false)
 
-  const emojisDisponibles = ['🍎', '⭐️', '🎈', '🚗', '🐟', '🐱', '🍌', '⚽']
+  // Aquí configuramos tus nuevos gráficos 3D premium
+  // Usamos import.meta.env.BASE_URL para que GitHub Pages encuentre la ruta exacta
+  const baseUrl = import.meta.env.BASE_URL
+  const itemsDisponibles = [
+    { id: 'manzana', src: `${baseUrl}assets/manzana.png`, fallback: '🍎' },
+    { id: 'estrella', src: `${baseUrl}assets/estrella.png`, fallback: '⭐️' },
+    { id: 'globo', src: `${baseUrl}assets/globo.png`, fallback: '🎈' },
+    { id: 'pez', src: `${baseUrl}assets/pez.png`, fallback: '🐟' },
+    { id: 'gato', src: `${baseUrl}assets/gato.png`, fallback: '🐱' },
+    { id: 'platano', src: `${baseUrl}assets/platano.png`, fallback: '🍌' },
+    { id: 'dino', src: `${baseUrl}assets/dino.png`, fallback: '🦖' }
+  ]
+
   const totalRondasMaximas = 5
 
   useEffect(() => {
@@ -19,7 +31,7 @@ export default function JuegoNumeros({ perfil, onVolver }) {
 
   const generarNuevoReto = () => {
     const cantidad = Math.floor(Math.random() * 5) + 1 // Entre 1 y 5
-    const emoji = emojisDisponibles[Math.floor(Math.random() * emojisDisponibles.length)]
+    const itemAleatorio = itemsDisponibles[Math.floor(Math.random() * itemsDisponibles.length)]
     
     // Generar opciones únicas (sin números repetidos)
     const opcionesSet = new Set([cantidad])
@@ -31,10 +43,10 @@ export default function JuegoNumeros({ perfil, onVolver }) {
 
     setRetoActual({
       cantidad,
-      emoji,
+      item: itemAleatorio,
       opciones,
       correcto: cantidad,
-      titulo: '¡Busca el número correcto!'
+      titulo: '¡Cuenta cuántos hay!'
     })
   }
 
@@ -48,7 +60,6 @@ export default function JuegoNumeros({ perfil, onVolver }) {
         setSeleccionado(null)
         setMensaje('')
         
-        // Actualización segura de ronda usando el estado anterior (evita el fallo de "Ronda 7 de 5")
         setRonda(prevRonda => {
           const siguienteRonda = prevRonda + 1
           if (siguienteRonda <= totalRondasMaximas) {
@@ -93,7 +104,7 @@ export default function JuegoNumeros({ perfil, onVolver }) {
       
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap');
-        @keyframes flotar {
+        @keyframes flotarElemento {
           0%, 100% { transform: translateY(0px) rotate(0deg); }
           50% { transform: translateY(-10px) rotate(4deg); }
         }
@@ -117,6 +128,13 @@ export default function JuegoNumeros({ perfil, onVolver }) {
         .btn-opcion-pro:active {
           transform: translateY(6px) scale(0.95);
         }
+        .grafico-juego {
+          width: 65px;
+          height: 65px;
+          object-fit: contain;
+          filter: drop-shadow(0 10px 15px rgba(0,0,0,0.2));
+          animation: flotarElemento 3s ease-in-out infinite;
+        }
       `}</style>
 
       {/* Botón de volver */}
@@ -136,9 +154,8 @@ export default function JuegoNumeros({ perfil, onVolver }) {
       {!victoria ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '500px', zIndex: 20 }}>
           
-          {/* Tarjeta de Título */}
           <div style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.88)',
+            backgroundColor: 'rgba(255, 255, 255, 0.92)',
             padding: '16px 30px',
             borderRadius: '28px',
             backdropFilter: 'blur(12px)',
@@ -150,18 +167,18 @@ export default function JuegoNumeros({ perfil, onVolver }) {
             <h2 style={{ color: '#2D3748', fontSize: '1.5rem', margin: 0 }}>{retoActual.titulo}</h2>
           </div>
 
-          {/* Lienzo central con objetos */}
+          {/* Lienzo central con tus imágenes 3D */}
           <div style={{
             backgroundColor: 'rgba(255, 255, 255, 0.8)',
             width: '100%',
             maxWidth: '380px',
-            height: '190px',
+            height: '210px',
             borderRadius: '35px',
             display: 'flex',
             flexWrap: 'wrap',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '18px',
+            gap: '15px',
             padding: '20px',
             boxSizing: 'border-box',
             backdropFilter: 'blur(10px)',
@@ -170,17 +187,33 @@ export default function JuegoNumeros({ perfil, onVolver }) {
             marginBottom: '25px'
           }}>
             {Array.from({ length: retoActual.cantidad }).map((_, i) => (
-              <span key={i} style={{ 
-                fontSize: '52px', 
-                animation: `flotar ${2 + (i % 2)}s ease-in-out infinite`,
-                filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.2))'
-              }}>
-                {retoActual.emoji}
-              </span>
+              <div key={i} style={{ position: 'relative' }}>
+                <img 
+                  src={retoActual.item.src} 
+                  alt={retoActual.item.id}
+                  className="grafico-juego"
+                  style={{ animationDelay: `${i * 0.2}s` }}
+                  // Salvavidas: si la imagen falla, muestra el emoji
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.nextSibling.style.display = 'block';
+                  }}
+                />
+                <span 
+                  style={{ 
+                    display: 'none', 
+                    fontSize: '55px', 
+                    filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.2))',
+                    animation: `flotarElemento 3s ease-in-out infinite`,
+                    animationDelay: `${i * 0.2}s`
+                  }}
+                >
+                  {retoActual.item.fallback}
+                </span>
+              </div>
             ))}
           </div>
 
-          {/* Feedback */}
           {mensaje && (
             <div style={{ 
               marginBottom: '15px', backgroundColor: '#FFFFFF', padding: '10px 25px', borderRadius: '20px',
@@ -191,7 +224,6 @@ export default function JuegoNumeros({ perfil, onVolver }) {
             </div>
           )}
 
-          {/* Opciones únicas (3 botones) */}
           <div style={{ display: 'flex', gap: '20px' }}>
             {retoActual.opciones.map((opcion) => (
               <button 
@@ -238,7 +270,6 @@ export default function JuegoNumeros({ perfil, onVolver }) {
           </button>
         </div>
       )}
-
       <div style={{ height: '20px' }} />
     </div>
   )
