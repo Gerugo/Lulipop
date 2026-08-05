@@ -8,7 +8,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
   const [inputPersonalizado, setInputPersonalizado] = useState('')
   
   const canvasRef = useRef(null)
-  const brushSizeRef = useRef(60)
+  const brushSizeRef = useRef(30)
   const [isDrawing, setIsDrawing] = useState(false)
   const [dimensiones, setDimensiones] = useState({ w: window.innerWidth, h: window.innerHeight })
 
@@ -43,7 +43,8 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     const maxFontSize = isWord ? (canvas.width * 0.85) / textoActual.length : canvas.height * 0.5
     const fontSize = Math.min(maxFontSize, 450) 
     
-    brushSizeRef.current = fontSize * 0.35
+    // AQUÍ ESTÁ LA MAGIA: El pincel ahora es solo un 12% del tamaño de la fuente (y nunca menor a 15px)
+    brushSizeRef.current = Math.max(fontSize * 0.12, 15)
 
     ctx.font = `900 ${fontSize}px 'Fredoka', sans-serif`
     ctx.textAlign = 'center'
