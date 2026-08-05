@@ -56,7 +56,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
           font-size: 280px;
           font-weight: 700;
           line-height: 1;
-          /* Aquí está la magia de Keiki: Rellenar la letra con un patrón/gradiente */
+          /* Aquí está la magia: Rellenar la letra con un patrón/gradiente */
           background: repeating-linear-gradient(
             45deg,
             #FF3366, #FF3366 20px,
@@ -85,14 +85,15 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         }
       `}</style>
 
-      {/* Estrellas de fondo generadas dinámicamente */}
+      {}
+      {/* Estrellas de fondo generadas dinámicamente con corrección de comillas */}
       {Array.from({ length: 15 }).map((_, i) => (
         <div key={i} style={{
           position: 'absolute',
-          top: \`\${Math.random() * 100}%\`, left: \`\${Math.random() * 100}%\`,
-          width: \`\${Math.random() * 6 + 2}px\`, height: \`\${Math.random() * 6 + 2}px\`,
+          top: `${Math.random() * 100}%`, left: `${Math.random() * 100}%`,
+          width: `${Math.random() * 6 + 2}px`, height: `${Math.random() * 6 + 2}px`,
           backgroundColor: 'white', borderRadius: '50%',
-          animation: \`parpadeoEstrella \${Math.random() * 3 + 1}s infinite\`
+          animation: `parpadeoEstrella ${Math.random() * 3 + 1}s infinite`
         }} />
       ))}
 
@@ -137,6 +138,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         ❮
       </button>
 
+      {}
       {/* Área central de trazado */}
       {!completado ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 10 }}>
@@ -171,7 +173,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
           
           {/* Barra de progreso de trazado */}
           <div style={{ width: '250px', height: '12px', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: '10px', marginTop: '30px', overflow: 'hidden' }}>
-            <div style={{ width: \`\${progresoTrazo}%\`, height: '100%', backgroundColor: '#06D6A0', boxShadow: '0 0 10px #06D6A0', transition: 'width 0.1s linear' }} />
+            <div style={{ width: `${progresoTrazo}%`, height: '100%', backgroundColor: '#06D6A0', boxShadow: '0 0 10px #06D6A0', transition: 'width 0.1s linear' }} />
           </div>
           
           <p style={{ color: 'rgba(255,255,255,0.6)', marginTop: '15px', fontWeight: '600' }}>
