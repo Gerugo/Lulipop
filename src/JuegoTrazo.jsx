@@ -1,19 +1,40 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useRef } from 'react'
 import { supabase } from './supabaseClient'
 
 export default function JuegoTrazo({ perfil, onVolver }) {
+  const [palabra, setPalabra] = useState('hola') // Palabra por defecto
+  const [progresoTrazo, setProgresoTrazo] = useState(0) // % completado
   const [completado, setCompletado] = useState(false)
   const [guardando, setGuardando] = useState(false)
-  const [progresoTrazo, setProgresoTrazo] = useState(0) // Simula el % de trazado
+  
+  // Estados para el modo personalizado
+  const [modoEdicion, setModoEdicion] = useState(false)
+  const [inputPalabra, setInputPalabra] = useState('')
+  const [isDragging, setIsDragging] = useState(false)
 
-  // Efecto para simular el trazado progresivo al mantener pulsado o mover el dedo
-  const manejarInteraccion = () => {
-    if (progresoTrazo < 100) {
-      setProgresoTrazo(prev => Math.min(prev + 5, 100))
-    } else if (!completado) {
-      setCompletado(true)
-      guardarProgreso()
-    }
+  const contenedorRef = useRef(null)
+
+  // 1. MECÁNICA ANTI-TRAMPAS: Solo avanza si arrastras SOBRE la palabra de izquierda a derecha
+  const manejarPuntero = (e) => {
+    if (!isDragging || completado) return
+
+    const rect = contenedorRef.current.getBoundingClientRect()
+    // Calcular posición X del dedo relativa a la palabra
+    const xRelativo = e.clientX - rect.left
+    const porcentaje = (xRelativo / rect.width) * 100
+
+    // Solo avanza si va hacia adelante (y limitamos a 100%)
+    setProgresoTrazo(prev => {
+      const nuevoProgreso = Math.max(prev, Math.min(porcentaje, 100))
+      
+      // Si llega al final (95% para tener margen de error en pantallas táctiles)
+      if (nuevoProgreso >= 95 && !completado) {
+        setCompletado(true)
+        guardarProgreso()
+        return 100
+      }
+      return nuevoProgreso
+    })
   }
 
   const guardarProgreso = async () => {
@@ -24,25 +45,38 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     setGuardando(false)
   }
 
+  const iniciarNuevaPalabra = (e) => {
+    e.preventDefault()
+    if (inputPalabra.trim() === '') return
+    setPalabra(inputPalabra.trim().toLowerCase())
+    setProgresoTrazo(0)
+    setCompletado(false)
+    setModoEdicion(false)
+    setInputPalabra('')
+  }
+
+  // Cálculo dinámico del tamaño de fuente para que palabras largas quepan en pantalla
+  const calcularTamañoFuente = () => {
+    const longitud = palabra.length
+    if (longitud <= 3) return '200px'
+    if (longitud <= 5) return '150px'
+    if (longitud <= 8) return '100px'
+    return '70px'
+  }
+
   return (
     <div 
-      onMouseMove={manejarInteraccion}
-      onTouchMove={manejarInteraccion}
       style={{ 
         minHeight: '100vh', width: '100vw',
         background: 'radial-gradient(circle at 50% 30%, #2B1B8A 0%, #0B0428 80%, #050114 100%)',
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         fontFamily: '"Fredoka", sans-serif', position: 'absolute', top: 0, left: 0, zIndex: 10,
-        overflow: 'hidden', userSelect: 'none', touchAction: 'none'
+        overflow: 'hidden', userSelect: 'none'
       }}
     >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@700&display=swap');
         
-        @keyframes orbitar {
-          0% { transform: rotate(0deg) translateX(40px) rotate(0deg); }
-          100% { transform: rotate(360deg) translateX(40px) rotate(-360deg); }
-        }
         @keyframes parpadeoEstrella {
           0%, 100% { opacity: 0.3; transform: scale(0.8); }
           50% { opacity: 1; transform: scale(1.2); box-shadow: 0 0 10px white; }
@@ -52,11 +86,19 @@ export default function JuegoTrazo({ perfil, onVolver }) {
           50% { transform: translateY(-15px) rotate(2deg); }
         }
         
-        .letra-textura {
-          font-size: 280px;
+        .texto-magico-base {
           font-weight: 700;
           line-height: 1;
-          /* Aquí está la magia: Rellenar la letra con un patrón/gradiente */
+          letter-spacing: 5px;
+        }
+
+        .texto-fondo {
+          color: transparent;
+          -webkit-text-stroke: 4px rgba(255, 255, 255, 0.2);
+          border-style: dashed;
+        }
+
+        .texto-relleno {
           background: repeating-linear-gradient(
             45deg,
             #FF3366, #FF3366 20px,
@@ -66,141 +108,118 @@ export default function JuegoTrazo({ perfil, onVolver }) {
           );
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
-          filter: drop-shadow(0 0 25px rgba(17, 138, 178, 0.6));
-          position: relative;
-          z-index: 2;
-        }
-
-        .guia-trazo {
-          position: absolute;
-          top: 50%; left: 50%;
-          transform: translate(-50%, -50%);
-          font-size: 280px;
-          font-weight: 700;
-          color: transparent;
-          -webkit-text-stroke: 4px rgba(255, 255, 255, 0.3);
-          border-style: dashed;
-          z-index: 3;
-          pointer-events: none;
+          filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.4));
         }
       `}</style>
 
-      {}
-      {/* Estrellas de fondo generadas dinámicamente con corrección de comillas */}
       {Array.from({ length: 15 }).map((_, i) => (
         <div key={i} style={{
-          position: 'absolute',
-          top: `${Math.random() * 100}%`, left: `${Math.random() * 100}%`,
-          width: `${Math.random() * 6 + 2}px`, height: `${Math.random() * 6 + 2}px`,
+          position: 'absolute', top: `${(i * 17) % 100}%`, left: `${(i * 23) % 100}%`,
+          width: `${(i % 5) + 3}px`, height: `${(i % 5) + 3}px`,
           backgroundColor: 'white', borderRadius: '50%',
-          animation: `parpadeoEstrella ${Math.random() * 3 + 1}s infinite`
+          animation: `parpadeoEstrella ${(i % 3) + 2}s infinite`
         }} />
       ))}
 
-      {/* Planeta decorativo izquierdo */}
-      <div style={{
-        position: 'absolute', top: '15%', left: '10%',
-        width: '80px', height: '80px', borderRadius: '50%',
-        background: 'radial-gradient(circle at 30% 30%, #FF3366, #900C3F)',
-        boxShadow: 'inset -10px -10px 20px rgba(0,0,0,0.5), 0 0 30px rgba(255, 51, 102, 0.4)',
-        animation: 'flotarLento 6s infinite ease-in-out'
-      }}>
-        <div style={{ position: 'absolute', top: '20%', left: '20%', width: '15px', height: '15px', backgroundColor: 'rgba(255,255,255,0.4)', borderRadius: '50%' }} />
-      </div>
+      <div style={{ position: 'absolute', top: '15%', left: '10%', width: '80px', height: '80px', borderRadius: '50%', background: 'radial-gradient(circle at 30% 30%, #FF3366, #900C3F)', boxShadow: 'inset -10px -10px 20px rgba(0,0,0,0.5)', animation: 'flotarLento 6s infinite ease-in-out' }} />
+      <div style={{ position: 'absolute', bottom: '20%', right: '10%', width: '120px', height: '120px', borderRadius: '50%', background: 'radial-gradient(circle at 30% 30%, #FFD166, #FF9900)', boxShadow: 'inset -15px -15px 25px rgba(0,0,0,0.5)', animation: 'flotarLento 8s infinite ease-in-out reverse' }} />
 
-      {/* Planeta decorativo derecho */}
-      <div style={{
-        position: 'absolute', bottom: '20%', right: '10%',
-        width: '120px', height: '120px', borderRadius: '50%',
-        background: 'radial-gradient(circle at 30% 30%, #FFD166, #FF9900)',
-        boxShadow: 'inset -15px -15px 25px rgba(0,0,0,0.5), 0 0 40px rgba(255, 209, 102, 0.3)',
-        animation: 'flotarLento 8s infinite ease-in-out reverse'
-      }}>
-        {/* Anillo del planeta */}
-        <div style={{
-          position: 'absolute', top: '50%', left: '50%', width: '180px', height: '40px',
-          border: '8px solid rgba(255, 255, 255, 0.6)', borderRadius: '50%',
-          transform: 'translate(-50%, -50%) rotate(-20deg)',
-          boxShadow: '0 0 15px rgba(255,255,255,0.5)'
-        }} />
-      </div>
+      <button onClick={onVolver} style={{ position: 'absolute', top: '30px', left: '30px', width: '55px', height: '55px', borderRadius: '20px', backgroundColor: 'rgba(255, 255, 255, 0.15)', color: 'white', border: '2px solid rgba(255,255,255,0.3)', fontSize: '24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 30, backdropFilter: 'blur(10px)' }}>❮</button>
+      
+      {!modoEdicion && (
+        <button onClick={() => setModoEdicion(true)} style={{ position: 'absolute', top: '30px', right: '30px', padding: '12px 25px', borderRadius: '20px', backgroundColor: 'rgba(255, 255, 255, 0.15)', color: 'white', border: '2px solid rgba(255,255,255,0.3)', fontSize: '1.1rem', fontWeight: '700', cursor: 'pointer', zIndex: 30, backdropFilter: 'blur(10px)', display: 'flex', gap: '10px' }}>
+          ✏️ Escribir Palabra
+        </button>
+      )}
 
-      {/* Botón de volver tipo "glassmorphism" */}
-      <button 
-        onClick={onVolver}
-        style={{ 
-          position: 'absolute', top: '30px', left: '30px', width: '55px', height: '55px', borderRadius: '20px',
-          backgroundColor: 'rgba(255, 255, 255, 0.15)', color: 'white', border: '2px solid rgba(255,255,255,0.3)', 
-          fontSize: '24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20,
-          backdropFilter: 'blur(10px)', boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
-        }}
-      >
-        ❮
-      </button>
-
-      {}
-      {/* Área central de trazado */}
-      {!completado ? (
+      {modoEdicion ? (
+        <form onSubmit={iniciarNuevaPalabra} style={{ backgroundColor: 'rgba(255,255,255,0.1)', padding: '40px', borderRadius: '30px', backdropFilter: 'blur(15px)', border: '2px solid rgba(255,255,255,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 20 }}>
+          <h2 style={{ color: 'white', marginTop: 0, fontSize: '2rem' }}>¿Qué trazamos hoy?</h2>
+          <input 
+            type="text" 
+            value={inputPalabra} 
+            onChange={(e) => setInputPalabra(e.target.value)} 
+            placeholder="Ej: mama, papa, sol" 
+            maxLength={10}
+            autoFocus
+            style={{ padding: '15px 25px', fontSize: '1.5rem', borderRadius: '20px', border: 'none', textAlign: 'center', marginBottom: '20px', width: '100%', maxWidth: '300px', fontFamily: '"Fredoka", sans-serif' }}
+          />
+          <div style={{ display: 'flex', gap: '15px' }}>
+            <button type="button" onClick={() => setModoEdicion(false)} style={{ padding: '15px 30px', fontSize: '1.2rem', borderRadius: '20px', border: 'none', backgroundColor: '#e2e8f0', color: '#4a5568', cursor: 'pointer', fontWeight: '700' }}>Cancelar</button>
+            <button type="submit" style={{ padding: '15px 30px', fontSize: '1.2rem', borderRadius: '20px', border: 'none', background: 'linear-gradient(135deg, #06D6A0, #118AB2)', color: 'white', cursor: 'pointer', fontWeight: '700', boxShadow: '0 5px 15px rgba(6, 214, 160, 0.4)' }}>¡Trazar! ✨</button>
+          </div>
+        </form>
+      ) : !completado ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 10 }}>
-          <div style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-            padding: '10px 40px', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.2)',
-            backdropFilter: 'blur(8px)', marginBottom: '40px'
-          }}>
-            <h2 style={{ color: 'white', fontSize: '2rem', margin: 0, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>
-              ¡Traza la letra! ✨
-            </h2>
+          <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: '10px 40px', borderRadius: '30px', border: '1px solid rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', marginBottom: '40px' }}>
+            <h2 style={{ color: 'white', fontSize: '2rem', margin: 0, textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>¡Sigue el camino! 🚀</h2>
           </div>
 
-          {/* Contenedor de la letra con textura */}
-          <div style={{ position: 'relative', cursor: 'crosshair', padding: '20px' }}>
-            {/* Letra base colorida */}
-            <div className="letra-textura" style={{ opacity: progresoTrazo === 0 ? 0.3 : (progresoTrazo / 100) }}>a</div>
+          {/* CONTENEDOR INTERACTIVO: El secreto de la detección */}
+          <div 
+            ref={contenedorRef}
+            onPointerDown={() => setIsDragging(true)}
+            onPointerUp={() => setIsDragging(false)}
+            onPointerLeave={() => setIsDragging(false)}
+            onPointerMove={manejarPuntero}
+            style={{ 
+              position: 'relative', 
+              display: 'inline-block',
+              cursor: 'crosshair',
+              touchAction: 'none', // Evita que la pantalla haga scroll al deslizar el dedo
+              padding: '20px' // Margen de seguridad para el dedo
+            }}
+          >
+            {/* Capa 1: Palabra gris punteada (Base) */}
+            <div className="texto-magico-base texto-fondo" style={{ fontSize: calcularTamañoFuente() }}>
+              {palabra}
+            </div>
             
-            {/* Guía punteada blanca por encima */}
-            <div className="guia-trazo">a</div>
-
-            {/* Puntero/Mano animada indicando que dibuje */}
-            {progresoTrazo === 0 && (
-              <div style={{ 
-                position: 'absolute', bottom: '20%', right: '10%', fontSize: '50px',
-                animation: 'orbitar 3s infinite linear', filter: 'drop-shadow(0 0 10px white)', zIndex: 10
-              }}>
-                👆
+            {/* Capa 2: Palabra coloreada (Se revela según el progreso) */}
+            <div style={{ 
+              position: 'absolute', top: '20px', left: '20px', height: '100%',
+              width: `${progresoTrazo}%`, 
+              overflow: 'hidden', 
+              whiteSpace: 'nowrap',
+              pointerEvents: 'none' // Para que no interfiera con el arrastre
+            }}>
+              <div className="texto-magico-base texto-relleno" style={{ fontSize: calcularTamañoFuente() }}>
+                {palabra}
               </div>
+            </div>
+
+            {/* Guía visual (Dedo indicador) */}
+            {progresoTrazo === 0 && (
+              <div style={{ position: 'absolute', bottom: '10%', left: '0', fontSize: '50px', animation: 'flotarLento 2s infinite ease-in-out', pointerEvents: 'none', zIndex: 10 }}>👆</div>
             )}
           </div>
           
-          {/* Barra de progreso de trazado */}
-          <div style={{ width: '250px', height: '12px', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: '10px', marginTop: '30px', overflow: 'hidden' }}>
-            <div style={{ width: `${progresoTrazo}%`, height: '100%', backgroundColor: '#06D6A0', boxShadow: '0 0 10px #06D6A0', transition: 'width 0.1s linear' }} />
+          <div style={{ width: '300px', height: '12px', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: '10px', marginTop: '30px', overflow: 'hidden' }}>
+            <div style={{ width: `${progresoTrazo}%`, height: '100%', backgroundColor: '#06D6A0', boxShadow: '0 0 10px #06D6A0', transition: 'width 0.1s' }} />
           </div>
           
-          <p style={{ color: 'rgba(255,255,255,0.6)', marginTop: '15px', fontWeight: '600' }}>
-            Desliza el dedo sobre la letra
-          </p>
-
+          <p style={{ color: 'rgba(255,255,255,0.6)', marginTop: '15px', fontWeight: '600' }}>Arrastra el dedo de izquierda a derecha</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', zIndex: 20 }}>
-          <div style={{ fontSize: '120px', filter: 'drop-shadow(0 0 30px #FFD166)', animation: 'flotarLento 2s infinite ease-in-out' }}>🏆</div>
-          <h1 style={{ color: 'white', fontSize: '4rem', margin: '10px 0', textShadow: '0 0 20px rgba(255, 255, 255, 0.5)' }}>
-            ¡Perfecto!
-          </h1>
-          <button 
-            onClick={onVolver}
-            style={{ 
-              marginTop: '30px', padding: '20px 50px', fontSize: '1.8rem', 
-              background: 'linear-gradient(135deg, #06D6A0, #118AB2)', color: 'white', border: 'none', 
-              borderRadius: '40px', cursor: 'pointer',
-              boxShadow: '0 10px 25px rgba(6, 214, 160, 0.4), inset 0 4px 0 rgba(255,255,255,0.3)',
-              fontFamily: '"Fredoka", sans-serif', fontWeight: '700'
-            }}
-          >
-            {guardando ? 'Guardando...' : '¡Genial! 🚀'}
+          <div style={{ fontSize: calcularTamañoFuente(), className: "texto-magico-base texto-relleno", animation: 'flotarLento 2s infinite ease-in-out' }}>
+            {palabra}
+          </div>
+          <h1 style={{ color: 'white', fontSize: '3rem', margin: '20px 0', textShadow: '0 0 20px rgba(255, 255, 255, 0.5)' }}>¡Maravilloso!</h1>
+          <button onClick={() => { setCompletado(false); setProgresoTrazo(0); }} style={{ marginTop: '20px', padding: '20px 50px', fontSize: '1.8rem', background: 'linear-gradient(135deg, #06D6A0, #118AB2)', color: 'white', border: 'none', borderRadius: '40px', cursor: 'pointer', fontWeight: '700', boxShadow: '0 10px 25px rgba(6, 214, 160, 0.4)' }}>
+            {guardando ? 'Guardando...' : 'Otra vez 🔄'}
           </button>
         </div>
       )}
     </div>
   )
 }
+```
+
+### Cambios Clave que hacen esto Profesional:
+1. **Detección `onPointerMove` y `onPointerDown`:** Ahora el juego requiere que "hagas click y arrastres" (o pongas el dedo y arrastres). Si solo mueves el ratón por encima sin pulsar, no cuenta.
+2. **Sistema de Capas (Máscara):** La palabra de color empieza oculta. Conforme deslizas el dedo sobre la palabra (y solo si vas de izquierda a derecha), la "ventana" transparente que deja ver el color se va abriendo porcentualmente. Es el mismo truco que usan Duolingo o Keiki para rellenar barras y textos.
+3. **Botón Personalizar:** Hemos añadido el botón "Escribir Palabra" arriba a la derecha. Ahora cualquier padre puede entrar ahí y escribir "perro", "mamá" o el nombre del niño. 
+4. **Tamaño de texto dinámico (`calcularTamañoFuente`):** Si escribes "sol", la letra se ve gigante. Si escribes "elefante", las letras se hacen más pequeñas automáticamente para que toda la palabra quepa en la pantalla del móvil sin romperse.
+
+Haz el commit, pruébalo desde el móvil (deslizando el dedo sobre el texto) o en PC arrastrando el ratón. ¡Vas a notar una diferencia brutal en la jugabilidad!
