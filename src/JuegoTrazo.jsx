@@ -112,12 +112,16 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         }
       `}</style>
 
+      {/* Estrellas de fondo a prueba de errores de compilación usando sumas de texto */}
       {Array.from({ length: 15 }).map((_, i) => (
         <div key={i} style={{
-          position: 'absolute', top: `${(i * 17) % 100}%`, left: `${(i * 23) % 100}%`,
-          width: `${(i % 5) + 3}px`, height: `${(i % 5) + 3}px`,
+          position: 'absolute', 
+          top: ((i * 17) % 100) + '%', 
+          left: ((i * 23) % 100) + '%',
+          width: ((i % 5) + 3) + 'px', 
+          height: ((i % 5) + 3) + 'px',
           backgroundColor: 'white', borderRadius: '50%',
-          animation: `parpadeoEstrella ${(i % 3) + 2}s infinite`
+          animation: 'parpadeoEstrella ' + ((i % 3) + 2) + 's infinite'
         }} />
       ))}
 
@@ -126,6 +130,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
 
       <button onClick={onVolver} style={{ position: 'absolute', top: '30px', left: '30px', width: '55px', height: '55px', borderRadius: '20px', backgroundColor: 'rgba(255, 255, 255, 0.15)', color: 'white', border: '2px solid rgba(255,255,255,0.3)', fontSize: '24px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 30, backdropFilter: 'blur(10px)' }}>❮</button>
       
+      {}
       {!modoEdicion && (
         <button onClick={() => setModoEdicion(true)} style={{ position: 'absolute', top: '30px', right: '30px', padding: '12px 25px', borderRadius: '20px', backgroundColor: 'rgba(255, 255, 255, 0.15)', color: 'white', border: '2px solid rgba(255,255,255,0.3)', fontSize: '1.1rem', fontWeight: '700', cursor: 'pointer', zIndex: 30, backdropFilter: 'blur(10px)', display: 'flex', gap: '10px' }}>
           ✏️ Escribir Palabra
@@ -175,10 +180,10 @@ export default function JuegoTrazo({ perfil, onVolver }) {
               {palabra}
             </div>
             
-            {/* Capa 2: Palabra coloreada (Se revela según el progreso) */}
+            {/* Capa 2: Palabra coloreada (Se revela según el progreso) - A prueba de errores */}
             <div style={{ 
               position: 'absolute', top: '20px', left: '20px', height: '100%',
-              width: `${progresoTrazo}%`, 
+              width: progresoTrazo + '%', 
               overflow: 'hidden', 
               whiteSpace: 'nowrap',
               pointerEvents: 'none' // Para que no interfiera con el arrastre
@@ -195,17 +200,17 @@ export default function JuegoTrazo({ perfil, onVolver }) {
           </div>
           
           <div style={{ width: '300px', height: '12px', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: '10px', marginTop: '30px', overflow: 'hidden' }}>
-            <div style={{ width: `${progresoTrazo}%`, height: '100%', backgroundColor: '#06D6A0', boxShadow: '0 0 10px #06D6A0', transition: 'width 0.1s' }} />
+            <div style={{ width: progresoTrazo + '%', height: '100%', backgroundColor: '#06D6A0', boxShadow: '0 0 10px #06D6A0', transition: 'width 0.1s' }} />
           </div>
           
           <p style={{ color: 'rgba(255,255,255,0.6)', marginTop: '15px', fontWeight: '600' }}>Arrastra el dedo de izquierda a derecha</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', zIndex: 20 }}>
-          <div style={{ fontSize: calcularTamañoFuente(), className: "texto-magico-base texto-relleno", animation: 'flotarLento 2s infinite ease-in-out' }}>
+          <div style={{ fontSize: calcularTamañoFuente() }} className="texto-magico-base texto-relleno">
             {palabra}
           </div>
-          <h1 style={{ color: 'white', fontSize: '3rem', margin: '20px 0', textShadow: '0 0 20px rgba(255, 255, 255, 0.5)' }}>¡Maravilloso!</h1>
+          <h1 style={{ color: 'white', fontSize: '3rem', margin: '20px 0', textShadow: '0 0 20px rgba(255, 255, 255, 0.5)', animation: 'flotarLento 2s infinite ease-in-out' }}>¡Maravilloso!</h1>
           <button onClick={() => { setCompletado(false); setProgresoTrazo(0); }} style={{ marginTop: '20px', padding: '20px 50px', fontSize: '1.8rem', background: 'linear-gradient(135deg, #06D6A0, #118AB2)', color: 'white', border: 'none', borderRadius: '40px', cursor: 'pointer', fontWeight: '700', boxShadow: '0 10px 25px rgba(6, 214, 160, 0.4)' }}>
             {guardando ? 'Guardando...' : 'Otra vez 🔄'}
           </button>
@@ -214,12 +219,3 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     </div>
   )
 }
-```
-
-### Cambios Clave que hacen esto Profesional:
-1. **Detección `onPointerMove` y `onPointerDown`:** Ahora el juego requiere que "hagas click y arrastres" (o pongas el dedo y arrastres). Si solo mueves el ratón por encima sin pulsar, no cuenta.
-2. **Sistema de Capas (Máscara):** La palabra de color empieza oculta. Conforme deslizas el dedo sobre la palabra (y solo si vas de izquierda a derecha), la "ventana" transparente que deja ver el color se va abriendo porcentualmente. Es el mismo truco que usan Duolingo o Keiki para rellenar barras y textos.
-3. **Botón Personalizar:** Hemos añadido el botón "Escribir Palabra" arriba a la derecha. Ahora cualquier padre puede entrar ahí y escribir "perro", "mamá" o el nombre del niño. 
-4. **Tamaño de texto dinámico (`calcularTamañoFuente`):** Si escribes "sol", la letra se ve gigante. Si escribes "elefante", las letras se hacen más pequeñas automáticamente para que toda la palabra quepa en la pantalla del móvil sin romperse.
-
-Haz el commit, pruébalo desde el móvil (deslizando el dedo sobre el texto) o en PC arrastrando el ratón. ¡Vas a notar una diferencia brutal en la jugabilidad!
