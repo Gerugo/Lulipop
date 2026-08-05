@@ -72,6 +72,7 @@ export default function MundoLulipop({ perfil, onVolver }) {
       }}
     >
       
+      {}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap');
         
@@ -107,7 +108,7 @@ export default function MundoLulipop({ perfil, onVolver }) {
           animation: entrarRebotandoAbajo 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
 
-        /* Botones 3D tipo Arcilla */
+        /* Botones 3D tipo Arcilla con Responsive Design (Media Queries) */
         .menu-btn-3d {
           width: 70px;
           height: 70px;
@@ -121,11 +122,25 @@ export default function MundoLulipop({ perfil, onVolver }) {
           transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
+        /* Si la pantalla es ancha (Tablets o PCs), los botones se hacen más grandes */
+        @media (min-width: 768px) {
+          .menu-btn-3d {
+            width: 90px;
+            height: 90px;
+            border-radius: 30px;
+            font-size: 45px;
+          }
+          .mascota-flotante {
+            width: 320px !important;
+          }
+        }
+
         .menu-btn-3d:active {
           transform: translateY(6px) scale(0.92);
         }
       `}</style>
 
+      {}
       {modoPegatina && (
         <div style={{
           position: 'fixed', top: '20px', left: '50%_at_50%_0', transform: 'translateX(-50%)',
@@ -138,14 +153,14 @@ export default function MundoLulipop({ perfil, onVolver }) {
         </div>
       )}
 
-      {/* Pegatinas colocadas en pantalla */}
+      {}
       {pegatinasColocadas.map((p) => (
         <div
           key={p.id}
           onClick={(e) => eliminarPegatina(e, p.id)}
           title="Toca para quitar"
           style={{
-            position: 'absolute', left: \`\${p.x - 25}px\`, top: \`\${p.y - 25}px\`,
+            position: 'absolute', left: `${p.x - 25}px`, top: `${p.y - 25}px`,
             fontSize: '50px', cursor: 'pointer', filter: 'drop-shadow(0 5px 8px rgba(0,0,0,0.3))',
             zIndex: 15, transition: 'transform 0.2s'
           }}
@@ -156,10 +171,10 @@ export default function MundoLulipop({ perfil, onVolver }) {
         </div>
       ))}
 
+      {}
       <div className="animar-cabecera" style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center', zIndex: 20 }}>
         <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
           
-          {/* Botón Volver Glassmorphism */}
           <button 
             onClick={onVolver}
             style={{ 
@@ -174,7 +189,6 @@ export default function MundoLulipop({ perfil, onVolver }) {
             ❮
           </button>
 
-          {/* Botón Álbum Independiente */}
           <button 
             onClick={() => setJuegoActivo('album')}
             style={{ 
@@ -190,7 +204,6 @@ export default function MundoLulipop({ perfil, onVolver }) {
           </button>
         </div>
 
-        {/* Tarjeta Perfil Niño */}
         <div style={{
           backgroundColor: 'rgba(255, 255, 255, 0.85)', padding: '8px 25px', borderRadius: '25px',
           backdropFilter: 'blur(12px)', border: '4px solid white',
@@ -201,11 +214,12 @@ export default function MundoLulipop({ perfil, onVolver }) {
         </div>
       </div>
 
-      {/* ESPACIO CENTRAL CON LA MASCOTA FLOTANDO */}
+      {}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', zIndex: 10 }}>
         <img 
           src={`${baseUrl}assets/mascota.png`} 
           alt="Lulipop Mascota"
+          className="mascota-flotante"
           style={{ 
             width: '260px', 
             height: 'auto',
@@ -217,7 +231,6 @@ export default function MundoLulipop({ perfil, onVolver }) {
             e.currentTarget.nextSibling.style.display = 'block';
           }}
         />
-        {/* Salvavidas por si falla la imagen */}
         <span style={{ 
           display: 'none', fontSize: '180px', 
           animation: 'flotarMascota 5s ease-in-out infinite',
@@ -227,7 +240,7 @@ export default function MundoLulipop({ perfil, onVolver }) {
         </span>
       </div>
 
-      {/* BARRA INFERIOR (DOCK) EXCLUSIVA DE MINIJUEGOS */}
+      {}
       <div className="animar-dock" style={{
         backgroundColor: 'rgba(255, 255, 255, 0.65)',
         padding: '15px 25px',
@@ -244,7 +257,6 @@ export default function MundoLulipop({ perfil, onVolver }) {
         flexWrap: 'wrap'
       }}>
         
-        {/* Memoria */}
         <div 
           className="menu-btn-3d" 
           onClick={() => setJuegoActivo('memoria')}
@@ -254,7 +266,6 @@ export default function MundoLulipop({ perfil, onVolver }) {
           🧠
         </div>
 
-        {/* Trazo de Letras */}
         <div 
           className="menu-btn-3d" 
           onClick={() => setJuegoActivo('trazo')}
@@ -264,7 +275,6 @@ export default function MundoLulipop({ perfil, onVolver }) {
           ✍️
         </div>
 
-        {/* Letras / Vocales */}
         <div 
           className="menu-btn-3d" 
           onClick={() => setJuegoActivo('letras')}
@@ -274,7 +284,6 @@ export default function MundoLulipop({ perfil, onVolver }) {
           🔤
         </div>
 
-        {/* Arte */}
         <div 
           className="menu-btn-3d" 
           onClick={() => setJuegoActivo('arte')}
@@ -284,7 +293,6 @@ export default function MundoLulipop({ perfil, onVolver }) {
           🎨
         </div>
         
-        {/* Puzzles */}
         <div 
           className="menu-btn-3d" 
           onClick={() => setJuegoActivo('puzzles')}
@@ -294,7 +302,6 @@ export default function MundoLulipop({ perfil, onVolver }) {
           🧩
         </div>
         
-        {/* Números */}
         <div 
           className="menu-btn-3d" 
           onClick={() => setJuegoActivo('numeros')}
