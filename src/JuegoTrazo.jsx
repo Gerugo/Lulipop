@@ -3,7 +3,7 @@ import fondoImg from './fondo-lulipop.png'
 
 export default function JuegoTrazo({ perfil, onVolver }) {
   const [textoActual, setTextoActual] = useState('A')
-  const [indiceLetra, setIndiceLetra] = useState(0) 
+  const [indiceLetra, setIndiceLetra] = useState(0) // NUEVO: Va letra por letra dentro de la palabra
   const [colorTrazo, setColorTrazo] = useState('#FF5E62')
   const [mostrarMenu, setMostrarMenu] = useState(false)
   const [inputPersonalizado, setInputPersonalizado] = useState('')
@@ -31,6 +31,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     { id: '#a18cd1', shadow: '#6b4c9a' }  // Morado Mágico
   ]
 
+  // Letra actual que toca dibujar
   const letraActiva = textoActual[indiceLetra] || textoActual[0]
 
   useEffect(() => {
@@ -62,6 +63,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     hitCtx.clearRect(0, 0, hitCanvas.width, hitCanvas.height)
     
+    // Al ser letra individual, luce grande y centrada en pantalla
     const fontSize = Math.min(canvas.height * 0.5, 450) 
     brushSizeRef.current = Math.max(fontSize * 0.12, 18)
 
@@ -75,6 +77,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     hitCtx.lineJoin = 'round'
     hitCtx.globalCompositeOperation = 'source-over'
     
+    // Mapa verde invisible de la letra actual
     hitCtx.fillStyle = '#00FF00'
     hitCtx.fillText(letraActiva, centerX, centerY)
     hitCtx.lineWidth = brushSizeRef.current * 0.85 
@@ -167,6 +170,10 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     const ctx = canvas.getContext('2d')
     const hitCtx = hitCanvasRef.current.getContext('2d')
     const { x, y } = getCoordinates(e, canvas)
+    
+    if (mascotaRef.current) {
+      mascotaRef.current.style.transform = `translate(${x}px, ${y}px) scale(1)`
+    }
 
     const dx = x - lastPosRef.current.x
     const dy = y - lastPosRef.current.y
@@ -204,6 +211,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
 
       const isUnpainted = (g > 150 && b < 100) 
 
+      // 1. PINTURA VISUAL NORMAL
       ctx.globalCompositeOperation = 'source-atop'
       ctx.beginPath()
       ctx.moveTo(lastPosRef.current.x, lastPosRef.current.y)
@@ -217,12 +225,13 @@ export default function JuegoTrazo({ perfil, onVolver }) {
       ctx.stroke()
       ctx.shadowBlur = 0 
 
+      // 2. PINCEL FANTASMA PARA LA LETRA ACTUAL
       hitCtx.globalCompositeOperation = 'source-atop'
       hitCtx.beginPath()
       hitCtx.moveTo(lastPosRef.current.x, lastPosRef.current.y)
       hitCtx.lineTo(x, y)
       hitCtx.strokeStyle = '#0000FF' 
-      hitCtx.lineWidth = brushSizeRef.current * 1.8 
+      hitCtx.lineWidth = brushSizeRef.current * 2.5 
       hitCtx.lineCap = 'round'
       hitCtx.lineJoin = 'round'
       hitCtx.stroke()
@@ -281,17 +290,19 @@ export default function JuegoTrazo({ perfil, onVolver }) {
 
     const completado = 1 - (currentGreen / totalGreenRef.current)
     
-    // UMBRAL AJUSTADO A 65% (Más fluido y accesible para los niños)
-    if (completado >= 0.65) { 
+    // Al superar el 70% de esta letra individual
+    if (completado >= 0.70) { 
       avanzarSiguientePaso()
     }
   }
 
   const avanzarSiguientePaso = () => {
+    // Si quedan más letras en la palabra actual
     if (indiceLetra < textoActual.length - 1) {
-      updateScore(20) 
-      setIndiceLetra(prev => prev + 1) 
+      updateScore(20) // Mini premio por letra completada
+      setIndiceLetra(prev => prev + 1) // Pasa a la siguiente letra
     } else {
+      // Si era la última letra, ¡victoria total de la palabra!
       lanzarVictoriaFinal()
     }
   }
@@ -309,7 +320,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
       }
       
       setTextoActual(palabrasPreset[nextIndex])
-      setIndiceLetra(0) 
+      setIndiceLetra(0) // Reinicia al principio de la nueva palabra
       setNivelSuperado(false)
     }, 2200) 
   }
@@ -349,7 +360,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         @keyframes rotaEstrella { 100% { transform: rotate(360deg); } }
       `}</style>
 
-      {/* INDICADOR VISUAL DE LETRAS */}
+      {/* INDICADOR VISUAL DE LETRAS (SI ES UNA PALABRA O NUMERO LARGO) */}
       {textoActual.length > 1 && (
         <div style={{
           position: 'absolute', top: '95px', left: '50%', transform: 'translateX(-50%)',
@@ -395,7 +406,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         />
       </div>
 
-      {/* PANTALLA DE VICTORIA */}
+      {/* PANTALLA DE VICTORIA FINAL */}
       {nivelSuperado && (
         <div style={{
           position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
