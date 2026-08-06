@@ -6,7 +6,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
   const [colorTrazo, setColorTrazo] = useState('#FF5E62')
   const [mostrarMenu, setMostrarMenu] = useState(false)
   const [inputPersonalizado, setInputPersonalizado] = useState('')
-  const [nivelSuperado, setNivelSuperado] = useState(false) // NUEVO: Estado de victoria
+  const [nivelSuperado, setNivelSuperado] = useState(false)
   
   const canvasRef = useRef(null)
   const hitCanvasRef = useRef(null)
@@ -14,6 +14,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
   const brushSizeRef = useRef(30)
   const lastPosRef = useRef({ x: 0, y: 0 }) 
   const scoreTimeoutRef = useRef(null) 
+  const totalGreenRef = useRef(0) // NUEVO: Guarda el tamaño real de la letra
   
   const [isDrawing, setIsDrawing] = useState(false)
   const [dimensiones, setDimensiones] = useState({ w: window.innerWidth, h: window.innerHeight })
@@ -63,23 +64,33 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     brushSizeRef.current = Math.max(fontSize * 0.12, 18)
 
     const fontStyle = "900 " + fontSize + "px 'Fredoka', sans-serif"
-    
     const centerX = canvas.width / 2
     const centerY = canvas.height / 2 - 20 
 
-    // --- MAPA RGB ANTI-TRAMPAS ---
+    // --- MAPA RGB ANTI-TRAMPAS (LIENZO INVISIBLE) ---
     hitCtx.font = fontStyle
     hitCtx.textAlign = 'center'
     hitCtx.textBaseline = 'middle'
     hitCtx.lineJoin = 'round'
+    hitCtx.globalCompositeOperation = 'source-over'
     
+    // Dibujamos la base verde
     hitCtx.fillStyle = '#00FF00'
     hitCtx.fillText(textoActual, centerX, centerY)
     hitCtx.lineWidth = brushSizeRef.current * 0.85 
     hitCtx.strokeStyle = '#00FF00'
     hitCtx.strokeText(textoActual, centerX, centerY)
 
-    // --- LIENZO VISIBLE ---
+    // Calculamos y guardamos la cantidad exacta de píxeles a pintar
+    const imgData = hitCtx.getImageData(0, 0, hitCanvas.width, hitCanvas.height).data
+    let totalG = 0
+    // Revisamos 1 de cada 16 píxeles para ser ultrarrápidos
+    for (let i = 0; i < imgData.length; i += 16) {
+      if (imgData[i + 1] > 150) totalG++
+    }
+    totalGreenRef.current = totalG
+
+    // --- LIENZO VISIBLE ESTILO KEIKI ---
     ctx.font = fontStyle
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
@@ -132,7 +143,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
   }
 
   const startDrawing = (e) => {
-    if (nivelSuperado) return // Evita pintar si está celebrando
+    if (nivelSuperado) return 
     e.preventDefault()
     const { x, y } = getCoordinates(e, canvasRef.current)
     setIsDrawing(true)
@@ -163,6 +174,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
       const isUnpainted = (g > 150 && b < 100) 
       const isOutside = (a < 100)              
 
+      // 1. PINTAR EN LIENZO VISIBLE
       ctx.globalCompositeOperation = 'source-atop'
       ctx.beginPath()
       ctx.moveTo(lastPosRef.current.x, lastPosRef.current.y)
@@ -176,19 +188,20 @@ export default function JuegoTrazo({ perfil, onVolver }) {
       ctx.stroke()
       ctx.shadowBlur = 0 
 
+      // 2. PINTAR EL REGISTRO INVISIBLE (¡La clave para que cuente bien!)
+      hitCtx.globalCompositeOperation = 'source-atop'
+      hitCtx.beginPath()
+      hitCtx.moveTo(lastPosRef.current.x, lastPosRef.current.y)
+      hitCtx.lineTo(x, y)
+      hitCtx.strokeStyle = '#0000FF' // Marcamos como azul (Pintado)
+      hitCtx.lineWidth = brushSizeRef.current
+      hitCtx.lineCap = 'round'
+      hitCtx.lineJoin = 'round'
+      hitCtx.stroke()
+
+      // 3. PUNTOS Y CHISPAS
       if (isUnpainted) {
         updateScore(3) 
-        
-        hitCtx.globalCompositeOperation = 'source-over'
-        hitCtx.beginPath()
-        hitCtx.moveTo(lastPosRef.current.x, lastPosRef.current.y)
-        hitCtx.lineTo(x, y)
-        hitCtx.strokeStyle = '#0000FF' 
-        hitCtx.lineWidth = brushSizeRef.current
-        hitCtx.lineCap = 'round'
-        hitCtx.lineJoin = 'round'
-        hitCtx.stroke()
-
         if (Math.random() > 0.4) {
           ctx.globalCompositeOperation = 'source-over'
           ctx.beginPath()
@@ -209,6 +222,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
           ctx.fill()
         }
       }
+      
       lastPosRef.current = { x, y }
     }
   }
@@ -216,48 +230,43 @@ export default function JuegoTrazo({ perfil, onVolver }) {
   const stopDrawing = () => {
     setIsDrawing(false)
     if (nivelSuperado) return
-    verificarProgreso() // Comprobar si hemos ganado al levantar el dedo
+    verificarProgreso() // Comprobar victoria al soltar el dedo
   }
 
-  // --- NUEVA LÓGICA DE PROGRESO Y VICTORIA ---
   const verificarProgreso = () => {
+    if (totalGreenRef.current === 0) return
+
     const hitCtx = hitCanvasRef.current.getContext('2d')
     const width = hitCanvasRef.current.width
     const height = hitCanvasRef.current.height
     const imgData = hitCtx.getImageData(0, 0, width, height).data
     
-    let greenCount = 0
-    let blueCount = 0
+    let currentGreen = 0
 
-    // Analizamos 1 de cada 16 píxeles para que sea súper rápido (no congela el móvil)
-    for (let i = 0; i < imgData.length; i += 64) {
+    // Contamos cuánto verde queda libre
+    for (let i = 0; i < imgData.length; i += 16) {
       const g = imgData[i + 1]
       const b = imgData[i + 2]
-      const a = imgData[i + 3]
-
-      if (a > 100) { 
-        if (g > 150 && b < 100) greenCount++
-        else if (b > 150) blueCount++
+      if (g > 150 && b < 100) {
+        currentGreen++
       }
     }
 
-    const total = greenCount + blueCount
-    if (total > 0) {
-      const completado = blueCount / total
-      if (completado >= 0.85) { // Si pasa del 85%, ¡Victoria!
-        lanzarVictoria()
-      }
+    // Matemática precisa: 100% - lo que falta
+    const completado = 1 - (currentGreen / totalGreenRef.current)
+    
+    if (completado >= 0.80) { // ¡Al pasar del 80% gana!
+      lanzarVictoria()
     }
   }
 
   const lanzarVictoria = () => {
     setNivelSuperado(true)
-    updateScore(50) // Premio gordo por acabar
+    updateScore(50) 
 
     setTimeout(() => {
-      // Avanzar a la siguiente palabra
       const currentIndex = palabrasPreset.indexOf(textoActual)
-      let nextIndex = 0 // Si no está (personalizada) o es la última, vuelve a la 'A'
+      let nextIndex = 0 
       
       if (currentIndex !== -1 && currentIndex < palabrasPreset.length - 1) {
         nextIndex = currentIndex + 1
@@ -265,7 +274,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
       
       setTextoActual(palabrasPreset[nextIndex])
       setNivelSuperado(false)
-    }, 2200) // Espera 2.2 segundos para que el niño disfrute su victoria
+    }, 2200) 
   }
 
   const guardarPersonalizada = (e) => {
@@ -280,7 +289,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
   return (
     <div style={{
       minHeight: '100vh', width: '100vw',
-      backgroundImage: "url(" + fondoImg + ")",
+      backgroundImage: `url(${fondoImg})`,
       backgroundSize: 'cover', backgroundPosition: 'center',
       fontFamily: '"Fredoka", sans-serif',
       position: 'absolute', top: 0, left: 0, zIndex: 10,
@@ -302,7 +311,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         @keyframes rotaEstrella { 100% { transform: rotate(360deg); } }
       `}</style>
 
-      {/* PANTALLA DE VICTORIA OVERLAY */}
+      {/* PANTALLA DE VICTORIA */}
       {nivelSuperado && (
         <div style={{
           position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
@@ -323,7 +332,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         </div>
       )}
 
-      {/* MARCADOR DE PUNTOS SUPERIOR CENTRAL */}
+      {/* MARCADOR SUPERIOR */}
       <div style={{
         position: 'absolute', top: '25px', left: '50%', transform: 'translateX(-50%)',
         backgroundColor: 'rgba(255, 255, 255, 0.95)', padding: '12px 30px',
@@ -334,7 +343,6 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         ⭐ <span id="marcador-puntos" style={{ color: '#FFD166', transition: 'all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1)', textShadow: '0 4px 0 #CCAC00', minWidth: '80px', textAlign: 'center', display: 'inline-block' }}>0</span>
       </div>
 
-      {/* LIENZO DE DIBUJO */}
       <canvas
         ref={canvasRef}
         width={dimensiones.w} height={dimensiones.h}
@@ -343,7 +351,6 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', cursor: 'crosshair', touchAction: 'none', zIndex: 1 }}
       />
 
-      {/* CABECERA (Controles Laterales) */}
       <div style={{ 
         position: 'absolute', top: '25px', left: '20px', right: '20px', 
         display: 'flex', justifyContent: 'space-between', zIndex: 10, pointerEvents: 'none' 
@@ -365,7 +372,6 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         }}>🧹</button>
       </div>
 
-      {/* DOCK INFERIOR (Colores y Menú) */}
       <div style={{
         position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)',
         backgroundColor: 'rgba(255, 255, 255, 0.9)', padding: '15px 20px',
@@ -393,7 +399,6 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         }}>✨ A-B-C</button>
       </div>
 
-      {/* MENÚ MODAL (Selección de letras) */}
       {mostrarMenu && (
         <div className="anim-pop" style={{
           position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
