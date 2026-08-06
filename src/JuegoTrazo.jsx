@@ -14,7 +14,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
   const scoreRef = useRef(0)
   const brushSizeRef = useRef(30)
   const lastPosRef = useRef({ x: 0, y: 0 }) 
-  const fueraDeLimitesRef = useRef(false) // NUEVO: Controla si el dedo se ha salido
+  const fueraDeLimitesRef = useRef(false) 
   const scoreTimeoutRef = useRef(null) 
   const totalGreenRef = useRef(0) 
   
@@ -143,19 +143,16 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     e.preventDefault()
     const { x, y } = getCoordinates(e, canvasRef.current)
 
-    // NUEVO: Verificamos si está tocando dentro de la letra para empezar
     const hitCtx = hitCanvasRef.current.getContext('2d')
     const px = Math.min(Math.max(Math.floor(x), 0), canvasRef.current.width - 1)
     const py = Math.min(Math.max(Math.floor(y), 0), canvasRef.current.height - 1)
     const alpha = hitCtx.getImageData(px, py, 1, 1).data[3]
 
-    if (alpha < 100) {
-      return // Si toca fuera, ignoramos el toque por completo (no arranca el pincel)
-    }
+    if (alpha < 100) return 
 
     setIsDrawing(true)
     lastPosRef.current = { x, y }
-    fueraDeLimitesRef.current = false // Reiniciamos el estado
+    fueraDeLimitesRef.current = false 
     
     if (mascotaRef.current) {
       mascotaRef.current.style.opacity = '1'
@@ -184,38 +181,30 @@ export default function JuegoTrazo({ perfil, onVolver }) {
       const b = pixel[2] 
       const a = pixel[3] 
 
-      const isOutside = (a < 100) // Zona transparente (Fuera de la letra)
+      const isOutside = (a < 100) 
 
-      // --- NUEVA LÓGICA DE COLISIÓN (MURO INVISIBLE) ---
       if (isOutside) {
-        updateScore(-1) // Penalización suave por salirse
-        
-        // Hacemos que la mascota tiemble en su último sitio válido (se queda atascada)
+        updateScore(-1) 
         if (mascotaRef.current) {
           mascotaRef.current.style.transform = `translate(${lastPosRef.current.x + (Math.random() > 0.5 ? 5 : -5)}px, ${lastPosRef.current.y}px) scale(0.9)`
         }
-        
-        fueraDeLimitesRef.current = true // Marcamos que se ha salido
-        return // IMPORTANTE: Cortamos la función aquí. No dibuja, no avanza.
+        fueraDeLimitesRef.current = true 
+        return 
       }
 
-      // Si el código llega aquí, es que ESTÁ DENTRO DEL RECORRIDO (a >= 100)
-
-      // Movemos la mascota libremente al dedo
       if (mascotaRef.current) {
         mascotaRef.current.style.transform = `translate(${x}px, ${y}px) scale(1)`
       }
 
-      // Si acaba de volver a entrar desde fuera, evitamos trazar una línea recta fea
       if (fueraDeLimitesRef.current) {
         lastPosRef.current = { x, y }
         fueraDeLimitesRef.current = false
-        return // Saltamos un frame de pintura para empezar limpio desde aquí
+        return 
       }
 
       const isUnpainted = (g > 150 && b < 100) 
 
-      // 1. PINTAR EL RECORRIDO VISUAL
+      // 1. PINTURA VISUAL NORMAL
       ctx.globalCompositeOperation = 'source-atop'
       ctx.beginPath()
       ctx.moveTo(lastPosRef.current.x, lastPosRef.current.y)
@@ -229,18 +218,17 @@ export default function JuegoTrazo({ perfil, onVolver }) {
       ctx.stroke()
       ctx.shadowBlur = 0 
 
-      // 2. PINTAR EL MAPA DE PROGRESO INVISIBLE
+      // 2. EL PINCEL FANTASMA GIGANTE (Esto permite que el niño simplemente "siga el camino" sin tener que pintar toda la superficie)
       hitCtx.globalCompositeOperation = 'source-atop'
       hitCtx.beginPath()
       hitCtx.moveTo(lastPosRef.current.x, lastPosRef.current.y)
       hitCtx.lineTo(x, y)
       hitCtx.strokeStyle = '#0000FF' 
-      hitCtx.lineWidth = brushSizeRef.current
+      hitCtx.lineWidth = brushSizeRef.current * 2.5 // <--- Truco: El pincel invisible es enorme. Se come todo el recorrido a su paso.
       hitCtx.lineCap = 'round'
       hitCtx.lineJoin = 'round'
       hitCtx.stroke()
 
-      // 3. PREMIOS Y PARTICULAS
       if (isUnpainted) {
         updateScore(3) 
         if (Math.random() > 0.4) {
@@ -295,7 +283,8 @@ export default function JuegoTrazo({ perfil, onVolver }) {
 
     const completado = 1 - (currentGreen / totalGreenRef.current)
     
-    if (completado >= 0.80) { 
+    // AHORA EXIGIMOS UN 70% (Al combinarse con el pincel fantasma gigante, garantiza que con solo seguir la ruta natural de la palabra la victoria salta al instante)
+    if (completado >= 0.70) { 
       lanzarVictoria()
     }
   }
