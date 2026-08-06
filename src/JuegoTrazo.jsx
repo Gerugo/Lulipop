@@ -10,11 +10,12 @@ export default function JuegoTrazo({ perfil, onVolver }) {
   
   const canvasRef = useRef(null)
   const hitCanvasRef = useRef(null)
+  const mascotaRef = useRef(null) 
   const scoreRef = useRef(0)
   const brushSizeRef = useRef(30)
   const lastPosRef = useRef({ x: 0, y: 0 }) 
   const scoreTimeoutRef = useRef(null) 
-  const totalGreenRef = useRef(0) // NUEVO: Guarda el tamaño real de la letra
+  const totalGreenRef = useRef(0) 
   
   const [isDrawing, setIsDrawing] = useState(false)
   const [dimensiones, setDimensiones] = useState({ w: window.innerWidth, h: window.innerHeight })
@@ -67,30 +68,25 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     const centerX = canvas.width / 2
     const centerY = canvas.height / 2 - 20 
 
-    // --- MAPA RGB ANTI-TRAMPAS (LIENZO INVISIBLE) ---
     hitCtx.font = fontStyle
     hitCtx.textAlign = 'center'
     hitCtx.textBaseline = 'middle'
     hitCtx.lineJoin = 'round'
     hitCtx.globalCompositeOperation = 'source-over'
     
-    // Dibujamos la base verde
     hitCtx.fillStyle = '#00FF00'
     hitCtx.fillText(textoActual, centerX, centerY)
     hitCtx.lineWidth = brushSizeRef.current * 0.85 
     hitCtx.strokeStyle = '#00FF00'
     hitCtx.strokeText(textoActual, centerX, centerY)
 
-    // Calculamos y guardamos la cantidad exacta de píxeles a pintar
     const imgData = hitCtx.getImageData(0, 0, hitCanvas.width, hitCanvas.height).data
     let totalG = 0
-    // Revisamos 1 de cada 16 píxeles para ser ultrarrápidos
     for (let i = 0; i < imgData.length; i += 16) {
       if (imgData[i + 1] > 150) totalG++
     }
     totalGreenRef.current = totalG
 
-    // --- LIENZO VISIBLE ESTILO KEIKI ---
     ctx.font = fontStyle
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
@@ -122,7 +118,6 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         scoreEl.style.textShadow = '0 4px 0 #27ae60'
         scoreEl.style.transform = 'scale(1.2)'
       }
-
       clearTimeout(scoreTimeoutRef.current)
       scoreTimeoutRef.current = setTimeout(() => {
         scoreEl.style.color = '#FFD166'
@@ -148,6 +143,11 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     const { x, y } = getCoordinates(e, canvasRef.current)
     setIsDrawing(true)
     lastPosRef.current = { x, y }
+    
+    if (mascotaRef.current) {
+      mascotaRef.current.style.opacity = '1'
+      mascotaRef.current.style.transform = "translate(" + x + "px, " + y + "px) scale(1)"
+    }
   }
 
   const draw = (e) => {
@@ -158,6 +158,10 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     const hitCtx = hitCanvasRef.current.getContext('2d')
     const { x, y } = getCoordinates(e, canvas)
     
+    if (mascotaRef.current) {
+      mascotaRef.current.style.transform = "translate(" + x + "px, " + y + "px) scale(1)"
+    }
+
     const dx = x - lastPosRef.current.x
     const dy = y - lastPosRef.current.y
     const distancia = Math.sqrt(dx * dx + dy * dy)
@@ -174,7 +178,6 @@ export default function JuegoTrazo({ perfil, onVolver }) {
       const isUnpainted = (g > 150 && b < 100) 
       const isOutside = (a < 100)              
 
-      // 1. PINTAR EN LIENZO VISIBLE
       ctx.globalCompositeOperation = 'source-atop'
       ctx.beginPath()
       ctx.moveTo(lastPosRef.current.x, lastPosRef.current.y)
@@ -188,18 +191,16 @@ export default function JuegoTrazo({ perfil, onVolver }) {
       ctx.stroke()
       ctx.shadowBlur = 0 
 
-      // 2. PINTAR EL REGISTRO INVISIBLE (¡La clave para que cuente bien!)
       hitCtx.globalCompositeOperation = 'source-atop'
       hitCtx.beginPath()
       hitCtx.moveTo(lastPosRef.current.x, lastPosRef.current.y)
       hitCtx.lineTo(x, y)
-      hitCtx.strokeStyle = '#0000FF' // Marcamos como azul (Pintado)
+      hitCtx.strokeStyle = '#0000FF' 
       hitCtx.lineWidth = brushSizeRef.current
       hitCtx.lineCap = 'round'
       hitCtx.lineJoin = 'round'
       hitCtx.stroke()
 
-      // 3. PUNTOS Y CHISPAS
       if (isUnpainted) {
         updateScore(3) 
         if (Math.random() > 0.4) {
@@ -211,6 +212,10 @@ export default function JuegoTrazo({ perfil, onVolver }) {
           ctx.shadowColor = '#FFFFFF'
           ctx.fill()
           ctx.shadowBlur = 0
+          
+          if (mascotaRef.current) {
+            mascotaRef.current.style.transform = "translate(" + x + "px, " + (y - 10) + "px) scale(1.1)"
+          }
         }
       } else if (isOutside) {
         updateScore(-2) 
@@ -220,6 +225,10 @@ export default function JuegoTrazo({ perfil, onVolver }) {
           ctx.arc(x + (Math.random() - 0.5) * (brushSizeRef.current * 1.2), y + (Math.random() - 0.5) * (brushSizeRef.current * 1.2), Math.random() * 5 + 2, 0, Math.PI * 2)
           ctx.fillStyle = '#FF4B4B'
           ctx.fill()
+          
+          if (mascotaRef.current) {
+            mascotaRef.current.style.transform = "translate(" + (x + (Math.random() > 0.5 ? 5 : -5)) + "px, " + y + "px) scale(0.9)"
+          }
         }
       }
       
@@ -229,8 +238,14 @@ export default function JuegoTrazo({ perfil, onVolver }) {
 
   const stopDrawing = () => {
     setIsDrawing(false)
+    
+    if (mascotaRef.current) {
+      mascotaRef.current.style.opacity = '0'
+      mascotaRef.current.style.transform = "translate(" + lastPosRef.current.x + "px, " + lastPosRef.current.y + "px) scale(0.5)"
+    }
+    
     if (nivelSuperado) return
-    verificarProgreso() // Comprobar victoria al soltar el dedo
+    verificarProgreso() 
   }
 
   const verificarProgreso = () => {
@@ -243,7 +258,6 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     
     let currentGreen = 0
 
-    // Contamos cuánto verde queda libre
     for (let i = 0; i < imgData.length; i += 16) {
       const g = imgData[i + 1]
       const b = imgData[i + 2]
@@ -252,10 +266,9 @@ export default function JuegoTrazo({ perfil, onVolver }) {
       }
     }
 
-    // Matemática precisa: 100% - lo que falta
     const completado = 1 - (currentGreen / totalGreenRef.current)
     
-    if (completado >= 0.50) { // ¡Al pasar del 50% gana!
+    if (completado >= 0.80) { 
       lanzarVictoria()
     }
   }
@@ -310,6 +323,29 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         .anim-estrella { animation: rotaEstrella 3s linear infinite; }
         @keyframes rotaEstrella { 100% { transform: rotate(360deg); } }
       `}</style>
+
+      {/* MASCOTA FLOTANTE (SEGUIDOR DE DEDO) */}
+      <div 
+        ref={mascotaRef}
+        style={{
+          position: 'absolute',
+          top: 0, left: 0,
+          width: '70px', height: '70px',
+          marginLeft: '-35px', marginTop: '-35px', 
+          pointerEvents: 'none', 
+          zIndex: 50,
+          opacity: 0, 
+          transition: 'opacity 0.2s ease', 
+          display: 'flex', justifyContent: 'center', alignItems: 'center',
+          filter: 'drop-shadow(0 10px 10px rgba(0,0,0,0.3))'
+        }}
+      >
+        <img 
+          src="./assets/mascota.png" 
+          alt="Mascota Lulipop" 
+          style={{ width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none' }} 
+        />
+      </div>
 
       {/* PANTALLA DE VICTORIA */}
       {nivelSuperado && (
