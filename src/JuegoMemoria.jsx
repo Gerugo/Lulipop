@@ -1,290 +1,321 @@
 import React, { useState, useEffect } from 'react'
-import { supabase } from './supabaseClient'
 import fondoImg from './fondo-lulipop.png'
 
-export default function JuegoMemoria({ perfil, onVolver }) {
-  const [cartas, setCartas] = useState([])
-  const [volteadas, setVolteadas] = useState([]) // Índices de las cartas actualmente giradas
-  const [emparejadas, setEmparejadas] = useState([]) // IDs de las cartas ya resueltas
-  const [bloqueado, setBloqueado] = useState(false) // Evita que se toquen más cartas durante la animación
-  const [victoria, setVictoria] = useState(false)
-  const [guardando, setGuardando] = useState(false)
-  const [movimientos, setMovimientos] = useState(0)
+// Usamos los assets que vi en tu GitHub
+const IMAGENES_CARTAS = [
+  './assets/dino.png',
+  './assets/estrella.png',
+  './assets/gato.png',
+  './assets/globo.png',
+  './assets/manzana.png',
+  './assets/pez.png'
+]
 
-  // Usamos import.meta.env.BASE_URL para que las imágenes carguen bien en GitHub Pages
-  const baseUrl = import.meta.env.BASE_URL
+export default function JuegoParejas({ perfil, onVolver }) {
+  const [baraja, setBaraja] = useState([])
+  const [cartasVolteadas, setCartasVolteadas] = useState([])
+  const [parejasEncontradas, setParejasEncontradas] = useState([])
+  const [bloqueado, setBloqueado] = useState(false)
   
-  const itemsDisponibles = [
-    { id: 'manzana', src: `${baseUrl}assets/manzana.png`, fallback: '🍎' },
-    { id: 'estrella', src: `${baseUrl}assets/estrella.png`, fallback: '⭐️' },
-    { id: 'globo', src: `${baseUrl}assets/globo.png`, fallback: '🎈' },
-    { id: 'pez', src: `${baseUrl}assets/pez.png`, fallback: '🐟' },
-    { id: 'gato', src: `${baseUrl}assets/gato.png`, fallback: '🐱' },
-    { id: 'platano', src: `${baseUrl}assets/platano.png`, fallback: '🍌' },
-    { id: 'dino', src: `${baseUrl}assets/dino.png`, fallback: '🦖' },
-    { id: 'mascota', src: `${baseUrl}assets/mascota.png`, fallback: '🍭' }
-  ]
+  const [puntos, setPuntos] = useState(0)
+  const [nivelSuperado, setNivelSuperado] = useState(false)
+  const [cartasError, setCartasError] = useState([]) // Para la animación de fallo
 
+  // Inicializar el juego
   useEffect(() => {
     iniciarJuego()
   }, [])
 
   const iniciarJuego = () => {
-    // Seleccionamos 6 parejas al azar (12 cartas en total) para un tablero de 3x4
-    const seleccionados = itemsDisponibles.sort(() => Math.random() - 0.5).slice(0, 6)
+    // Duplicamos las imágenes para hacer las parejas
+    const mazo = [...IMAGENES_CARTAS, ...IMAGENES_CARTAS]
+    // Barajamos (Fisher-Yates)
+    for (let i = mazo.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[mazo[i], mazo[j]] = [mazo[j], mazo[i]]
+    }
     
-    // Duplicamos para hacer las parejas y barajamos
-    const barajadas = [...seleccionados, ...seleccionados]
-      .sort(() => Math.random() - 0.5)
-      .map((item, index) => ({ ...item, uuid: index })) // Añadimos un ID único a cada carta
-      
-    setCartas(barajadas)
-    setVolteadas([])
-    setEmparejadas([])
-    setVictoria(false)
-    setMovimientos(0)
+    // Creamos los objetos de las cartas
+    const barajaLista = mazo.map((img, index) => ({
+      id: index,
+      img: img
+    }))
+
+    setBaraja(barajaLista)
+    setCartasVolteadas([])
+    setParejasEncontradas([])
+    setCartasError([])
+    setPuntos(0)
+    setNivelSuperado(false)
+    setBloqueado(false)
   }
 
-  const manejarClickCarta = (index) => {
-    // Si el tablero está bloqueado, o la carta ya está volteada o emparejada, ignoramos el clic
-    if (bloqueado || volteadas.includes(index) || emparejadas.includes(cartas[index].id)) return
+  const updateScore = (nuevosPuntos) => {
+    setPuntos(prev => Math.max(0, prev + nuevosPuntos))
+    
+    const scoreEl = document.getElementById('marcador-puntos-parejas')
+    if (scoreEl) {
+      if (nuevosPuntos < 0) {
+        scoreEl.style.color = '#FF4B4B'
+        scoreEl.style.textShadow = '0 4px 0 #C0392B'
+        scoreEl.style.transform = 'scale(0.8)'
+      } else if (nuevosPuntos > 0) {
+        scoreEl.style.color = '#43e97b'
+        scoreEl.style.textShadow = '0 4px 0 #27ae60'
+        scoreEl.style.transform = 'scale(1.3)'
+      }
+      setTimeout(() => {
+        if (scoreEl) {
+          scoreEl.style.color = '#FFD166'
+          scoreEl.style.textShadow = '0 4px 0 #CCAC00'
+          scoreEl.style.transform = 'scale(1)'
+        }
+      }, 300)
+    }
+  }
 
-    const nuevasVolteadas = [...volteadas, index]
-    setVolteadas(nuevasVolteadas)
+  const voltearCarta = (index) => {
+    // Evitar clicks si está bloqueado, si la carta ya está volteada o si ya es una pareja
+    if (bloqueado || cartasVolteadas.includes(index) || parejasEncontradas.includes(baraja[index].img)) {
+      return
+    }
 
+    const nuevasVolteadas = [...cartasVolteadas, index]
+    setCartasVolteadas(nuevasVolteadas)
+
+    // Si ya hemos volteado 2 cartas, comprobamos
     if (nuevasVolteadas.length === 2) {
       setBloqueado(true)
-      setMovimientos(prev => prev + 1)
-      const carta1 = cartas[nuevasVolteadas[0]]
-      const carta2 = cartas[nuevasVolteadas[1]]
+      const carta1 = baraja[nuevasVolteadas[0]]
+      const carta2 = baraja[nuevasVolteadas[1]]
 
-      if (carta1.id === carta2.id) {
-        // ¡Pareja encontrada!
+      if (carta1.img === carta2.img) {
+        // ¡ACIERTO!
         setTimeout(() => {
-          setEmparejadas(prev => {
-            const nuevasEmparejadas = [...prev, carta1.id]
-            // Comprobar victoria
-            if (nuevasEmparejadas.length === cartas.length / 2) {
+          setParejasEncontradas(prev => {
+            const nuevasParejas = [...prev, carta1.img]
+            // ¿Ha ganado?
+            if (nuevasParejas.length === IMAGENES_CARTAS.length) {
               setTimeout(() => {
-                setVictoria(true)
-                guardarProgreso()
-              }, 600) // Pequeña pausa dramática antes de la victoria
+                setNivelSuperado(true)
+                updateScore(50)
+              }, 500)
             }
-            return nuevasEmparejadas
+            return nuevasParejas
           })
-          setVolteadas([])
+          setCartasVolteadas([])
           setBloqueado(false)
-        }, 800) // Tiempo que se muestran antes de fijarse
+          updateScore(15) // +15 puntos por pareja
+        }, 600)
       } else {
-        // Fallo: volver a girarlas
+        // ¡FALLO!
+        updateScore(-2) // Pequeña penalización
+        setCartasError([...nuevasVolteadas]) // Activa animación de temblor
+        
         setTimeout(() => {
-          setVolteadas([])
+          setCartasVolteadas([])
+          setCartasError([])
           setBloqueado(false)
-        }, 1200) // Tiempo que se muestran antes de ocultarse
+        }, 1000) // Se giran de vuelta tras 1 segundo
       }
     }
   }
 
-  const guardarProgreso = async () => {
-    setGuardando(true)
-    await supabase.from('progreso_actividades').insert([
-      { perfil_id: perfil.id, padre_id: perfil.padre_id, actividad_id: 'juego_memoria', completado: true, estrellas: 3 }
-    ])
-    setGuardando(false)
-  }
-
   return (
-    <div style={{ 
+    <div style={{
       minHeight: '100vh', width: '100vw',
-      backgroundImage: `url(${fondoImg})`, backgroundSize: 'cover', backgroundPosition: 'center',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between',
-      fontFamily: '"Fredoka", sans-serif', position: 'absolute', top: 0, left: 0, zIndex: 10,
-      overflow: 'hidden', userSelect: 'none', padding: '25px', boxSizing: 'border-box'
+      backgroundImage: `url(${fondoImg})`,
+      backgroundSize: 'cover', backgroundPosition: 'center',
+      fontFamily: '"Fredoka", sans-serif',
+      position: 'absolute', top: 0, left: 0, zIndex: 10,
+      overflow: 'hidden',
+      display: 'flex', flexDirection: 'column', alignItems: 'center'
     }}>
-      
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;900&display=swap');
         
-        @keyframes brilloVictoria {
-          0% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5)); }
-          50% { transform: scale(1.1); filter: drop-shadow(0 0 30px rgba(255, 215, 0, 0.9)); }
-          100% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5)); }
-        }
-
-        /* --- Magia 3D para las Cartas --- */
-        .escena-carta {
+        /* Física de las Cartas 3D */
+        .carta-contenedor {
           perspective: 1000px;
-          width: 75px;
-          height: 75px;
           cursor: pointer;
         }
-
-        @media (min-width: 400px) {
-          .escena-carta { width: 85px; height: 85px; }
-        }
-
         .carta-inner {
           position: relative;
-          width: 100%;
-          height: 100%;
-          text-align: center;
-          transition: transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1);
+          width: 100%; height: 100%;
+          transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
           transform-style: preserve-3d;
         }
-
-        /* Cuando está volteada o emparejada, rotamos el contenedor interno 180 grados */
-        .carta-girada .carta-inner {
+        .carta-volteada .carta-inner {
+          transform: rotateY(180deg);
+        }
+        
+        /* Caras de la carta */
+        .carta-cara {
+          position: absolute;
+          width: 100%; height: 100%;
+          backface-visibility: hidden; /* Esto arregla tu error de la piruleta invertida */
+          border-radius: 20px;
+          box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+          display: flex; justify-content: center; align-items: center;
+          border: 4px solid white;
+        }
+        
+        /* Parte Trasera (Piruleta) */
+        .carta-frente {
+          background: linear-gradient(135deg, #a8c0ff 0%, #3f2b96 100%);
+          background: linear-gradient(135deg, #B5C6FF 0%, #FFB5E8 100%); /* Colores pastel parecidos a tu captura */
+        }
+        
+        /* Parte Delantera (La imagen oculta) */
+        .carta-dorso {
+          background-color: white;
           transform: rotateY(180deg);
         }
 
-        /* Caras de la carta (Oculta y Descubierta) */
-        .cara-oculta, .cara-descubierta {
-          position: absolute;
-          width: 100%;
-          height: 100%;
-          backface-visibility: hidden; /* Oculta la parte trasera cuando gira */
-          border-radius: 20px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 8px 15px rgba(0,0,0,0.15);
-        }
-
-        /* La parte de atrás de la carta (la que vemos al principio) */
-        .cara-oculta {
-          background: linear-gradient(135deg, #a6c1ee 0%, #fbc2eb 100%);
-          border: 3px solid white;
-          transform: rotateY(0deg); /* Posición inicial */
-        }
+        /* Animaciones */
+        .anim-victoria { animation: victoria 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes victoria { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
         
-        /* El diseño de Lulipop en la parte de atrás */
-        .cara-oculta::after {
-          content: '🍭';
-          font-size: 35px;
-          opacity: 0.8;
-        }
+        .anim-estrella { animation: rotaEstrella 3s linear infinite; }
+        @keyframes rotaEstrella { 100% { transform: rotate(360deg); } }
 
-        /* La parte de adelante de la carta (con la imagen) */
-        .cara-descubierta {
-          background: white;
-          border: 4px solid #FFD166;
-          transform: rotateY(180deg); /* Empieza de espaldas */
-        }
+        .carta-acierto { animation: aciertoPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; box-shadow: 0 0 20px 5px rgba(255, 209, 102, 0.8); border-color: #FFD166; }
+        @keyframes aciertoPop { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
 
-        .imagen-carta {
-          width: 70%;
-          height: 70%;
-          object-fit: contain;
-          filter: drop-shadow(0 5px 8px rgba(0,0,0,0.15));
-        }
-
-        /* Efecto cuando la carta ya está emparejada (se apaga un poco) */
-        .carta-emparejada .carta-inner {
-          transform: rotateY(180deg) scale(0.95);
-          opacity: 0.8;
-          transition: transform 0.3s, opacity 0.5s;
+        .carta-error { animation: temblor 0.4s ease-in-out; }
+        @keyframes temblor {
+          0%, 100% { transform: rotateY(180deg) translateX(0); }
+          25% { transform: rotateY(180deg) translateX(-8px) rotate(-3deg); }
+          75% { transform: rotateY(180deg) translateX(8px) rotate(3deg); }
         }
       `}</style>
 
-      {}
-      <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 20 }}>
-        <button 
-          onClick={onVolver}
-          style={{ 
-            width: '50px', height: '50px', borderRadius: '16px',
-            backgroundColor: '#FFFFFF', color: '#FF5E62', border: 'none', fontSize: '20px', cursor: 'pointer',
-            boxShadow: '0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}
-        >
-          ❮
-        </button>
-        
+      {/* PANTALLA DE VICTORIA */}
+      {nivelSuperado && (
         <div style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.85)', padding: '8px 20px', borderRadius: '20px',
-          backdropFilter: 'blur(10px)', border: '2px solid white', fontWeight: '700', color: '#555',
-          boxShadow: '0 5px 15px rgba(0,0,0,0.1)'
+          position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+          backgroundColor: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(10px)',
+          zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
         }}>
-          Movimientos: {movimientos}
-        </div>
-      </div>
-
-      {}
-      {!victoria ? (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '500px', zIndex: 20 }}>
-          
-          <div style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.92)', padding: '15px 30px', borderRadius: '28px',
-            backdropFilter: 'blur(12px)', marginBottom: '25px', border: '4px solid white',
-            boxShadow: '0 15px 35px rgba(0,0,0,0.15)', textAlign: 'center'
-          }}>
-            <h2 style={{ color: '#2D3748', fontSize: '1.5rem', margin: 0 }}>¡Encuentra las parejas!</h2>
+          <div className="anim-victoria" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div className="anim-estrella" style={{ fontSize: '100px', filter: 'drop-shadow(0 10px 10px rgba(0,0,0,0.2))' }}>🌟</div>
+            <h1 style={{
+              color: '#FFD166', fontSize: '4.5rem', margin: '10px 0',
+              textShadow: '0 6px 0 #CCAC00, 0 10px 20px rgba(0,0,0,0.2)',
+              textTransform: 'uppercase', letterSpacing: '2px'
+            }}>¡Súper!</h1>
+            <p style={{ color: '#4facfe', fontSize: '1.8rem', fontWeight: '900', margin: 0, backgroundColor: 'white', padding: '10px 30px', borderRadius: '30px', boxShadow: '0 5px 0 #cbd5e1' }}>
+              +50 puntos
+            </p>
+            <button onClick={iniciarJuego} style={{
+              marginTop: '30px', backgroundColor: '#43e97b', color: 'white', border: 'none',
+              padding: '15px 40px', borderRadius: '30px', fontSize: '1.5rem', fontWeight: '900',
+              cursor: 'pointer', boxShadow: '0 8px 0 #27ae60'
+            }}>Jugar de nuevo</button>
           </div>
-
-          {/* Tablero Glassmorphism */}
-          <div style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.4)', padding: '25px', borderRadius: '35px',
-            backdropFilter: 'blur(12px)', border: '5px solid rgba(255,255,255,0.7)',
-            boxShadow: 'inset 0 10px 20px rgba(255,255,255,0.5), 0 20px 40px rgba(0,0,0,0.15)',
-            display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px',
-            justifyItems: 'center'
-          }}>
-            {cartas.map((carta, index) => {
-              const estaVolteada = volteadas.includes(index)
-              const estaEmparejada = emparejadas.includes(carta.id)
-              
-              return (
-                <div 
-                  key={carta.uuid} 
-                  className={`escena-carta ${estaVolteada || estaEmparejada ? 'carta-girada' : ''} ${estaEmparejada ? 'carta-emparejada' : ''}`}
-                  onClick={() => manejarClickCarta(index)}
-                >
-                  <div className="carta-inner">
-                    <div className="cara-oculta"></div>
-                    <div className="cara-descubierta">
-                      <img 
-                        src={carta.src} 
-                        alt={carta.id} 
-                        className="imagen-carta"
-                        // Salvavidas por si falla la imagen
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                          e.currentTarget.nextSibling.style.display = 'block';
-                        }}
-                      />
-                      <span style={{ display: 'none', fontSize: '40px' }}>{carta.fallback}</span>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '15px', zIndex: 20 }}>
-          <div style={{ fontSize: '110px', animation: 'brilloVictoria 2s infinite ease-in-out' }}>🏆✨</div>
-          <h1 style={{ color: 'white', fontSize: '3.5rem', margin: '10px 0 0 0', textShadow: '0 5px 15px rgba(0,0,0,0.3)' }}>
-            ¡Memoria de Elefante! 🐘
-          </h1>
-          <p style={{ color: 'white', fontSize: '1.4rem', margin: 0, textShadow: '0 2px 6px rgba(0,0,0,0.3)', backgroundColor: 'rgba(0,0,0,0.2)', padding: '10px 20px', borderRadius: '20px' }}>
-            Completado en <b>{movimientos}</b> movimientos.
-          </p>
-          <button 
-            onClick={onVolver}
-            style={{ 
-              marginTop: '25px', padding: '18px 45px', fontSize: '1.5rem', 
-              background: 'linear-gradient(135deg, #48BB78, #38A169)', color: 'white', border: 'none', 
-              borderRadius: '35px', cursor: 'pointer',
-              boxShadow: '0 15px 25px rgba(72, 187, 120, 0.4), inset 0 5px 0 rgba(255,255,255,0.3)',
-              fontFamily: '"Fredoka", sans-serif', fontWeight: '700'
-            }}
-          >
-            {guardando ? 'Guardando...' : '¡Increíble! 🚀'}
-          </button>
         </div>
       )}
 
-      <div style={{ height: '20px' }} />
+      {/* BOTONES SUPERIORES */}
+      <div style={{ 
+        position: 'absolute', top: '25px', left: '20px', right: '20px', 
+        display: 'flex', justifyContent: 'space-between', zIndex: 50 
+      }}>
+        <button onClick={onVolver} style={{
+          width: '55px', height: '55px', borderRadius: '18px',
+          backgroundColor: '#FFFFFF', color: '#FF5E62', border: 'none', 
+          fontSize: '24px', cursor: 'pointer',
+          boxShadow: '0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>❮</button>
+
+        <button onClick={iniciarJuego} style={{
+          height: '55px', padding: '0 20px', borderRadius: '18px',
+          backgroundColor: '#FFFFFF', color: '#333', border: 'none', 
+          fontSize: '22px', fontWeight: '900', cursor: 'pointer',
+          boxShadow: '0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)',
+          display: 'flex', alignItems: 'center'
+        }}>🧹</button>
+      </div>
+
+      {/* MARCADOR DE PUNTOS */}
+      <div style={{
+        position: 'absolute', top: '25px', left: '50%', transform: 'translateX(-50%)',
+        backgroundColor: 'rgba(255, 255, 255, 0.95)', padding: '12px 30px',
+        borderRadius: '30px', border: '4px solid white',
+        boxShadow: '0 12px 30px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center',
+        gap: '12px', zIndex: 20, fontSize: '32px', fontWeight: '900'
+      }}>
+        ⭐ <span id="marcador-puntos-parejas" style={{ color: '#FFD166', transition: 'all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1)', textShadow: '0 4px 0 #CCAC00', minWidth: '80px', textAlign: 'center', display: 'inline-block' }}>{puntos}</span>
+      </div>
+
+      {/* TABLERO DE JUEGO */}
+      <div style={{
+        marginTop: '130px', // Espacio para la cabecera
+        backgroundColor: 'rgba(255, 255, 255, 0.6)',
+        backdropFilter: 'blur(20px)',
+        padding: '25px',
+        borderRadius: '40px',
+        border: '6px solid rgba(255,255,255,0.8)',
+        boxShadow: '0 25px 50px rgba(0,0,0,0.1)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center'
+      }}>
+        
+        <h2 style={{ 
+          color: '#334155', fontSize: '1.8rem', margin: '0 0 20px 0',
+          backgroundColor: 'white', padding: '10px 30px', borderRadius: '25px',
+          boxShadow: '0 5px 0 #e2e8f0'
+        }}>¡Encuentra las parejas!</h2>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)', // 4 columnas
+          gap: '15px',
+          width: '95vw',
+          maxWidth: '500px'
+        }}>
+          {baraja.map((carta, index) => {
+            const estaVolteada = cartasVolteadas.includes(index)
+            const estaEmparejada = parejasEncontradas.includes(carta.img)
+            const tieneError = cartasError.includes(index)
+            
+            // Clase combinada
+            let clasesExtra = ''
+            if (estaVolteada || estaEmparejada) clasesExtra += ' carta-volteada'
+            
+            // Animaciones condicionales para la cara descubierta
+            let claseDorso = 'carta-cara carta-dorso'
+            if (estaEmparejada) claseDorso += ' carta-acierto'
+            if (tieneError) claseDorso += ' carta-error'
+
+            return (
+              <div 
+                key={index} 
+                className={`carta-contenedor ${clasesExtra}`}
+                style={{ aspectRatio: '1/1' }} // Cartas cuadradas perfectas
+                onClick={() => voltearCarta(index)}
+              >
+                <div className="carta-inner">
+                  {/* FRENTE: Lo que se ve cuando está boca abajo (Piruleta) */}
+                  <div className="carta-cara carta-frente">
+                    <span style={{ fontSize: '35px' }}>🍭</span>
+                  </div>
+                  
+                  {/* DORSO: La imagen a descubrir */}
+                  <div className={claseDorso}>
+                    <img 
+                      src={carta.img} 
+                      alt="Carta" 
+                      style={{ width: '65%', height: '65%', objectFit: 'contain' }}
+                      draggable="false"
+                    />
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }
