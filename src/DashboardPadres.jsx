@@ -25,127 +25,195 @@ export default function DashboardPadres({ perfil, onVolver }) {
     setLoading(false)
   }
 
-  // Calcular total de estrellas
+  // Cálculos de Gamificación (Niveles)
   const totalEstrellas = progreso.reduce((acc, curr) => acc + (curr.estrellas || 3), 0)
+  const ESTRELLAS_POR_NIVEL = 30
+  const nivelActual = Math.floor(totalEstrellas / ESTRELLAS_POR_NIVEL) + 1
+  const estrellasNivelActual = totalEstrellas % ESTRELLAS_POR_NIVEL
+  const porcentajeProgreso = (estrellasNivelActual / ESTRELLAS_POR_NIVEL) * 100
 
-  // Mapeo de nombres de actividades para mostrar bonitos
+  // Mapeo de nombres de actividades con iconos premium
   const nombresActividades = {
-    'juego_numeros': '🔢 Contando Números',
-    'puzzles_formas': '🧩 Puzzles de Formas',
-    'arte_creativo': '🎨 Taller de Arte',
-    'letras_vocabulario': '🔤 Vocabulario y Letras',
-    'trazo_letras': '✍️ Trazo Guiado'
+    'juego_numeros': { nombre: 'Contando Números', icono: '🔢', color: '#4facfe', bg: '#e0f2fe' },
+    'puzzles_formas': { nombre: 'Puzzles de Formas', icono: '🧩', color: '#43e97b', bg: '#dcfce7' },
+    'arte_creativo': { nombre: 'Taller de Arte', icono: '🎨', color: '#a18cd1', bg: '#f3e8ff' },
+    'letras_vocabulario': { nombre: 'Vocabulario', icono: '🔤', color: '#FFD166', bg: '#fef3c7' },
+    'trazo_letras': { nombre: 'Trazo Guiado', icono: '✍️', color: '#FF5E62', bg: '#ffe4e6' }
   }
 
   return (
     <div style={{ 
-      minHeight: '100vh', 
-      width: '100vw',
+      minHeight: '100vh', width: '100vw',
       backgroundImage: `url(${fondoImg})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      position: 'absolute',
-      top: 0, left: 0,
-      boxSizing: 'border-box',
-      padding: '30px 20px',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
+      backgroundSize: 'cover', backgroundPosition: 'center',
+      position: 'absolute', top: 0, left: 0,
+      boxSizing: 'border-box', padding: '25px 20px',
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
       fontFamily: '"Fredoka", sans-serif',
-      overflowY: 'auto',
-      zIndex: 20
+      overflowY: 'auto', overflowX: 'hidden', zIndex: 20
     }}>
       
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;900&display=swap');
+
+        /* Animaciones Premium */
+        .anim-pop { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 0; }
+        @keyframes popIn { 0% { transform: translateY(20px) scale(0.9); opacity: 0; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+        
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+
+        .btn-press { transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+        .btn-press:active { transform: translateY(6px) scale(0.95); box-shadow: 0 2px 0 var(--shadow-color) !important; }
+
+        /* Contenedores estilo Cristal (Glassmorphism) */
+        .glass-panel {
+          background: rgba(255, 255, 255, 0.85);
+          backdrop-filter: blur(15px);
+          border: 6px solid white;
+          border-radius: 40px;
+          box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        /* Barra de progreso animada */
+        .progress-bar-fill {
+          transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
       `}</style>
 
-      {/* Botón superior de volver */}
-      <div style={{ width: '100%', maxWidth: '650px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      {/* HEADER: Botón volver y Título */}
+      <header style={{ 
+        width: '100%', maxWidth: '700px', display: 'flex', 
+        justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' 
+      }}>
         <button 
           onClick={onVolver}
+          className="btn-press"
           style={{ 
-            width: '50px', height: '50px', borderRadius: '16px',
+            '--shadow-color': '#E0E0E0',
+            width: '60px', height: '60px', borderRadius: '20px',
             backgroundColor: '#FFFFFF', color: '#FF5E62', 
-            border: 'none', fontSize: '20px', cursor: 'pointer',
-            boxShadow: '0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)',
+            border: 'none', fontSize: '26px',
+            boxShadow: '0 8px 0 var(--shadow-color), 0 10px 15px rgba(0,0,0,0.15)',
             display: 'flex', alignItems: 'center', justifyContent: 'center'
           }}
         >
           ❮
         </button>
-        <h2 style={{ color: 'white', margin: 0, textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>Panel de Control Parental 📊</h2>
-      </div>
+        <div style={{ backgroundColor: 'rgba(255,255,255,0.9)', padding: '10px 25px', borderRadius: '25px', border: '4px solid white', boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }}>
+          <h2 style={{ color: '#334155', margin: 0, fontSize: '1.6rem', fontWeight: '900' }}>Panel de Progreso 📊</h2>
+        </div>
+      </header>
 
-      <div style={{ maxWidth: '650px', width: '100%', display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '40px' }}>
+      <div style={{ maxWidth: '700px', width: '100%', display: 'flex', flexDirection: 'column', gap: '25px', paddingBottom: '50px' }}>
         
-        {/* Tarjeta de Resumen del Niño */}
-        <div style={{ 
-          backgroundColor: 'rgba(255, 255, 255, 0.92)', 
-          padding: '25px 30px', 
-          borderRadius: '30px', 
-          boxShadow: '0 15px 30px rgba(0,0,0,0.15)',
-          border: '4px solid white',
-          backdropFilter: 'blur(10px)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '20px'
-        }}>
-          <div style={{ fontSize: '65px', background: '#F0F2F5', padding: '10px 20px', borderRadius: '22px' }}>
-            {perfil.avatar}
-          </div>
-          <div>
-            <h3 style={{ margin: '0 0 5px 0', color: '#333', fontSize: '1.6rem' }}>{perfil.nombre}</h3>
-            <p style={{ margin: '0 0 10px 0', color: '#666', fontSize: '1.05rem' }}>{perfil.edad} años • Explorador activo 🚀</p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#FFF3CD', padding: '6px 14px', borderRadius: '14px', width: 'fit-content' }}>
-              <span style={{ fontSize: '20px' }}>⭐</span>
-              <span style={{ fontWeight: '700', color: '#856404', fontSize: '1.1rem' }}>{totalEstrellas} Estrellas Conseguidas</span>
+        {/* TARJETA 1: Resumen y Nivel del Niño */}
+        <div className="glass-panel anim-pop" style={{ padding: '30px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+            
+            {/* Avatar Grande */}
+            <div style={{ 
+              fontSize: '70px', background: '#F8FAFC', padding: '15px', 
+              borderRadius: '30px', border: '4px solid #E2E8F0',
+              boxShadow: 'inset 0 4px 6px rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'center', alignItems: 'center'
+            }}>
+              <span style={{ filter: 'drop-shadow(0 5px 5px rgba(0,0,0,0.2))' }}>{perfil.avatar}</span>
+            </div>
+            
+            {/* Info y Barra de Progreso */}
+            <div style={{ flex: 1, minWidth: '250px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <h3 style={{ margin: '0 0 5px 0', color: '#334155', fontSize: '2rem', fontWeight: '900' }}>{perfil.nombre}</h3>
+                  <p style={{ margin: '0 0 15px 0', color: '#64748b', fontSize: '1.1rem', fontWeight: '600' }}>
+                    Explorador Nivel {nivelActual} 🚀
+                  </p>
+                </div>
+                <div style={{ 
+                  display: 'flex', alignItems: 'center', gap: '8px', 
+                  backgroundColor: '#FFFBEB', border: '3px solid #FEF3C7',
+                  padding: '8px 16px', borderRadius: '20px' 
+                }}>
+                  <span style={{ fontSize: '22px', animation: 'popIn 1s infinite alternate' }}>⭐</span>
+                  <span style={{ fontWeight: '900', color: '#D97706', fontSize: '1.4rem' }}>{totalEstrellas}</span>
+                </div>
+              </div>
+
+              {/* Barra de Progreso hacia el siguiente nivel */}
+              <div style={{ width: '100%' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span style={{ color: '#94A3B8', fontSize: '0.95rem', fontWeight: '600' }}>Progreso Nivel {nivelActual}</span>
+                  <span style={{ color: '#94A3B8', fontSize: '0.95rem', fontWeight: '600' }}>{estrellasNivelActual} / {ESTRELLAS_POR_NIVEL} ⭐</span>
+                </div>
+                <div style={{ width: '100%', height: '16px', backgroundColor: '#F1F5F9', borderRadius: '10px', overflow: 'hidden', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)' }}>
+                  <div 
+                    className="progress-bar-fill"
+                    style={{ 
+                      height: '100%', width: `${porcentajeProgreso}%`, 
+                      background: 'linear-gradient(90deg, #43e97b 0%, #38f9d7 100%)',
+                      borderRadius: '10px'
+                    }} 
+                  />
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
 
-        {/* Listado de Actividades Completadas */}
-        <div style={{ 
-          backgroundColor: 'rgba(255, 255, 255, 0.92)', 
-          padding: '25px 30px', 
-          borderRadius: '30px',
-          boxShadow: '0 15px 30px rgba(0,0,0,0.15)',
-          border: '4px solid white',
-          backdropFilter: 'blur(10px)'
-        }}>
-          <h4 style={{ color: '#333', fontSize: '1.3rem', marginTop: 0, marginBottom: '20px' }}>Historial de Actividades Recientes</h4>
+        {/* TARJETA 2: Historial de Actividades (Timeline) */}
+        <div className="glass-panel anim-pop delay-1" style={{ padding: '30px' }}>
+          <h4 style={{ color: '#334155', fontSize: '1.5rem', marginTop: 0, marginBottom: '25px', fontWeight: '900' }}>
+            Últimas Aventuras Completadas 🗺️
+          </h4>
 
           {loading ? (
-            <p style={{ color: '#666' }}>Cargando progreso...</p>
+            <div style={{ textAlign: 'center', padding: '30px 0', color: '#64748b', fontSize: '1.2rem', fontWeight: '600' }}>
+              <span style={{ display: 'inline-block', animation: 'rotaEstrella 2s linear infinite' }}>⏳</span> Buscando en los archivos...
+            </div>
           ) : progreso.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <p style={{ color: '#666', fontSize: '1.1rem', margin: '0 0 10px 0' }}>Aún no hay actividades completadas.</p>
-              <p style={{ color: '#888', fontSize: '0.95rem', margin: 0 }}>¡Anima a {perfil.nombre} a jugar en Mundo Lulipop para ganar estrellas!</p>
+            <div style={{ textAlign: 'center', padding: '30px 0', backgroundColor: '#F8FAFC', borderRadius: '25px', border: '3px dashed #CBD5E1' }}>
+              <span style={{ fontSize: '50px', filter: 'grayscale(1)', opacity: 0.5 }}>🎯</span>
+              <p style={{ color: '#475569', fontSize: '1.2rem', margin: '15px 0 5px 0', fontWeight: '900' }}>¡El lienzo está en blanco!</p>
+              <p style={{ color: '#64748b', fontSize: '1rem', margin: 0, fontWeight: '600' }}>Anima a {perfil.nombre} a jugar para llenarlo de estrellas.</p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {progreso.map((item, index) => (
-                <div key={index} style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '14px 18px',
-                  backgroundColor: '#F8F9FA',
-                  borderRadius: '16px',
-                  border: '2px solid #E9ECEF'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <span style={{ fontSize: '24px' }}>✅</span>
-                    <span style={{ fontWeight: '600', color: '#333', fontSize: '1.05rem' }}>
-                      {nombresActividades[item.actividad_id] || item.actividad_id}
-                    </span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              {/* Mostramos las actividades más recientes primero invirtiendo el array */}
+              {[...progreso].reverse().map((item, index) => {
+                const act = nombresActividades[item.actividad_id] || { nombre: item.actividad_id, icono: '✅', color: '#64748b', bg: '#f1f5f9' }
+                
+                return (
+                  <div key={index} className="anim-pop delay-2" style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '15px 20px', backgroundColor: '#FFFFFF', borderRadius: '25px',
+                    border: '3px solid #F1F5F9', boxShadow: '0 5px 15px rgba(0,0,0,0.03)',
+                    transition: 'transform 0.2s', cursor: 'default'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                      <div style={{ 
+                        width: '50px', height: '50px', borderRadius: '15px', 
+                        backgroundColor: act.bg, display: 'flex', justifyContent: 'center', 
+                        alignItems: 'center', fontSize: '24px' 
+                      }}>
+                        {act.icono}
+                      </div>
+                      <span style={{ fontWeight: '900', color: '#334155', fontSize: '1.15rem' }}>
+                        {act.nombre}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#F0FDF4', border: '2px solid #BBF7D0', padding: '6px 14px', borderRadius: '15px' }}>
+                      <span style={{ fontSize: '16px' }}>⭐</span>
+                      <span style={{ fontWeight: '900', color: '#16A34A', fontSize: '1.1rem' }}>+{item.estrellas || 3}</span>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#E2F0D9', padding: '4px 10px', borderRadius: '12px' }}>
-                    <span>⭐</span>
-                    <span style={{ fontWeight: '700', color: '#385723' }}>+{item.estrellas || 3}</span>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
