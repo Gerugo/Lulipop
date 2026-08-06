@@ -217,13 +217,12 @@ export default function JuegoTrazo({ perfil, onVolver }) {
       ctx.stroke()
       ctx.shadowBlur = 0 
 
-      // PINCEL FANTASMA CORREGIDO: Solo un poco más grande (1.5) para obligar a recorrer la letra completa
       hitCtx.globalCompositeOperation = 'source-atop'
       hitCtx.beginPath()
       hitCtx.moveTo(lastPosRef.current.x, lastPosRef.current.y)
       hitCtx.lineTo(x, y)
       hitCtx.strokeStyle = '#0000FF' 
-      hitCtx.lineWidth = brushSizeRef.current * 1.5 // <--- Antes era 2.5, por eso se terminaba sola
+      hitCtx.lineWidth = brushSizeRef.current * 1.8 
       hitCtx.lineCap = 'round'
       hitCtx.lineJoin = 'round'
       hitCtx.stroke()
@@ -282,8 +281,8 @@ export default function JuegoTrazo({ perfil, onVolver }) {
 
     const completado = 1 - (currentGreen / totalGreenRef.current)
     
-    // UMBRAL CORREGIDO: Ahora exige completar el 88% del trazo físico de la letra
-    if (completado >= 0.88) { 
+    // UMBRAL AJUSTADO A 65% (Más fluido y accesible para los niños)
+    if (completado >= 0.65) { 
       avanzarSiguientePaso()
     }
   }
