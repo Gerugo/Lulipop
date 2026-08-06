@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
-import fondoImg from './fondo-lulipop.png' // Mismo fondo de la app
+import fondoImg from './fondo-lulipop.png'
 
 export default function JuegoPuzzles({ perfil, onVolver }) {
-  // Rutas seguras para GitHub Pages
   const baseUrl = import.meta.env.BASE_URL
 
-  // Usamos los iconos del juego de memoria adaptados a piezas de puzzle
   const formasOriginales = [
     { id: 'dino', nombre: 'Dino', src: `${baseUrl}assets/dino.png`, color: '#43e97b', sombra: '#27ae60' },
     { id: 'gato', nombre: 'Gato', src: `${baseUrl}assets/gato.png`, color: '#FFD166', sombra: '#CCAC00' },
@@ -14,13 +12,15 @@ export default function JuegoPuzzles({ perfil, onVolver }) {
     { id: 'manzana', nombre: 'Manzana', src: `${baseUrl}assets/manzana.png`, color: '#FF5E62', sombra: '#C0392B' }
   ]
 
-  const [seleccionado, setSeleccionado] = useState(null)
   const [completados, setCompletados] = useState([])
   const [victoria, setVictoria] = useState(false)
   const [guardando, setGuardando] = useState(false)
-
-  // Barajamos las siluetas de destino solo una vez al inicio
   const [siluetas, setSiluetas] = useState([])
+
+  // Estados para el arrastre (Drag & Drop nativo táctil/mouse)
+  const [piezaArrastrada, setPiezaArrastrada] = useState(null)
+  const [posicion, setPosicion] = useState({ x: 0, y: 0 })
+  const [offset, setOffset] = useState({ x: 0, y: 0 })
 
   useEffect(() => {
     iniciarJuego()
@@ -28,46 +28,63 @@ export default function JuegoPuzzles({ perfil, onVolver }) {
 
   const iniciarJuego = () => {
     setSiluetas([...formasOriginales].sort(() => Math.random() - 0.5))
-    setSeleccionado(null)
     setCompletados([])
     setVictoria(false)
+    setPiezaArrastrada(null)
   }
 
-  const manejarClickForma = (forma) => {
-    if (completados.includes(forma.id)) return
-    
-    // Si toca la misma que ya estaba seleccionada, la deselecciona
-    if (seleccionado?.id === forma.id) {
-      setSeleccionado(null)
-    } else {
-      setSeleccionado(forma)
-    }
+  // Comienza el arrastre
+  const handlePointerDown = (e, forma) => {
+    if (completados.includes(forma.id) || victoria) return
+    e.preventDefault()
+
+    const rect = e.currentTarget.getBoundingClientRect()
+    setOffset({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    })
+    setPiezaArrastrada(forma)
+    setPosicion({ x: e.clientX, y: e.clientY })
   }
 
-  const manejarClickSilueta = (silueta) => {
-    if (!seleccionado || completados.includes(silueta.id)) return
+  // Moviendo la pieza por la pantalla
+  const handlePointerMove = (e) => {
+    if (!piezaArrastrada) return
+    e.preventDefault()
+    setPosicion({ x: e.clientX, y: e.clientY })
+  }
 
-    if (seleccionado.id === silueta.id) {
-      // ¡ACIERTO!
-      const nuevosCompletados = [...completados, silueta.id]
-      setCompletados(nuevosCompletados)
-      setSeleccionado(null)
+  // Al soltar la pieza
+  const handlePointerUp = (e) => {
+    if (!piezaArrastrada) return
+    e.preventDefault()
 
-      if (nuevosCompletados.length === formasOriginales.length) {
-        setTimeout(() => {
-          setVictoria(true)
-          guardarProgreso()
-        }, 500)
+    // Detectar qué elemento hay exactamente debajo de las coordenadas donde se soltó
+    const elementoDebajo = document.elementFromPoint(e.clientX, e.clientY)
+    const siluetaTarget = elementoDebajo?.closest('.silueta-box')
+
+    if (siluetaTarget) {
+      const targetId = siluetaTarget.getAttribute('data-id')
+
+      if (targetId === piezaArrastrada.id) {
+        // ¡ACIERTO!
+        const nuevosCompletados = [...completados, piezaArrastrada.id]
+        setCompletados(nuevosCompletados)
+
+        if (nuevosCompletados.length === formasOriginales.length) {
+          setTimeout(() => {
+            setVictoria(true)
+            guardarProgreso()
+          }, 400)
+        }
+      } else {
+        // ¡FALLO! Animación de error en la silueta incorrecta
+        siluetaTarget.classList.add('error-shake')
+        setTimeout(() => siluetaTarget.classList.remove('error-shake'), 400)
       }
-    } else {
-      // ¡FALLO! Animación de temblor
-      const el = document.getElementById(`silueta-${silueta.id}`)
-      if (el) {
-        el.classList.add('error-shake')
-        setTimeout(() => el.classList.remove('error-shake'), 400)
-      }
-      setSeleccionado(null)
     }
+
+    setPiezaArrastrada(null)
   }
 
   const guardarProgreso = async () => {
@@ -88,21 +105,24 @@ export default function JuegoPuzzles({ perfil, onVolver }) {
   }
 
   return (
-    <div style={{ 
-      minHeight: '100vh', width: '100vw',
-      backgroundImage: `url(${fondoImg})`,
-      backgroundSize: 'cover', backgroundPosition: 'center',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', 
-      fontFamily: '"Fredoka", sans-serif',
-      position: 'absolute', top: 0, left: 0, zIndex: 10,
-      overflow: 'hidden', userSelect: 'none', padding: '20px',
-      boxSizing: 'border-box'
-    }}>
+    <div 
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      style={{ 
+        minHeight: '100vh', width: '100vw',
+        backgroundImage: `url(${fondoImg})`,
+        backgroundSize: 'cover', backgroundPosition: 'center',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', 
+        fontFamily: '"Fredoka", sans-serif',
+        position: 'absolute', top: 0, left: 0, zIndex: 10,
+        overflow: 'hidden', userSelect: 'none', padding: '20px',
+        boxSizing: 'border-box',
+        touchAction: 'none' // Evita que la pantalla haga scroll al arrastrar en móviles
+      }}>
       
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;900&display=swap');
 
-        /* Botones superiores */
         .pieza-3d {
           width: 100px;
           height: 100px;
@@ -110,13 +130,14 @@ export default function JuegoPuzzles({ perfil, onVolver }) {
           display: flex;
           align-items: center;
           justify-content: center;
-          cursor: pointer;
-          transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+          cursor: grab;
+          transition: transform 0.1s ease;
           border: 4px solid rgba(255,255,255,0.8);
+          touch-action: none;
         }
+        .pieza-3d:active { cursor: grabbing; }
         .pieza-3d img { width: 70%; height: 70%; object-fit: contain; pointer-events: none; }
 
-        /* Siluetas de destino */
         .silueta-box {
           width: 110px;
           height: 110px;
@@ -124,31 +145,27 @@ export default function JuegoPuzzles({ perfil, onVolver }) {
           display: flex;
           align-items: center;
           justify-content: center;
-          cursor: pointer;
-          transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
           background: rgba(255,255,255,0.4);
           border: 4px dashed rgba(255,255,255,0.7);
+          transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         
-        /* Imagen negra pura para hacer de silueta */
         .img-silueta {
           width: 65%; height: 65%; object-fit: contain; pointer-events: none;
           filter: brightness(0) opacity(0.2);
           transition: all 0.3s ease;
         }
 
-        /* Cuando la silueta se rellena */
         .silueta-completada {
           background-color: white !important;
           border-style: solid !important;
           animation: aciertoPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
         .silueta-completada .img-silueta {
-          filter: none; /* Recupera el color original */
+          filter: none;
           width: 80%; height: 80%;
         }
 
-        /* Animaciones */
         .error-shake { animation: wobble 0.4s ease-in-out; }
         @keyframes wobble {
           0%, 100% { transform: translateX(0); }
@@ -162,16 +179,34 @@ export default function JuegoPuzzles({ perfil, onVolver }) {
           100% { transform: scale(1); } 
         }
 
-        /* Pantalla Victoria */
         .anim-victoria { animation: victoria 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         @keyframes victoria { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
         .anim-estrella { animation: rotaEstrella 3s linear infinite; }
         @keyframes rotaEstrella { 100% { transform: rotate(360deg); } }
-        
-        /* Animación de pieza seleccionada flotando */
-        .flotando { animation: flotar 1.5s ease-in-out infinite alternate; }
-        @keyframes flotar { 0% { transform: translateY(-8px) scale(1.1); } 100% { transform: translateY(-15px) scale(1.1); } }
       `}</style>
+
+      {/* PIEZA FLOTANTE AL ARRASTRAR */}
+      {piezaArrastrada && (
+        <div style={{
+          position: 'fixed',
+          left: posicion.x - offset.x,
+          top: posicion.y - offset.y,
+          width: '100px',
+          height: '100px',
+          backgroundColor: piezaArrastrada.color,
+          borderRadius: '25px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: `0 25px 35px rgba(0,0,0,0.3), 0 12px 0 ${piezaArrastrada.sombra}`,
+          border: '4px solid white',
+          pointerEvents: 'none',
+          zIndex: 1000,
+          transform: 'scale(1.15) translateY(-10px)'
+        }}>
+          <img src={piezaArrastrada.src} alt={piezaArrastrada.nombre} style={{ width: '70%', height: '70%', objectFit: 'contain' }} />
+        </div>
+      )}
 
       {/* BOTONES SUPERIORES */}
       <div style={{ 
@@ -235,37 +270,33 @@ export default function JuegoPuzzles({ perfil, onVolver }) {
             boxShadow: '0 15px 30px rgba(0,0,0,0.1)', textAlign: 'center'
           }}>
             <h2 style={{ color: '#475569', fontSize: '1.6rem', margin: 0, fontWeight: '900' }}>
-              Toca una ficha y ponla en su sombra 👇
+              ¡Arrastra cada figura a su sombra! 🧩
             </h2>
           </div>
 
-          {/* FICHAS PARA SELECCIONAR (ARRIBA) */}
+          {/* FICHAS PARA ARRASTRAR (ARRIBA) */}
           <div style={{ 
             display: 'flex', gap: '15px', marginBottom: '50px', 
             justifyContent: 'center', flexWrap: 'wrap' 
           }}>
             {formasOriginales.map((forma) => {
               const estaUsada = completados.includes(forma.id)
-              const estaSeleccionadoEste = seleccionado?.id === forma.id
+              const estaSiendoArrastrada = piezaArrastrada?.id === forma.id
 
-              // Si ya se ha colocado, dejamos un hueco vacío
               if (estaUsada) return <div key={forma.id} style={{ width: '100px', height: '100px', opacity: 0.1 }} />
 
               return (
                 <div 
                   key={forma.id}
-                  className={`pieza-3d ${estaSeleccionadoEste ? 'flotando' : ''}`}
-                  onClick={() => manejarClickForma(forma)}
+                  className="pieza-3d"
+                  onPointerDown={(e) => handlePointerDown(e, forma)}
                   style={{
                     backgroundColor: forma.color,
-                    boxShadow: estaSeleccionadoEste 
-                      ? `0 15px 25px rgba(0,0,0,0.3), 0 0 0 5px white, 0 15px 0 ${forma.sombra}`
-                      : `0 8px 0 ${forma.sombra}, 0 10px 15px rgba(0,0,0,0.1)`,
-                    border: estaSeleccionadoEste ? 'none' : '4px solid rgba(255,255,255,0.7)',
-                    zIndex: estaSeleccionadoEste ? 10 : 1
+                    boxShadow: `0 8px 0 ${forma.sombra}, 0 10px 15px rgba(0,0,0,0.1)`,
+                    opacity: estaSiendoArrastrada ? 0.3 : 1, // Se desvanece la original al arrastrar
                   }}
                 >
-                  <img src={forma.src} alt={forma.nombre} onError={(e) => e.target.style.display = 'none'} />
+                  <img src={forma.src} alt={forma.nombre} draggable="false" />
                 </div>
               )
             })}
@@ -280,16 +311,15 @@ export default function JuegoPuzzles({ perfil, onVolver }) {
           }}>
             {siluetas.map((silueta) => {
               const estaCompletado = completados.includes(silueta.id)
-              const esObjetivoActual = seleccionado?.id === silueta.id
 
               return (
                 <div 
                   key={silueta.id}
+                  data-id={silueta.id}
                   id={`silueta-${silueta.id}`}
                   className={`silueta-box ${estaCompletado ? 'silueta-completada' : ''}`}
-                  onClick={() => manejarClickSilueta(silueta)}
                   style={{
-                    borderColor: estaCompletado ? silueta.color : (esObjetivoActual ? '#FFF' : 'rgba(255, 255, 255, 0.7)'),
+                    borderColor: estaCompletado ? silueta.color : 'rgba(255, 255, 255, 0.7)',
                     boxShadow: estaCompletado ? `0px 8px 0px ${silueta.sombra}` : 'inset 0 5px 15px rgba(0,0,0,0.1)'
                   }}
                 >
@@ -297,6 +327,7 @@ export default function JuegoPuzzles({ perfil, onVolver }) {
                     src={silueta.src} 
                     alt="Silueta" 
                     className="img-silueta"
+                    draggable="false"
                   />
                 </div>
               )
