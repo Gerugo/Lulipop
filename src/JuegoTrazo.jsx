@@ -283,8 +283,8 @@ export default function JuegoTrazo({ perfil, onVolver }) {
 
     const completado = 1 - (currentGreen / totalGreenRef.current)
     
-    // AHORA EXIGIMOS UN 70% (Al combinarse con el pincel fantasma gigante, garantiza que con solo seguir la ruta natural de la palabra la victoria salta al instante)
-    if (completado >= 0.70) { 
+    // AHORA EXIGIMOS UN 40% (Al combinarse con el pincel fantasma gigante, garantiza que con solo seguir la ruta natural de la palabra la victoria salta al instante)
+    if (completado >= 0.40) { 
       lanzarVictoria()
     }
   }
