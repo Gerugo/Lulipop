@@ -14,6 +14,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
   const scoreRef = useRef(0)
   const brushSizeRef = useRef(30)
   const lastPosRef = useRef({ x: 0, y: 0 }) 
+  const fueraDeLimitesRef = useRef(false) // NUEVO: Controla si el dedo se ha salido
   const scoreTimeoutRef = useRef(null) 
   const totalGreenRef = useRef(0) 
   
@@ -141,12 +142,24 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     if (nivelSuperado) return 
     e.preventDefault()
     const { x, y } = getCoordinates(e, canvasRef.current)
+
+    // NUEVO: Verificamos si está tocando dentro de la letra para empezar
+    const hitCtx = hitCanvasRef.current.getContext('2d')
+    const px = Math.min(Math.max(Math.floor(x), 0), canvasRef.current.width - 1)
+    const py = Math.min(Math.max(Math.floor(y), 0), canvasRef.current.height - 1)
+    const alpha = hitCtx.getImageData(px, py, 1, 1).data[3]
+
+    if (alpha < 100) {
+      return // Si toca fuera, ignoramos el toque por completo (no arranca el pincel)
+    }
+
     setIsDrawing(true)
     lastPosRef.current = { x, y }
+    fueraDeLimitesRef.current = false // Reiniciamos el estado
     
     if (mascotaRef.current) {
       mascotaRef.current.style.opacity = '1'
-      mascotaRef.current.style.transform = "translate(" + x + "px, " + y + "px) scale(1)"
+      mascotaRef.current.style.transform = `translate(${x}px, ${y}px) scale(1)`
     }
   }
 
@@ -157,16 +170,12 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     const ctx = canvas.getContext('2d')
     const hitCtx = hitCanvasRef.current.getContext('2d')
     const { x, y } = getCoordinates(e, canvas)
-    
-    if (mascotaRef.current) {
-      mascotaRef.current.style.transform = "translate(" + x + "px, " + y + "px) scale(1)"
-    }
 
     const dx = x - lastPosRef.current.x
     const dy = y - lastPosRef.current.y
     const distancia = Math.sqrt(dx * dx + dy * dy)
 
-    if (distancia >= 3) { 
+    if (distancia >= 2) { 
       const px = Math.min(Math.max(Math.floor(x), 0), canvas.width - 1)
       const py = Math.min(Math.max(Math.floor(y), 0), canvas.height - 1)
       
@@ -175,9 +184,38 @@ export default function JuegoTrazo({ perfil, onVolver }) {
       const b = pixel[2] 
       const a = pixel[3] 
 
-      const isUnpainted = (g > 150 && b < 100) 
-      const isOutside = (a < 100)              
+      const isOutside = (a < 100) // Zona transparente (Fuera de la letra)
 
+      // --- NUEVA LÓGICA DE COLISIÓN (MURO INVISIBLE) ---
+      if (isOutside) {
+        updateScore(-1) // Penalización suave por salirse
+        
+        // Hacemos que la mascota tiemble en su último sitio válido (se queda atascada)
+        if (mascotaRef.current) {
+          mascotaRef.current.style.transform = `translate(${lastPosRef.current.x + (Math.random() > 0.5 ? 5 : -5)}px, ${lastPosRef.current.y}px) scale(0.9)`
+        }
+        
+        fueraDeLimitesRef.current = true // Marcamos que se ha salido
+        return // IMPORTANTE: Cortamos la función aquí. No dibuja, no avanza.
+      }
+
+      // Si el código llega aquí, es que ESTÁ DENTRO DEL RECORRIDO (a >= 100)
+
+      // Movemos la mascota libremente al dedo
+      if (mascotaRef.current) {
+        mascotaRef.current.style.transform = `translate(${x}px, ${y}px) scale(1)`
+      }
+
+      // Si acaba de volver a entrar desde fuera, evitamos trazar una línea recta fea
+      if (fueraDeLimitesRef.current) {
+        lastPosRef.current = { x, y }
+        fueraDeLimitesRef.current = false
+        return // Saltamos un frame de pintura para empezar limpio desde aquí
+      }
+
+      const isUnpainted = (g > 150 && b < 100) 
+
+      // 1. PINTAR EL RECORRIDO VISUAL
       ctx.globalCompositeOperation = 'source-atop'
       ctx.beginPath()
       ctx.moveTo(lastPosRef.current.x, lastPosRef.current.y)
@@ -191,6 +229,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
       ctx.stroke()
       ctx.shadowBlur = 0 
 
+      // 2. PINTAR EL MAPA DE PROGRESO INVISIBLE
       hitCtx.globalCompositeOperation = 'source-atop'
       hitCtx.beginPath()
       hitCtx.moveTo(lastPosRef.current.x, lastPosRef.current.y)
@@ -201,6 +240,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
       hitCtx.lineJoin = 'round'
       hitCtx.stroke()
 
+      // 3. PREMIOS Y PARTICULAS
       if (isUnpainted) {
         updateScore(3) 
         if (Math.random() > 0.4) {
@@ -214,20 +254,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
           ctx.shadowBlur = 0
           
           if (mascotaRef.current) {
-            mascotaRef.current.style.transform = "translate(" + x + "px, " + (y - 10) + "px) scale(1.1)"
-          }
-        }
-      } else if (isOutside) {
-        updateScore(-2) 
-        if (Math.random() > 0.3) {
-          ctx.globalCompositeOperation = 'source-over'
-          ctx.beginPath()
-          ctx.arc(x + (Math.random() - 0.5) * (brushSizeRef.current * 1.2), y + (Math.random() - 0.5) * (brushSizeRef.current * 1.2), Math.random() * 5 + 2, 0, Math.PI * 2)
-          ctx.fillStyle = '#FF4B4B'
-          ctx.fill()
-          
-          if (mascotaRef.current) {
-            mascotaRef.current.style.transform = "translate(" + (x + (Math.random() > 0.5 ? 5 : -5)) + "px, " + y + "px) scale(0.9)"
+            mascotaRef.current.style.transform = `translate(${x}px, ${y - 10}px) scale(1.1)`
           }
         }
       }
@@ -241,7 +268,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     
     if (mascotaRef.current) {
       mascotaRef.current.style.opacity = '0'
-      mascotaRef.current.style.transform = "translate(" + lastPosRef.current.x + "px, " + lastPosRef.current.y + "px) scale(0.5)"
+      mascotaRef.current.style.transform = `translate(${lastPosRef.current.x}px, ${lastPosRef.current.y}px) scale(0.5)`
     }
     
     if (nivelSuperado) return
@@ -324,7 +351,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         @keyframes rotaEstrella { 100% { transform: rotate(360deg); } }
       `}</style>
 
-      {/* MASCOTA FLOTANTE (SEGUIDOR DE DEDO) */}
+      {/* MASCOTA FLOTANTE (CON FÍSICA DE MURO INVISIBLE) */}
       <div 
         ref={mascotaRef}
         style={{
@@ -387,6 +414,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', cursor: 'crosshair', touchAction: 'none', zIndex: 1 }}
       />
 
+      {/* BOTONES SUPERIORES */}
       <div style={{ 
         position: 'absolute', top: '25px', left: '20px', right: '20px', 
         display: 'flex', justifyContent: 'space-between', zIndex: 10, pointerEvents: 'none' 
@@ -408,6 +436,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         }}>🧹</button>
       </div>
 
+      {/* MENÚ INFERIOR */}
       <div style={{
         position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)',
         backgroundColor: 'rgba(255, 255, 255, 0.9)', padding: '15px 20px',
@@ -435,6 +464,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         }}>✨ A-B-C</button>
       </div>
 
+      {/* MENÚ MODAL */}
       {mostrarMenu && (
         <div className="anim-pop" style={{
           position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
