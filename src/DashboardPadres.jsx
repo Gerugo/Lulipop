@@ -6,15 +6,17 @@ export default function DashboardPadres({ perfil, onVolver }) {
   const [progreso, setProgreso] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // 1. SOLUCIÓN AL ERROR DE GITHUB: El useEffect ahora es estructuralmente perfecto 
-  // y tiene perfil?.id para evitar que la app explote si el perfil tarda en cargar.
+  // 🔥 SOLUCIÓN GITHUB ACTIONS: La función está DENTRO del useEffect
   useEffect(() => {
     const cargarProgreso = async () => {
+      // Protección extra: Si por algún motivo el perfil no llega, cortamos aquí
+      if (!perfil?.id) return 
+
       setLoading(true)
       const { data, error } = await supabase
         .from('progreso_actividades')
         .select('*')
-        .eq('perfil_id', perfil?.id)
+        .eq('perfil_id', perfil.id) // Aquí ya es seguro usar perfil.id
 
       if (error) {
         console.error("Error cargando progreso:", error)
@@ -24,10 +26,9 @@ export default function DashboardPadres({ perfil, onVolver }) {
       setLoading(false)
     }
 
-    if (perfil?.id) {
-      cargarProgreso()
-    }
-  }, [perfil?.id])
+    // Llamamos a la función
+    cargarProgreso()
+  }, [perfil?.id]) // La única dependencia es el ID del perfil
 
   // Cálculos de Gamificación (Niveles)
   const totalEstrellas = progreso.reduce((acc, curr) => acc + (curr.estrellas || 3), 0)
@@ -64,7 +65,6 @@ export default function DashboardPadres({ perfil, onVolver }) {
         .anim-pop { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 0; }
         @keyframes popIn { 0% { transform: translateY(20px) scale(0.9); opacity: 0; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
         
-        /* SOLUCIÓN: Keyframe faltante que podía dar error en el build */
         @keyframes rotaEstrella { 100% { transform: rotate(360deg); } }
         
         .delay-1 { animation-delay: 0.1s; }
