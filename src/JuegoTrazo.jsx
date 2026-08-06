@@ -255,7 +255,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     // Matemática precisa: 100% - lo que falta
     const completado = 1 - (currentGreen / totalGreenRef.current)
     
-    if (completado >= 0.70) { // ¡Al pasar del 80% gana!
+    if (completado >= 0.50) { // ¡Al pasar del 50% gana!
       lanzarVictoria()
     }
   }
