@@ -11,19 +11,19 @@ export default function JuegoTrazo({ perfil, onVolver }) {
   const hitCanvasRef = useRef(null)
   const scoreRef = useRef(0)
   const brushSizeRef = useRef(30)
-  const lastPosRef = useRef({ x: 0, y: 0 }) // Para medir la distancia del dedo
-  const scoreTimeoutRef = useRef(null) // Para la animación del marcador
+  const lastPosRef = useRef({ x: 0, y: 0 }) 
+  const scoreTimeoutRef = useRef(null) 
   
   const [isDrawing, setIsDrawing] = useState(false)
   const [dimensiones, setDimensiones] = useState({ w: window.innerWidth, h: window.innerHeight })
 
   const palabrasPreset = ['A', 'B', 'C', 'MAMA', 'PAPA', 'SOL', 'LULU', '123']
   const colores = [
-    { id: '#FF5E62', shadow: '#C0392B' },
-    { id: '#4facfe', shadow: '#005580' },
-    { id: '#43e97b', shadow: '#27ae60' },
-    { id: '#FFD166', shadow: '#CCAC00' },
-    { id: '#a18cd1', shadow: '#6b4c9a' }
+    { id: '#FF5E62', shadow: '#C0392B' }, // Rojo Sandía
+    { id: '#4facfe', shadow: '#005580' }, // Azul Hielo
+    { id: '#43e97b', shadow: '#27ae60' }, // Verde Lima
+    { id: '#FFD166', shadow: '#CCAC00' }, // Amarillo Sol
+    { id: '#a18cd1', shadow: '#6b4c9a' }  // Morado Mágico
   ]
 
   useEffect(() => {
@@ -59,55 +59,59 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     const maxFontSize = isWord ? (canvas.width * 0.85) / textoActual.length : canvas.height * 0.5
     const fontSize = Math.min(maxFontSize, 450) 
     
-    brushSizeRef.current = Math.max(fontSize * 0.12, 15)
+    brushSizeRef.current = Math.max(fontSize * 0.12, 18)
 
     const fontStyle = "900 " + fontSize + "px 'Fredoka', sans-serif"
-    ctx.font = fontStyle
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    
-    hitCtx.font = fontStyle
-    hitCtx.textAlign = 'center'
-    hitCtx.textBaseline = 'middle'
     
     const centerX = canvas.width / 2
     const centerY = canvas.height / 2 - 20 
 
-    // --- LIENZO INVISIBLE (ZONA VÁLIDA ESTRICTA) ---
-    hitCtx.fillStyle = '#000000'
-    hitCtx.fillText(textoActual, centerX, centerY)
-    // Tolerancia mucho más estricta (solo el tamaño del pincel)
-    hitCtx.lineWidth = brushSizeRef.current * 0.9 
+    // --- LIENZO INVISIBLE (MAPA RGB ANTI-TRAMPAS) ---
+    hitCtx.font = fontStyle
+    hitCtx.textAlign = 'center'
+    hitCtx.textBaseline = 'middle'
     hitCtx.lineJoin = 'round'
-    hitCtx.strokeStyle = '#000000'
+    
+    // Zona Verde = Área válida sin pintar
+    hitCtx.fillStyle = '#00FF00'
+    hitCtx.fillText(textoActual, centerX, centerY)
+    hitCtx.lineWidth = brushSizeRef.current * 0.85 
+    hitCtx.strokeStyle = '#00FF00'
     hitCtx.strokeText(textoActual, centerX, centerY)
 
-    // --- LIENZO VISIBLE ---
+    // --- LIENZO VISIBLE (ESTÉTICA PREMIUM TIPO KEIKI) ---
+    ctx.font = fontStyle
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
     ctx.globalCompositeOperation = 'source-over'
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)'
+    
+    // 1. Relleno cristalino suave
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)'
     ctx.fillText(textoActual, centerX, centerY)
     
-    ctx.lineWidth = Math.max(fontSize * 0.015, 4)
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)'
+    // 2. Borde exterior con brillo (Glow)
+    ctx.lineWidth = Math.max(fontSize * 0.02, 6)
+    ctx.strokeStyle = '#FFFFFF'
     ctx.lineJoin = 'round'
+    ctx.shadowColor = 'rgba(255, 255, 255, 0.9)'
+    ctx.shadowBlur = 15
     ctx.strokeText(textoActual, centerX, centerY)
+    ctx.shadowBlur = 0 // Resetear sombra para lo siguiente
   }
 
-  // Animación manual para no saturar el rendimiento del navegador
   const updateScore = (points) => {
     scoreRef.current = Math.max(0, scoreRef.current + points)
     const scoreEl = document.getElementById('marcador-puntos')
     if (scoreEl) {
       scoreEl.innerText = scoreRef.current
-      
       if (points < 0) {
-        scoreEl.style.color = '#e74c3c'
-        scoreEl.style.textShadow = '0 4px 0 #c0392b'
-        scoreEl.style.transform = 'scale(0.85)'
-      } else {
-        scoreEl.style.color = '#2ecc71'
+        scoreEl.style.color = '#FF4B4B'
+        scoreEl.style.textShadow = '0 4px 0 #C0392B'
+        scoreEl.style.transform = 'scale(0.8)'
+      } else if (points > 0) {
+        scoreEl.style.color = '#43e97b'
         scoreEl.style.textShadow = '0 4px 0 #27ae60'
-        scoreEl.style.transform = 'scale(1.15)'
+        scoreEl.style.transform = 'scale(1.2)'
       }
 
       clearTimeout(scoreTimeoutRef.current)
@@ -115,7 +119,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         scoreEl.style.color = '#FFD166'
         scoreEl.style.textShadow = '0 4px 0 #CCAC00'
         scoreEl.style.transform = 'scale(1)'
-      }, 250)
+      }, 300)
     }
   }
 
@@ -131,21 +135,9 @@ export default function JuegoTrazo({ perfil, onVolver }) {
 
   const startDrawing = (e) => {
     e.preventDefault()
-    const canvas = canvasRef.current
-    const ctx = canvas.getContext('2d')
-    const { x, y } = getCoordinates(e, canvas)
-    
+    const { x, y } = getCoordinates(e, canvasRef.current)
     setIsDrawing(true)
-    lastPosRef.current = { x, y } // Guardamos dónde empezó el toque
-    
-    ctx.globalCompositeOperation = 'source-atop'
-    ctx.strokeStyle = colorTrazo
-    ctx.lineWidth = brushSizeRef.current
-    ctx.lineCap = 'round'
-    ctx.lineJoin = 'round'
-    
-    ctx.beginPath()
-    ctx.moveTo(x, y)
+    lastPosRef.current = { x, y }
   }
 
   const draw = (e) => {
@@ -156,60 +148,76 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     const hitCtx = hitCanvasRef.current.getContext('2d')
     const { x, y } = getCoordinates(e, canvas)
     
-    // Siempre dibujamos la línea para que no se rompa el trazo, aunque salga invisible
-    ctx.globalCompositeOperation = 'source-atop'
-    ctx.lineTo(x, y)
-    ctx.stroke()
-
-    // Calculamos si el dedo se ha movido al menos 4 píxeles (Evita sumar puntos a lo loco)
     const dx = x - lastPosRef.current.x
     const dy = y - lastPosRef.current.y
     const distancia = Math.sqrt(dx * dx + dy * dy)
 
-    if (distancia >= 4) {
-      const px = Math.floor(x)
-      const py = Math.floor(y)
+    if (distancia >= 3) { // Solo evaluamos si hay movimiento real
+      const px = Math.min(Math.max(Math.floor(x), 0), canvas.width - 1)
+      const py = Math.min(Math.max(Math.floor(y), 0), canvas.height - 1)
       
-      let isInside = false
-      // Asegurarnos de que no leemos píxeles fuera de la pantalla (evita cuelgues)
-      if (px >= 0 && px < canvas.width && py >= 0 && py < canvas.height) {
-        const pixelData = hitCtx.getImageData(px, py, 1, 1).data
-        isInside = pixelData[3] > 0 // Si no es transparente, está dentro
-      }
+      const pixel = hitCtx.getImageData(px, py, 1, 1).data
+      const g = pixel[1] // Canal Verde
+      const b = pixel[2] // Canal Azul
+      const a = pixel[3] // Transparencia
 
-      if (isInside) {
-        updateScore(2) // +2 puntos por avanzar por buen camino
+      const isUnpainted = (g > 150 && b < 100) // Zona verde pura (No pintada)
+      const isPainted = (b > 150)              // Zona azul (Ya pintada por el niño)
+      const isOutside = (a < 100)              // Zona vacía (Fuera de la letra)
 
-        // Chispas blancas (Acierto)
-        if (Math.random() > 0.6) {
+      // 1. DIBUJAMOS EL TRAZO VISUAL SIEMPRE (Para que no se corte la línea)
+      ctx.globalCompositeOperation = 'source-atop'
+      ctx.beginPath()
+      ctx.moveTo(lastPosRef.current.x, lastPosRef.current.y)
+      ctx.lineTo(x, y)
+      ctx.strokeStyle = colorTrazo
+      ctx.lineWidth = brushSizeRef.current
+      ctx.lineCap = 'round'
+      ctx.lineJoin = 'round'
+      ctx.shadowColor = colorTrazo // Efecto Glow en la pintura
+      ctx.shadowBlur = 8
+      ctx.stroke()
+      ctx.shadowBlur = 0 // Reset
+
+      if (isUnpainted) {
+        updateScore(3) // +3 puntos por descubrir zona nueva
+        
+        // MARCAR ZONA COMO PINTADA (Azul) EN EL LIENZO INVISIBLE
+        hitCtx.globalCompositeOperation = 'source-over'
+        hitCtx.beginPath()
+        hitCtx.moveTo(lastPosRef.current.x, lastPosRef.current.y)
+        hitCtx.lineTo(x, y)
+        hitCtx.strokeStyle = '#0000FF' // Pure Blue
+        hitCtx.lineWidth = brushSizeRef.current
+        hitCtx.lineCap = 'round'
+        hitCtx.lineJoin = 'round'
+        hitCtx.stroke()
+
+        // CHISPAS MÁGICAS (Estrellas) AL ACERTAR
+        if (Math.random() > 0.4) {
           ctx.globalCompositeOperation = 'source-over'
           ctx.beginPath()
-          ctx.arc(x + (Math.random() - 0.5) * brushSizeRef.current, y + (Math.random() - 0.5) * brushSizeRef.current, Math.random() * 3 + 2, 0, Math.PI * 2)
+          ctx.arc(x + (Math.random() - 0.5) * brushSizeRef.current, y + (Math.random() - 0.5) * brushSizeRef.current, Math.random() * 4 + 2, 0, Math.PI * 2)
           ctx.fillStyle = '#FFFFFF'
-          ctx.shadowBlur = 8
-          ctx.shadowColor = colorTrazo
+          ctx.shadowBlur = 12
+          ctx.shadowColor = '#FFFFFF'
           ctx.fill()
-          ctx.shadowBlur = 0 
+          ctx.shadowBlur = 0
         }
-      } else {
+      } else if (isOutside) {
         updateScore(-2) // -2 puntos por salirse
-
-        // Chispas rojas (Fallo)
+        
+        // CHISPAS DE ERROR (Rojas)
         if (Math.random() > 0.3) {
           ctx.globalCompositeOperation = 'source-over'
           ctx.beginPath()
-          ctx.arc(x + (Math.random() - 0.5) * 20, y + (Math.random() - 0.5) * 20, Math.random() * 4 + 2, 0, Math.PI * 2)
+          ctx.arc(x + (Math.random() - 0.5) * (brushSizeRef.current * 1.2), y + (Math.random() - 0.5) * (brushSizeRef.current * 1.2), Math.random() * 5 + 2, 0, Math.PI * 2)
           ctx.fillStyle = '#FF4B4B'
           ctx.fill()
         }
       }
-      
-      // Reconectar el pincel para el siguiente fotograma
-      ctx.globalCompositeOperation = 'source-atop'
-      ctx.beginPath()
-      ctx.moveTo(x, y)
-      
-      // Actualizamos la última posición
+      // Si "isPainted" es true, simplemente no hace nada (ni suma ni resta), permitiendo repasar.
+
       lastPosRef.current = { x, y }
     }
   }
@@ -228,7 +236,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
   return (
     <div style={{
       minHeight: '100vh', width: '100vw',
-      backgroundImage: "url(" + fondoImg + ")",
+      backgroundImage: `url(${fondoImg})`,
       backgroundSize: 'cover', backgroundPosition: 'center',
       fontFamily: '"Fredoka", sans-serif',
       position: 'absolute', top: 0, left: 0, zIndex: 10,
@@ -242,13 +250,13 @@ export default function JuegoTrazo({ perfil, onVolver }) {
 
       {/* MARCADOR DE PUNTOS SUPERIOR CENTRAL */}
       <div style={{
-        position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)',
-        backgroundColor: 'rgba(255, 255, 255, 0.95)', padding: '10px 25px',
-        borderRadius: '25px', border: '4px solid white',
-        boxShadow: '0 10px 25px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center',
-        gap: '10px', zIndex: 20, fontSize: '28px', fontWeight: '900', pointerEvents: 'none'
+        position: 'absolute', top: '25px', left: '50%', transform: 'translateX(-50%)',
+        backgroundColor: 'rgba(255, 255, 255, 0.95)', padding: '12px 30px',
+        borderRadius: '30px', border: '4px solid white',
+        boxShadow: '0 12px 30px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center',
+        gap: '12px', zIndex: 20, fontSize: '32px', fontWeight: '900', pointerEvents: 'none'
       }}>
-        ⭐ <span id="marcador-puntos" style={{ color: '#FFD166', transition: 'all 0.15s ease', textShadow: '0 4px 0 #CCAC00', minWidth: '70px', textAlign: 'center', display: 'inline-block' }}>0</span>
+        ⭐ <span id="marcador-puntos" style={{ color: '#FFD166', transition: 'all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1)', textShadow: '0 4px 0 #CCAC00', minWidth: '80px', textAlign: 'center', display: 'inline-block' }}>0</span>
       </div>
 
       {/* LIENZO DE DIBUJO */}
@@ -260,96 +268,94 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', cursor: 'crosshair', touchAction: 'none', zIndex: 1 }}
       />
 
-      {/* CABECERA */}
+      {/* CABECERA (Controles Laterales) */}
       <div style={{ 
-        position: 'absolute', top: '20px', left: '20px', right: '20px', 
+        position: 'absolute', top: '25px', left: '20px', right: '20px', 
         display: 'flex', justifyContent: 'space-between', zIndex: 10, pointerEvents: 'none' 
       }}>
         <button onClick={onVolver} style={{
-          width: '50px', height: '50px', borderRadius: '16px',
+          width: '55px', height: '55px', borderRadius: '18px',
           backgroundColor: '#FFFFFF', color: '#FF5E62', border: 'none', 
-          fontSize: '22px', cursor: 'pointer', pointerEvents: 'auto',
+          fontSize: '24px', cursor: 'pointer', pointerEvents: 'auto',
           boxShadow: '0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)',
           display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>❮</button>
 
         <button onClick={inicializarCanvas} style={{
-          height: '50px', padding: '0 20px', borderRadius: '16px',
+          height: '55px', padding: '0 20px', borderRadius: '18px',
           backgroundColor: '#FFFFFF', color: '#333', border: 'none', 
-          fontSize: '18px', fontWeight: '900', cursor: 'pointer', pointerEvents: 'auto',
+          fontSize: '22px', fontWeight: '900', cursor: 'pointer', pointerEvents: 'auto',
           boxShadow: '0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)',
-          display: 'flex', alignItems: 'center', gap: '8px'
+          display: 'flex', alignItems: 'center'
         }}>🧹</button>
       </div>
 
-      {/* DOCK INFERIOR */}
+      {/* DOCK INFERIOR (Colores y Menú) */}
       <div style={{
-        position: 'absolute', bottom: '25px', left: '50%', transform: 'translateX(-50%)',
-        backgroundColor: 'rgba(255, 255, 255, 0.9)', padding: '12px 15px',
-        borderRadius: '25px', backdropFilter: 'blur(20px)', border: '4px solid white',
-        boxShadow: '0 15px 30px rgba(0,0,0,0.2)', display: 'flex', flexWrap: 'wrap',
-        justifyContent: 'center', alignItems: 'center', gap: '12px', zIndex: 10,
-        width: '90%', maxWidth: '450px' 
+        position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)',
+        backgroundColor: 'rgba(255, 255, 255, 0.9)', padding: '15px 20px',
+        borderRadius: '35px', backdropFilter: 'blur(20px)', border: '4px solid white',
+        boxShadow: '0 15px 35px rgba(0,0,0,0.2)', display: 'flex', flexWrap: 'wrap',
+        justifyContent: 'center', alignItems: 'center', gap: '15px', zIndex: 10,
+        width: '90%', maxWidth: '480px' 
       }}>
-        
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
           {colores.map(c => (
             <div key={c.id} onClick={() => setColorTrazo(c.id)} style={{
-              width: '38px', height: '38px', borderRadius: '50%', backgroundColor: c.id, 
+              width: '42px', height: '42px', borderRadius: '50%', backgroundColor: c.id, 
               cursor: 'pointer', border: colorTrazo === c.id ? '4px solid white' : '3px solid rgba(255,255,255,0.8)',
-              boxShadow: colorTrazo === c.id ? "0 0 15px " + c.id : "0 4px 0 " + c.shadow,
-              transform: colorTrazo === c.id ? 'translateY(-3px) scale(1.1)' : 'scale(1)',
+              boxShadow: colorTrazo === c.id ? `0 0 18px ${c.id}` : `0 4px 0 ${c.shadow}`,
+              transform: colorTrazo === c.id ? 'translateY(-4px) scale(1.15)' : 'scale(1)',
               transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)'
             }} />
           ))}
         </div>
-
         <button onClick={() => setMostrarMenu(true)} style={{
           backgroundColor: '#FFD166', color: '#7A5C00', border: 'none',
-          padding: '10px 18px', borderRadius: '20px', fontSize: '18px',
-          fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
+          padding: '12px 22px', borderRadius: '25px', fontSize: '20px',
+          fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
           boxShadow: '0 5px 0 #CCAC00'
         }}>✨ A-B-C</button>
       </div>
 
-      {/* MENÚ MODAL */}
+      {/* MENÚ MODAL (Selección de letras) */}
       {mostrarMenu && (
         <div className="anim-pop" style={{
           position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-          backgroundColor: 'rgba(255, 255, 255, 0.6)', backdropFilter: 'blur(15px)',
+          backgroundColor: 'rgba(255, 255, 255, 0.6)', backdropFilter: 'blur(20px)',
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '20px', boxSizing: 'border-box'
         }}>
           <div style={{
-            backgroundColor: '#FFFFFF', padding: '30px 20px', borderRadius: '35px',
-            boxShadow: '0 20px 40px rgba(0,0,0,0.2)', border: '5px solid #F8FAFC',
-            width: '100%', maxWidth: '450px', display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative', boxSizing: 'border-box'
+            backgroundColor: '#FFFFFF', padding: '35px 25px', borderRadius: '40px',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.25)', border: '6px solid #F8FAFC',
+            width: '100%', maxWidth: '480px', display: 'flex', flexDirection: 'column', gap: '25px', position: 'relative', boxSizing: 'border-box'
           }}>
             <button onClick={() => setMostrarMenu(false)} style={{
-              position: 'absolute', top: '-15px', right: '-15px', width: '45px', height: '45px',
+              position: 'absolute', top: '-15px', right: '-15px', width: '50px', height: '50px',
               borderRadius: '50%', backgroundColor: '#FF6B6B', color: 'white', border: 'none',
-              fontSize: '20px', fontWeight: '900', cursor: 'pointer', boxShadow: '0 5px 0 #C0392B'
+              fontSize: '22px', fontWeight: '900', cursor: 'pointer', boxShadow: '0 6px 0 #C0392B'
             }}>X</button>
-            <h2 style={{ textAlign: 'center', color: '#333', fontSize: '1.6rem', margin: 0 }}>¿Qué trazamos ahora?</h2>
+            <h2 style={{ textAlign: 'center', color: '#333', fontSize: '1.8rem', margin: 0 }}>¿Qué trazamos ahora?</h2>
             
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
               {palabrasPreset.map(p => (
                 <button key={p} onClick={() => { setTextoActual(p); setMostrarMenu(false); }} style={{ 
-                  backgroundColor: '#F1F5F9', border: 'none', padding: '12px 20px', borderRadius: '18px',
-                  fontSize: '1.2rem', fontWeight: '900', color: '#475569', cursor: 'pointer',
-                  boxShadow: '0 5px 0 #CBD5E1'
+                  backgroundColor: '#F1F5F9', border: 'none', padding: '14px 22px', borderRadius: '20px',
+                  fontSize: '1.3rem', fontWeight: '900', color: '#475569', cursor: 'pointer',
+                  boxShadow: '0 5px 0 #CBD5E1', transition: 'transform 0.1s'
                 }}>{p}</button>
               ))}
             </div>
             
-            <form onSubmit={guardarPersonalizada} style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '10px' }}>
+            <form onSubmit={guardarPersonalizada} style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '15px' }}>
               <input type="text" placeholder="Tu palabra..." value={inputPersonalizado} onChange={(e) => setInputPersonalizado(e.target.value)} maxLength={7} style={{
-                padding: '12px 15px', borderRadius: '16px', border: '3px solid #E2E8F0',
-                fontFamily: 'Fredoka', fontSize: '1.2rem', outline: 'none', width: '140px',
+                padding: '14px 18px', borderRadius: '18px', border: '4px solid #E2E8F0',
+                fontFamily: 'Fredoka', fontSize: '1.3rem', outline: 'none', width: '150px',
                 textAlign: 'center', color: '#333', textTransform: 'uppercase'
               }} />
               <button type="submit" style={{
-                backgroundColor: '#43e97b', color: 'white', border: 'none', padding: '0 20px',
-                borderRadius: '16px', fontSize: '1.2rem', fontWeight: '900', cursor: 'pointer', boxShadow: '0 5px 0 #27ae60'
+                backgroundColor: '#43e97b', color: 'white', border: 'none', padding: '0 25px',
+                borderRadius: '18px', fontSize: '1.3rem', fontWeight: '900', cursor: 'pointer', boxShadow: '0 6px 0 #27ae60'
               }}>¡Vale!</button>
             </form>
           </div>
