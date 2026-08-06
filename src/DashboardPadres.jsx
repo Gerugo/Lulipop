@@ -6,24 +6,28 @@ export default function DashboardPadres({ perfil, onVolver }) {
   const [progreso, setProgreso] = useState([])
   const [loading, setLoading] = useState(true)
 
+  // 1. SOLUCIÓN AL ERROR DE GITHUB: El useEffect ahora es estructuralmente perfecto 
+  // y tiene perfil?.id para evitar que la app explote si el perfil tarda en cargar.
   useEffect(() => {
-    cargarProgreso()
-  }, [])
+    const cargarProgreso = async () => {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('progreso_actividades')
+        .select('*')
+        .eq('perfil_id', perfil?.id)
 
-  const cargarProgreso = async () => {
-    setLoading(true)
-    const { data, error } = await supabase
-      .from('progreso_actividades')
-      .select('*')
-      .eq('perfil_id', perfil.id)
-
-    if (error) {
-      console.error("Error cargando progreso:", error)
-    } else {
-      setProgreso(data || [])
+      if (error) {
+        console.error("Error cargando progreso:", error)
+      } else {
+        setProgreso(data || [])
+      }
+      setLoading(false)
     }
-    setLoading(false)
-  }
+
+    if (perfil?.id) {
+      cargarProgreso()
+    }
+  }, [perfil?.id])
 
   // Cálculos de Gamificación (Niveles)
   const totalEstrellas = progreso.reduce((acc, curr) => acc + (curr.estrellas || 3), 0)
@@ -32,13 +36,13 @@ export default function DashboardPadres({ perfil, onVolver }) {
   const estrellasNivelActual = totalEstrellas % ESTRELLAS_POR_NIVEL
   const porcentajeProgreso = (estrellasNivelActual / ESTRELLAS_POR_NIVEL) * 100
 
-  // Mapeo de nombres de actividades con iconos premium
+  // Mapeo de nombres de actividades
   const nombresActividades = {
-    'juego_numeros': { nombre: 'Contando Números', icono: '🔢', color: '#4facfe', bg: '#e0f2fe' },
-    'puzzles_formas': { nombre: 'Puzzles de Formas', icono: '🧩', color: '#43e97b', bg: '#dcfce7' },
-    'arte_creativo': { nombre: 'Taller de Arte', icono: '🎨', color: '#a18cd1', bg: '#f3e8ff' },
-    'letras_vocabulario': { nombre: 'Vocabulario', icono: '🔤', color: '#FFD166', bg: '#fef3c7' },
-    'trazo_letras': { nombre: 'Trazo Guiado', icono: '✍️', color: '#FF5E62', bg: '#ffe4e6' }
+    'juego_numeros': { nombre: 'Contando Números', icono: '🔢', bg: '#e0f2fe' },
+    'puzzles_formas': { nombre: 'Puzzles de Formas', icono: '🧩', bg: '#dcfce7' },
+    'arte_creativo': { nombre: 'Taller de Arte', icono: '🎨', bg: '#f3e8ff' },
+    'letras_vocabulario': { nombre: 'Vocabulario', icono: '🔤', bg: '#fef3c7' },
+    'trazo_letras': { nombre: 'Trazo Guiado', icono: '✍️', bg: '#ffe4e6' }
   }
 
   return (
@@ -60,13 +64,16 @@ export default function DashboardPadres({ perfil, onVolver }) {
         .anim-pop { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 0; }
         @keyframes popIn { 0% { transform: translateY(20px) scale(0.9); opacity: 0; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
         
+        /* SOLUCIÓN: Keyframe faltante que podía dar error en el build */
+        @keyframes rotaEstrella { 100% { transform: rotate(360deg); } }
+        
         .delay-1 { animation-delay: 0.1s; }
         .delay-2 { animation-delay: 0.2s; }
 
         .btn-press { transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
         .btn-press:active { transform: translateY(6px) scale(0.95); box-shadow: 0 2px 0 var(--shadow-color) !important; }
 
-        /* Contenedores estilo Cristal (Glassmorphism) */
+        /* Contenedores estilo Cristal */
         .glass-panel {
           background: rgba(255, 255, 255, 0.85);
           backdrop-filter: blur(15px);
@@ -113,20 +120,18 @@ export default function DashboardPadres({ perfil, onVolver }) {
         <div className="glass-panel anim-pop" style={{ padding: '30px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
             
-            {/* Avatar Grande */}
             <div style={{ 
               fontSize: '70px', background: '#F8FAFC', padding: '15px', 
               borderRadius: '30px', border: '4px solid #E2E8F0',
               boxShadow: 'inset 0 4px 6px rgba(0,0,0,0.05)', display: 'flex', justifyContent: 'center', alignItems: 'center'
             }}>
-              <span style={{ filter: 'drop-shadow(0 5px 5px rgba(0,0,0,0.2))' }}>{perfil.avatar}</span>
+              <span style={{ filter: 'drop-shadow(0 5px 5px rgba(0,0,0,0.2))' }}>{perfil?.avatar || '🧒'}</span>
             </div>
             
-            {/* Info y Barra de Progreso */}
             <div style={{ flex: 1, minWidth: '250px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                  <h3 style={{ margin: '0 0 5px 0', color: '#334155', fontSize: '2rem', fontWeight: '900' }}>{perfil.nombre}</h3>
+                  <h3 style={{ margin: '0 0 5px 0', color: '#334155', fontSize: '2rem', fontWeight: '900' }}>{perfil?.nombre || 'Explorador'}</h3>
                   <p style={{ margin: '0 0 15px 0', color: '#64748b', fontSize: '1.1rem', fontWeight: '600' }}>
                     Explorador Nivel {nivelActual} 🚀
                   </p>
@@ -141,7 +146,6 @@ export default function DashboardPadres({ perfil, onVolver }) {
                 </div>
               </div>
 
-              {/* Barra de Progreso hacia el siguiente nivel */}
               <div style={{ width: '100%' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                   <span style={{ color: '#94A3B8', fontSize: '0.95rem', fontWeight: '600' }}>Progreso Nivel {nivelActual}</span>
@@ -163,7 +167,7 @@ export default function DashboardPadres({ perfil, onVolver }) {
           </div>
         </div>
 
-        {/* TARJETA 2: Historial de Actividades (Timeline) */}
+        {/* TARJETA 2: Historial de Actividades */}
         <div className="glass-panel anim-pop delay-1" style={{ padding: '30px' }}>
           <h4 style={{ color: '#334155', fontSize: '1.5rem', marginTop: 0, marginBottom: '25px', fontWeight: '900' }}>
             Últimas Aventuras Completadas 🗺️
@@ -177,13 +181,12 @@ export default function DashboardPadres({ perfil, onVolver }) {
             <div style={{ textAlign: 'center', padding: '30px 0', backgroundColor: '#F8FAFC', borderRadius: '25px', border: '3px dashed #CBD5E1' }}>
               <span style={{ fontSize: '50px', filter: 'grayscale(1)', opacity: 0.5 }}>🎯</span>
               <p style={{ color: '#475569', fontSize: '1.2rem', margin: '15px 0 5px 0', fontWeight: '900' }}>¡El lienzo está en blanco!</p>
-              <p style={{ color: '#64748b', fontSize: '1rem', margin: 0, fontWeight: '600' }}>Anima a {perfil.nombre} a jugar para llenarlo de estrellas.</p>
+              <p style={{ color: '#64748b', fontSize: '1rem', margin: 0, fontWeight: '600' }}>Anima a {perfil?.nombre || 'tu peque'} a jugar para llenarlo de estrellas.</p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              {/* Mostramos las actividades más recientes primero invirtiendo el array */}
               {[...progreso].reverse().map((item, index) => {
-                const act = nombresActividades[item.actividad_id] || { nombre: item.actividad_id, icono: '✅', color: '#64748b', bg: '#f1f5f9' }
+                const act = nombresActividades[item.actividad_id] || { nombre: item.actividad_id, icono: '✅', bg: '#f1f5f9' }
                 
                 return (
                   <div key={index} className="anim-pop delay-2" style={{
