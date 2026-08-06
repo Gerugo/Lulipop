@@ -3,6 +3,7 @@ import fondoImg from './fondo-lulipop.png'
 
 export default function JuegoTrazo({ perfil, onVolver }) {
   const [textoActual, setTextoActual] = useState('A')
+  const [indiceLetra, setIndiceLetra] = useState(0) // NUEVO: Va letra por letra dentro de la palabra
   const [colorTrazo, setColorTrazo] = useState('#FF5E62')
   const [mostrarMenu, setMostrarMenu] = useState(false)
   const [inputPersonalizado, setInputPersonalizado] = useState('')
@@ -30,6 +31,9 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     { id: '#a18cd1', shadow: '#6b4c9a' }  // Morado Mágico
   ]
 
+  // Letra actual que toca dibujar
+  const letraActiva = textoActual[indiceLetra] || textoActual[0]
+
   useEffect(() => {
     const handleResize = () => setDimensiones({ w: window.innerWidth, h: window.innerHeight })
     window.addEventListener('resize', handleResize)
@@ -43,7 +47,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     document.fonts.ready.then(() => {
       inicializarCanvas()
     })
-  }, [textoActual, dimensiones])
+  }, [textoActual, indiceLetra, dimensiones])
 
   const inicializarCanvas = () => {
     const canvas = canvasRef.current
@@ -59,10 +63,8 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     hitCtx.clearRect(0, 0, hitCanvas.width, hitCanvas.height)
     
-    const isWord = textoActual.length > 1
-    const maxFontSize = isWord ? (canvas.width * 0.85) / textoActual.length : canvas.height * 0.5
-    const fontSize = Math.min(maxFontSize, 450) 
-    
+    // Al ser letra individual, luce grande y centrada en pantalla
+    const fontSize = Math.min(canvas.height * 0.5, 450) 
     brushSizeRef.current = Math.max(fontSize * 0.12, 18)
 
     const fontStyle = "900 " + fontSize + "px 'Fredoka', sans-serif"
@@ -75,11 +77,12 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     hitCtx.lineJoin = 'round'
     hitCtx.globalCompositeOperation = 'source-over'
     
+    // Mapa verde invisible de la letra actual
     hitCtx.fillStyle = '#00FF00'
-    hitCtx.fillText(textoActual, centerX, centerY)
+    hitCtx.fillText(letraActiva, centerX, centerY)
     hitCtx.lineWidth = brushSizeRef.current * 0.85 
     hitCtx.strokeStyle = '#00FF00'
-    hitCtx.strokeText(textoActual, centerX, centerY)
+    hitCtx.strokeText(letraActiva, centerX, centerY)
 
     const imgData = hitCtx.getImageData(0, 0, hitCanvas.width, hitCanvas.height).data
     let totalG = 0
@@ -94,14 +97,14 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     ctx.globalCompositeOperation = 'source-over'
     
     ctx.fillStyle = 'rgba(255, 255, 255, 0.35)'
-    ctx.fillText(textoActual, centerX, centerY)
+    ctx.fillText(letraActiva, centerX, centerY)
     
     ctx.lineWidth = Math.max(fontSize * 0.02, 6)
     ctx.strokeStyle = '#FFFFFF'
     ctx.lineJoin = 'round'
     ctx.shadowColor = 'rgba(255, 255, 255, 0.9)'
     ctx.shadowBlur = 15
-    ctx.strokeText(textoActual, centerX, centerY)
+    ctx.strokeText(letraActiva, centerX, centerY)
     ctx.shadowBlur = 0 
   }
 
@@ -218,13 +221,13 @@ export default function JuegoTrazo({ perfil, onVolver }) {
       ctx.stroke()
       ctx.shadowBlur = 0 
 
-      // 2. EL PINCEL FANTASMA GIGANTE (Esto permite que el niño simplemente "siga el camino" sin tener que pintar toda la superficie)
+      // 2. PINCEL FANTASMA PARA LA LETRA ACTUAL
       hitCtx.globalCompositeOperation = 'source-atop'
       hitCtx.beginPath()
       hitCtx.moveTo(lastPosRef.current.x, lastPosRef.current.y)
       hitCtx.lineTo(x, y)
       hitCtx.strokeStyle = '#0000FF' 
-      hitCtx.lineWidth = brushSizeRef.current * 2.5 // <--- Truco: El pincel invisible es enorme. Se come todo el recorrido a su paso.
+      hitCtx.lineWidth = brushSizeRef.current * 2.5 
       hitCtx.lineCap = 'round'
       hitCtx.lineJoin = 'round'
       hitCtx.stroke()
@@ -260,10 +263,10 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     }
     
     if (nivelSuperado) return
-    verificarProgreso() 
+    verificarProgresoLetra() 
   }
 
-  const verificarProgreso = () => {
+  const verificarProgresoLetra = () => {
     if (totalGreenRef.current === 0) return
 
     const hitCtx = hitCanvasRef.current.getContext('2d')
@@ -283,13 +286,24 @@ export default function JuegoTrazo({ perfil, onVolver }) {
 
     const completado = 1 - (currentGreen / totalGreenRef.current)
     
-    // AHORA EXIGIMOS UN 40% (Al combinarse con el pincel fantasma gigante, garantiza que con solo seguir la ruta natural de la palabra la victoria salta al instante)
-    if (completado >= 0.40) { 
-      lanzarVictoria()
+    // Al superar el 70% de esta letra individual
+    if (completado >= 0.70) { 
+      avanzarSiguientePaso()
     }
   }
 
-  const lanzarVictoria = () => {
+  const avanzarSiguientePaso = () => {
+    // Si quedan más letras en la palabra actual
+    if (indiceLetra < textoActual.length - 1) {
+      updateScore(20) // Mini premio por letra completada
+      setIndiceLetra(prev => prev + 1) // Pasa a la siguiente letra
+    } else {
+      // Si era la última letra, ¡victoria total de la palabra!
+      lanzarVictoriaFinal()
+    }
+  }
+
+  const lanzarVictoriaFinal = () => {
     setNivelSuperado(true)
     updateScore(50) 
 
@@ -302,6 +316,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
       }
       
       setTextoActual(palabrasPreset[nextIndex])
+      setIndiceLetra(0) // Reinicia al principio de la nueva palabra
       setNivelSuperado(false)
     }, 2200) 
   }
@@ -310,6 +325,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     e.preventDefault()
     if (inputPersonalizado.trim() !== '') {
       setTextoActual(inputPersonalizado.toUpperCase().substring(0, 7))
+      setIndiceLetra(0)
       setMostrarMenu(false)
       setInputPersonalizado('')
     }
@@ -340,7 +356,30 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         @keyframes rotaEstrella { 100% { transform: rotate(360deg); } }
       `}</style>
 
-      {/* MASCOTA FLOTANTE (CON FÍSICA DE MURO INVISIBLE) */}
+      {/* INDICADOR VISUAL DE LETRAS (SI ES UNA PALABRA O NUMERO LARGO) */}
+      {textoActual.length > 1 && (
+        <div style={{
+          position: 'absolute', top: '95px', left: '50%', transform: 'translateX(-50%)',
+          display: 'flex', gap: '8px', zIndex: 20, pointerEvents: 'none'
+        }}>
+          {textoActual.split('').map((letra, idx) => (
+            <div key={idx} style={{
+              width: '40px', height: '40px', borderRadius: '12px',
+              backgroundColor: idx < indiceLetra ? '#43e97b' : idx === indiceLetra ? '#FFD166' : 'rgba(255,255,255,0.85)',
+              color: idx === indiceLetra ? '#7A5C00' : idx < indiceLetra ? 'white' : '#64748b',
+              display: 'flex', justifyContent: 'center', alignItems: 'center',
+              fontSize: '22px', fontWeight: '900', border: '3px solid white',
+              boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
+              transform: idx === indiceLetra ? 'scale(1.15)' : 'scale(1)',
+              transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
+            }}>
+              {letra}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* MASCOTA FLOTANTE */}
       <div 
         ref={mascotaRef}
         style={{
@@ -363,7 +402,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         />
       </div>
 
-      {/* PANTALLA DE VICTORIA */}
+      {/* PANTALLA DE VICTORIA FINAL */}
       {nivelSuperado && (
         <div style={{
           position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
@@ -474,7 +513,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
             
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
               {palabrasPreset.map(p => (
-                <button key={p} onClick={() => { setTextoActual(p); setMostrarMenu(false); }} style={{ 
+                <button key={p} onClick={() => { setTextoActual(p); setIndiceLetra(0); setMostrarMenu(false); }} style={{ 
                   backgroundColor: '#F1F5F9', border: 'none', padding: '14px 22px', borderRadius: '20px',
                   fontSize: '1.3rem', fontWeight: '900', color: '#475569', cursor: 'pointer',
                   boxShadow: '0 5px 0 #CBD5E1', transition: 'transform 0.1s'
