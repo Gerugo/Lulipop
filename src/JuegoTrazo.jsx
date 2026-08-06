@@ -8,9 +8,11 @@ export default function JuegoTrazo({ perfil, onVolver }) {
   const [inputPersonalizado, setInputPersonalizado] = useState('')
   
   const canvasRef = useRef(null)
-  const hitCanvasRef = useRef(null) // Lienzo invisible para detectar si te sales
-  const scoreRef = useRef(0) // Usamos ref para el score para no ralentizar el dibujo con renders de React
+  const hitCanvasRef = useRef(null)
+  const scoreRef = useRef(0)
   const brushSizeRef = useRef(30)
+  const lastPosRef = useRef({ x: 0, y: 0 }) // Para medir la distancia del dedo
+  const scoreTimeoutRef = useRef(null) // Para la animación del marcador
   
   const [isDrawing, setIsDrawing] = useState(false)
   const [dimensiones, setDimensiones] = useState({ w: window.innerWidth, h: window.innerHeight })
@@ -27,7 +29,6 @@ export default function JuegoTrazo({ perfil, onVolver }) {
   useEffect(() => {
     const handleResize = () => setDimensiones({ w: window.innerWidth, h: window.innerHeight })
     window.addEventListener('resize', handleResize)
-    // Inicializar lienzo oculto
     if (!hitCanvasRef.current) {
       hitCanvasRef.current = document.createElement('canvas')
     }
@@ -46,9 +47,8 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     if (!canvas || !hitCanvas) return
     
     const ctx = canvas.getContext('2d')
-    const hitCtx = hitCanvas.getContext('2d', { willReadFrequently: true }) // Optimizado para leer píxeles
+    const hitCtx = hitCanvas.getContext('2d', { willReadFrequently: true })
     
-    // Sincronizar tamaños
     hitCanvas.width = canvas.width
     hitCanvas.height = canvas.height
     
@@ -59,7 +59,6 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     const maxFontSize = isWord ? (canvas.width * 0.85) / textoActual.length : canvas.height * 0.5
     const fontSize = Math.min(maxFontSize, 450) 
     
-    // Pincel dinámico al 12% del tamaño
     brushSizeRef.current = Math.max(fontSize * 0.12, 15)
 
     const fontStyle = "900 " + fontSize + "px 'Fredoka', sans-serif"
@@ -74,17 +73,16 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     const centerX = canvas.width / 2
     const centerY = canvas.height / 2 - 20 
 
-    // --- DIBUJAR LIENZO INVISIBLE (MAPA DE CHOQUE) ---
-    // Dibujamos la letra en negro puro para saber dónde puede pisar el niño.
-    // Le damos un "borde de tolerancia" para que no sea excesivamente difícil.
+    // --- LIENZO INVISIBLE (ZONA VÁLIDA ESTRICTA) ---
     hitCtx.fillStyle = '#000000'
     hitCtx.fillText(textoActual, centerX, centerY)
-    hitCtx.lineWidth = brushSizeRef.current * 1.5 // Margen de error o tolerancia
+    // Tolerancia mucho más estricta (solo el tamaño del pincel)
+    hitCtx.lineWidth = brushSizeRef.current * 0.9 
     hitCtx.lineJoin = 'round'
     hitCtx.strokeStyle = '#000000'
     hitCtx.strokeText(textoActual, centerX, centerY)
 
-    // --- DIBUJAR LIENZO VISIBLE ---
+    // --- LIENZO VISIBLE ---
     ctx.globalCompositeOperation = 'source-over'
     ctx.fillStyle = 'rgba(255, 255, 255, 0.4)'
     ctx.fillText(textoActual, centerX, centerY)
@@ -95,15 +93,29 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     ctx.strokeText(textoActual, centerX, centerY)
   }
 
-  // Actualizar el DOM directamente para no congelar el juego con React renders
+  // Animación manual para no saturar el rendimiento del navegador
   const updateScore = (points) => {
-    scoreRef.current = Math.max(0, scoreRef.current + points) // El mínimo es 0
+    scoreRef.current = Math.max(0, scoreRef.current + points)
     const scoreEl = document.getElementById('marcador-puntos')
     if (scoreEl) {
       scoreEl.innerText = scoreRef.current
-      scoreEl.className = points > 0 ? 'score-up' : 'score-down'
-      // Reset de animación
-      void scoreEl.offsetWidth
+      
+      if (points < 0) {
+        scoreEl.style.color = '#e74c3c'
+        scoreEl.style.textShadow = '0 4px 0 #c0392b'
+        scoreEl.style.transform = 'scale(0.85)'
+      } else {
+        scoreEl.style.color = '#2ecc71'
+        scoreEl.style.textShadow = '0 4px 0 #27ae60'
+        scoreEl.style.transform = 'scale(1.15)'
+      }
+
+      clearTimeout(scoreTimeoutRef.current)
+      scoreTimeoutRef.current = setTimeout(() => {
+        scoreEl.style.color = '#FFD166'
+        scoreEl.style.textShadow = '0 4px 0 #CCAC00'
+        scoreEl.style.transform = 'scale(1)'
+      }, 250)
     }
   }
 
@@ -124,14 +136,16 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     const { x, y } = getCoordinates(e, canvas)
     
     setIsDrawing(true)
-    ctx.beginPath()
-    ctx.moveTo(x, y)
+    lastPosRef.current = { x, y } // Guardamos dónde empezó el toque
     
     ctx.globalCompositeOperation = 'source-atop'
     ctx.strokeStyle = colorTrazo
     ctx.lineWidth = brushSizeRef.current
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
+    
+    ctx.beginPath()
+    ctx.moveTo(x, y)
   }
 
   const draw = (e) => {
@@ -142,53 +156,61 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     const hitCtx = hitCanvasRef.current.getContext('2d')
     const { x, y } = getCoordinates(e, canvas)
     
-    // COMPROBAR SI ESTÁ DENTRO O FUERA LEYENDO EL PÍXEL INVISIBLE
-    const pixelAlpha = hitCtx.getImageData(x, y, 1, 1).data[3]
-    const isInside = pixelAlpha > 0 // Si el pixel no es transparente, está dentro
+    // Siempre dibujamos la línea para que no se rompa el trazo, aunque salga invisible
+    ctx.globalCompositeOperation = 'source-atop'
+    ctx.lineTo(x, y)
+    ctx.stroke()
 
-    if (isInside) {
-      // ESTÁ DENTRO: ¡Sumamos puntos!
-      updateScore(10)
+    // Calculamos si el dedo se ha movido al menos 4 píxeles (Evita sumar puntos a lo loco)
+    const dx = x - lastPosRef.current.x
+    const dy = y - lastPosRef.current.y
+    const distancia = Math.sqrt(dx * dx + dy * dy)
+
+    if (distancia >= 4) {
+      const px = Math.floor(x)
+      const py = Math.floor(y)
       
+      let isInside = false
+      // Asegurarnos de que no leemos píxeles fuera de la pantalla (evita cuelgues)
+      if (px >= 0 && px < canvas.width && py >= 0 && py < canvas.height) {
+        const pixelData = hitCtx.getImageData(px, py, 1, 1).data
+        isInside = pixelData[3] > 0 // Si no es transparente, está dentro
+      }
+
+      if (isInside) {
+        updateScore(2) // +2 puntos por avanzar por buen camino
+
+        // Chispas blancas (Acierto)
+        if (Math.random() > 0.6) {
+          ctx.globalCompositeOperation = 'source-over'
+          ctx.beginPath()
+          ctx.arc(x + (Math.random() - 0.5) * brushSizeRef.current, y + (Math.random() - 0.5) * brushSizeRef.current, Math.random() * 3 + 2, 0, Math.PI * 2)
+          ctx.fillStyle = '#FFFFFF'
+          ctx.shadowBlur = 8
+          ctx.shadowColor = colorTrazo
+          ctx.fill()
+          ctx.shadowBlur = 0 
+        }
+      } else {
+        updateScore(-2) // -2 puntos por salirse
+
+        // Chispas rojas (Fallo)
+        if (Math.random() > 0.3) {
+          ctx.globalCompositeOperation = 'source-over'
+          ctx.beginPath()
+          ctx.arc(x + (Math.random() - 0.5) * 20, y + (Math.random() - 0.5) * 20, Math.random() * 4 + 2, 0, Math.PI * 2)
+          ctx.fillStyle = '#FF4B4B'
+          ctx.fill()
+        }
+      }
+      
+      // Reconectar el pincel para el siguiente fotograma
       ctx.globalCompositeOperation = 'source-atop'
-      ctx.lineTo(x, y)
-      ctx.stroke()
-
-      // Chispas mágicas de premio
-      if (Math.random() > 0.6) {
-        ctx.globalCompositeOperation = 'source-over'
-        ctx.beginPath()
-        const offsetX = x + (Math.random() - 0.5) * brushSizeRef.current
-        const offsetY = y + (Math.random() - 0.5) * brushSizeRef.current
-        ctx.arc(offsetX, offsetY, Math.random() * 6 + 2, 0, Math.PI * 2)
-        ctx.fillStyle = '#FFFFFF'
-        ctx.shadowBlur = 10
-        ctx.shadowColor = colorTrazo
-        ctx.fill()
-        ctx.shadowBlur = 0 
-        
-        ctx.globalCompositeOperation = 'source-atop'
-        ctx.beginPath()
-        ctx.moveTo(x, y)
-      }
-    } else {
-      // SE HA SALIDO: Restamos puntos
-      updateScore(-5)
+      ctx.beginPath()
+      ctx.moveTo(x, y)
       
-      // Mostrar cruces/puntos rojos de error por salirse de la línea
-      if (Math.random() > 0.4) {
-        ctx.globalCompositeOperation = 'source-over' // Esto permite dibujar fuera de la letra
-        ctx.beginPath()
-        const offsetX = x + (Math.random() - 0.5) * (brushSizeRef.current * 1.5)
-        const offsetY = y + (Math.random() - 0.5) * (brushSizeRef.current * 1.5)
-        ctx.arc(offsetX, offsetY, Math.random() * 4 + 2, 0, Math.PI * 2)
-        ctx.fillStyle = '#FF4B4B' // Rojo error
-        ctx.fill()
-        
-        ctx.globalCompositeOperation = 'source-atop'
-        ctx.beginPath()
-        ctx.moveTo(x, y) // Recuperar la posición para no romper la línea principal
-      }
+      // Actualizamos la última posición
+      lastPosRef.current = { x, y }
     }
   }
 
@@ -216,21 +238,6 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;900&display=swap');
         .anim-pop { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-        
-        /* Animaciones del marcador de puntos */
-        .score-up { animation: popGreen 0.3s ease; color: #27ae60; text-shadow: 0 4px 0 #1e8449; }
-        .score-down { animation: shakeRed 0.3s ease; color: #e74c3c; text-shadow: 0 4px 0 #c0392b; }
-        
-        @keyframes popGreen {
-          0% { transform: scale(1); }
-          50% { transform: scale(1.3); color: #2ecc71; }
-          100% { transform: scale(1); }
-        }
-        @keyframes shakeRed {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-5px) scale(0.9); }
-          75% { transform: translateX(5px) scale(0.9); }
-        }
       `}</style>
 
       {/* MARCADOR DE PUNTOS SUPERIOR CENTRAL */}
@@ -241,7 +248,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         boxShadow: '0 10px 25px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center',
         gap: '10px', zIndex: 20, fontSize: '28px', fontWeight: '900', pointerEvents: 'none'
       }}>
-        ⭐ <span id="marcador-puntos" style={{ color: '#FFD166', transition: 'color 0.2s', textShadow: '0 4px 0 #CCAC00', minWidth: '70px', textAlign: 'center' }}>0</span>
+        ⭐ <span id="marcador-puntos" style={{ color: '#FFD166', transition: 'all 0.15s ease', textShadow: '0 4px 0 #CCAC00', minWidth: '70px', textAlign: 'center', display: 'inline-block' }}>0</span>
       </div>
 
       {/* LIENZO DE DIBUJO */}
@@ -253,7 +260,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', cursor: 'crosshair', touchAction: 'none', zIndex: 1 }}
       />
 
-      {/* CABECERA (Controles Superiores Responsivos) */}
+      {/* CABECERA */}
       <div style={{ 
         position: 'absolute', top: '20px', left: '20px', right: '20px', 
         display: 'flex', justifyContent: 'space-between', zIndex: 10, pointerEvents: 'none' 
@@ -275,7 +282,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         }}>🧹</button>
       </div>
 
-      {/* DOCK INFERIOR (Responsivo y Adaptable) */}
+      {/* DOCK INFERIOR */}
       <div style={{
         position: 'absolute', bottom: '25px', left: '50%', transform: 'translateX(-50%)',
         backgroundColor: 'rgba(255, 255, 255, 0.9)', padding: '12px 15px',
