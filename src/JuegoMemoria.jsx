@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react'
 import fondoImg from './fondo-lulipop.png'
 
-// Usamos los assets que vi en tu GitHub
-const IMAGENES_CARTAS = [
-  './assets/dino.png',
-  './assets/estrella.png',
-  './assets/gato.png',
-  './assets/globo.png',
-  './assets/manzana.png',
-  './assets/pez.png'
-]
+export default function JuegoMemoria({ perfil, onVolver }) {
+  // Magia de Vite para GitHub Pages: Asegura que la ruta base sea correcta en producción
+  const baseUrl = import.meta.env.BASE_URL
 
-export default function JuegoParejas({ perfil, onVolver }) {
+  // Construimos las rutas usando el baseUrl
+  const IMAGENES_CARTAS = [
+    `${baseUrl}assets/dino.png`,
+    `${baseUrl}assets/estrella.png`,
+    `${baseUrl}assets/gato.png`,
+    `${baseUrl}assets/globo.png`,
+    `${baseUrl}assets/manzana.png`,
+    `${baseUrl}assets/pez.png`
+  ]
+
   const [baraja, setBaraja] = useState([])
   const [cartasVolteadas, setCartasVolteadas] = useState([])
   const [parejasEncontradas, setParejasEncontradas] = useState([])
@@ -19,23 +22,21 @@ export default function JuegoParejas({ perfil, onVolver }) {
   
   const [puntos, setPuntos] = useState(0)
   const [nivelSuperado, setNivelSuperado] = useState(false)
-  const [cartasError, setCartasError] = useState([]) // Para la animación de fallo
+  const [cartasError, setCartasError] = useState([]) 
 
-  // Inicializar el juego
   useEffect(() => {
     iniciarJuego()
   }, [])
 
   const iniciarJuego = () => {
-    // Duplicamos las imágenes para hacer las parejas
     const mazo = [...IMAGENES_CARTAS, ...IMAGENES_CARTAS]
-    // Barajamos (Fisher-Yates)
+    
+    // Barajamos (Algoritmo Fisher-Yates)
     for (let i = mazo.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1))
       ;[mazo[i], mazo[j]] = [mazo[j], mazo[i]]
     }
     
-    // Creamos los objetos de las cartas
     const barajaLista = mazo.map((img, index) => ({
       id: index,
       img: img
@@ -75,7 +76,6 @@ export default function JuegoParejas({ perfil, onVolver }) {
   }
 
   const voltearCarta = (index) => {
-    // Evitar clicks si está bloqueado, si la carta ya está volteada o si ya es una pareja
     if (bloqueado || cartasVolteadas.includes(index) || parejasEncontradas.includes(baraja[index].img)) {
       return
     }
@@ -83,18 +83,15 @@ export default function JuegoParejas({ perfil, onVolver }) {
     const nuevasVolteadas = [...cartasVolteadas, index]
     setCartasVolteadas(nuevasVolteadas)
 
-    // Si ya hemos volteado 2 cartas, comprobamos
     if (nuevasVolteadas.length === 2) {
       setBloqueado(true)
       const carta1 = baraja[nuevasVolteadas[0]]
       const carta2 = baraja[nuevasVolteadas[1]]
 
       if (carta1.img === carta2.img) {
-        // ¡ACIERTO!
         setTimeout(() => {
           setParejasEncontradas(prev => {
             const nuevasParejas = [...prev, carta1.img]
-            // ¿Ha ganado?
             if (nuevasParejas.length === IMAGENES_CARTAS.length) {
               setTimeout(() => {
                 setNivelSuperado(true)
@@ -105,18 +102,17 @@ export default function JuegoParejas({ perfil, onVolver }) {
           })
           setCartasVolteadas([])
           setBloqueado(false)
-          updateScore(15) // +15 puntos por pareja
+          updateScore(15)
         }, 600)
       } else {
-        // ¡FALLO!
-        updateScore(-2) // Pequeña penalización
-        setCartasError([...nuevasVolteadas]) // Activa animación de temblor
+        updateScore(-2) 
+        setCartasError([...nuevasVolteadas]) 
         
         setTimeout(() => {
           setCartasVolteadas([])
           setCartasError([])
           setBloqueado(false)
-        }, 1000) // Se giran de vuelta tras 1 segundo
+        }, 1000) 
       }
     }
   }
@@ -134,7 +130,7 @@ export default function JuegoParejas({ perfil, onVolver }) {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;900&display=swap');
         
-        /* Física de las Cartas 3D */
+        /* 🚀 MOTOR 3D PARA LAS CARTAS */
         .carta-contenedor {
           perspective: 1000px;
           cursor: pointer;
@@ -153,7 +149,7 @@ export default function JuegoParejas({ perfil, onVolver }) {
         .carta-cara {
           position: absolute;
           width: 100%; height: 100%;
-          backface-visibility: hidden; /* Esto arregla tu error de la piruleta invertida */
+          backface-visibility: hidden; /* 🔥 ESTO ARREGLA LA PIRULETA INVERTIDA 🔥 */
           border-radius: 20px;
           box-shadow: 0 10px 20px rgba(0,0,0,0.15);
           display: flex; justify-content: center; align-items: center;
@@ -162,8 +158,7 @@ export default function JuegoParejas({ perfil, onVolver }) {
         
         /* Parte Trasera (Piruleta) */
         .carta-frente {
-          background: linear-gradient(135deg, #a8c0ff 0%, #3f2b96 100%);
-          background: linear-gradient(135deg, #B5C6FF 0%, #FFB5E8 100%); /* Colores pastel parecidos a tu captura */
+          background: linear-gradient(135deg, #B5C6FF 0%, #FFB5E8 100%); 
         }
         
         /* Parte Delantera (La imagen oculta) */
@@ -251,7 +246,7 @@ export default function JuegoParejas({ perfil, onVolver }) {
 
       {/* TABLERO DE JUEGO */}
       <div style={{
-        marginTop: '130px', // Espacio para la cabecera
+        marginTop: '130px',
         backgroundColor: 'rgba(255, 255, 255, 0.6)',
         backdropFilter: 'blur(20px)',
         padding: '25px',
@@ -269,7 +264,7 @@ export default function JuegoParejas({ perfil, onVolver }) {
 
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)', // 4 columnas
+          gridTemplateColumns: 'repeat(4, 1fr)',
           gap: '15px',
           width: '95vw',
           maxWidth: '500px'
@@ -279,11 +274,9 @@ export default function JuegoParejas({ perfil, onVolver }) {
             const estaEmparejada = parejasEncontradas.includes(carta.img)
             const tieneError = cartasError.includes(index)
             
-            // Clase combinada
             let clasesExtra = ''
             if (estaVolteada || estaEmparejada) clasesExtra += ' carta-volteada'
             
-            // Animaciones condicionales para la cara descubierta
             let claseDorso = 'carta-cara carta-dorso'
             if (estaEmparejada) claseDorso += ' carta-acierto'
             if (tieneError) claseDorso += ' carta-error'
@@ -292,22 +285,27 @@ export default function JuegoParejas({ perfil, onVolver }) {
               <div 
                 key={index} 
                 className={`carta-contenedor ${clasesExtra}`}
-                style={{ aspectRatio: '1/1' }} // Cartas cuadradas perfectas
+                style={{ aspectRatio: '1/1' }} 
                 onClick={() => voltearCarta(index)}
               >
                 <div className="carta-inner">
-                  {/* FRENTE: Lo que se ve cuando está boca abajo (Piruleta) */}
+                  {/* FRENTE: La piruleta */}
                   <div className="carta-cara carta-frente">
                     <span style={{ fontSize: '35px' }}>🍭</span>
                   </div>
                   
-                  {/* DORSO: La imagen a descubrir */}
+                  {/* DORSO: La imagen cargada correctamente en GitHub Pages */}
                   <div className={claseDorso}>
                     <img 
                       src={carta.img} 
                       alt="Carta" 
                       style={{ width: '65%', height: '65%', objectFit: 'contain' }}
                       draggable="false"
+                      onError={(e) => {
+                         // Fallback visual en caso de que alguna imagen tarde en cargar
+                         e.target.style.display = 'none';
+                         e.target.parentElement.innerHTML += '<span style="font-size:40px">❓</span>';
+                      }}
                     />
                   </div>
                 </div>
