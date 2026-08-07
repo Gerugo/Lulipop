@@ -7,6 +7,7 @@ import JuegoTrazo from './JuegoTrazo'
 import AlbumPegatinas from './AlbumPegatinas'
 import JuegoMemoria from './JuegoMemoria'
 import JuegoSombras from './JuegoSombras'
+import JuegoBurbujas from './JuegoBurbujas' // <-- NUEVO JUEGO IMPORTADO
 import fondoImg from './fondo-lulipop.png'
 
 export default function MundoLulipop({ perfil, onVolver }) {
@@ -49,6 +50,7 @@ export default function MundoLulipop({ perfil, onVolver }) {
   if (juegoActivo === 'album') return <AlbumPegatinas perfil={perfil} onVolver={() => setJuegoActivo(null)} onSeleccionarParaPegar={(emoji) => { setModoPegatina(emoji); setJuegoActivo(null); }} />
   if (juegoActivo === 'memoria') return <JuegoMemoria perfil={perfil} onVolver={() => setJuegoActivo(null)} />
   if (juegoActivo === 'sombras') return <JuegoSombras perfil={perfil} onVolver={() => setJuegoActivo(null)} />
+  if (juegoActivo === 'burbujas') return <JuegoBurbujas perfil={perfil} onVolver={() => setJuegoActivo(null)} /> // <-- NUEVA RUTA AL JUEGO
 
   return (
     <div 
@@ -314,6 +316,16 @@ export default function MundoLulipop({ perfil, onVolver }) {
           title="Sombras"
         >
           🌒
+        </div>
+
+        {/* NUEVO BOTÓN: BURBUJAS MÁGICAS */}
+        <div 
+          className="menu-btn-3d" 
+          onClick={() => setJuegoActivo('burbujas')}
+          style={{ backgroundColor: '#00d2d3', boxShadow: 'inset 0px 4px 0px #48dbfb, 0px 6px 0px #01a3a4, 0px 10px 15px rgba(0,0,0,0.2)' }}
+          title="Burbujas"
+        >
+          🎈
         </div>
 
       </div>
