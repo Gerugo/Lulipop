@@ -345,7 +345,7 @@ export default function MundoLulipop({ perfil, onVolver }) {
           title="Burbujas"
         >
           <img src={`${baseUrl}icono-burbujas.png`} alt="Burbujas" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
-          <span style={{ display: 'none', fontSize: '38px' => {}}}>🎈</span>
+          <span style={{ display: 'none', fontSize: '38px' }}>🎈</span>
         </div>
 
         {/* EL INTRUSO */}
