@@ -41,11 +41,11 @@ export default function Auth() {
       overflow: 'hidden'
     }}>
       
-      {/* VIDEO DE FONDO */}
+      {/* VIDEO DE FONDO CON LOS ATRIBUTOS FORZADOS A TRUE */}
       <video
-        autoPlay
-        muted
-        playsInline
+        autoPlay={true}
+        muted={true}
+        playsInline={true}
         style={{
           position: 'absolute',
           top: 0,
