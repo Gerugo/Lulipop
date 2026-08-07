@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { supabase } from './supabaseClient'
 import logoImg from './Logosinfondo.png'
-// Ya no importamos fondoImg porque usaremos el video
 
 export default function Auth() {
   const [loading, setLoading] = useState(false)
@@ -28,9 +27,8 @@ export default function Auth() {
 
   return (
     <div style={{
-      minHeight: '100vh',
+      minHeight: '100dvh', /* Cambiado a dvh para adaptarse como una App nativa */
       width: '100vw',
-      /* Eliminamos el backgroundImage estático de aquí */
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
@@ -40,15 +38,14 @@ export default function Auth() {
       top: 0, left: 0,
       padding: '20px',
       boxSizing: 'border-box',
-      overflow: 'hidden' /* Importante para que el video no cree barras de desplazamiento */
+      overflow: 'hidden'
     }}>
       
       {/* VIDEO DE FONDO */}
       <video
         autoPlay
         muted
-        playsInline /* Crucial para que se reproduzca solo en móviles */
-        /* NO ponemos "loop" para que se quede congelado en el final */
+        playsInline
         style={{
           position: 'absolute',
           top: 0,
@@ -56,55 +53,86 @@ export default function Auth() {
           width: '100%',
           height: '100%',
           objectFit: 'cover',
-          zIndex: -1, /* Lo mandamos al fondo, detrás del formulario */
+          zIndex: -1, 
         }}
       >
         <source src={`${baseUrl}assets/video_intro_logo.mp4`} type="video/mp4" />
       </video>
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700;900&display=swap');
+        
+        /* Efecto para que los inputs resalten sobre el video */
         .input-auth {
-          padding: 14px 18px;
-          border-radius: 18px;
-          border: 2px solid #E0E0E0;
+          padding: 16px 20px;
+          border-radius: 20px;
+          border: 3px solid rgba(255, 255, 255, 0.9);
+          background-color: rgba(255, 255, 255, 0.85);
+          backdrop-filter: blur(5px);
           font-family: 'Fredoka', sans-serif;
-          font-size: 1rem;
+          font-size: 1.1rem;
+          color: #334155;
           outline: none;
-          transition: border-color 0.2s;
+          transition: all 0.2s;
           width: 100%;
           box-sizing: border-box;
+          box-shadow: 0 10px 20px rgba(0,0,0,0.1);
         }
         .input-auth:focus {
           border-color: #FF5E62;
+          background-color: rgba(255, 255, 255, 1);
+          transform: translateY(-2px);
+        }
+        .input-auth::placeholder {
+          color: #94A3B8;
+        }
+
+        /* Resplandor para que las letras se lean sin importar el color de fondo */
+        .texto-brillante {
+          color: #1E293B;
+          text-shadow: 0 2px 4px rgba(255,255,255,0.9), 0 0 15px rgba(255,255,255,1);
+        }
+        
+        @keyframes flotarLogo {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-10px); }
         }
       `}</style>
 
+      {/* CONTENEDOR 100% TRANSPARENTE (Sin caja blanca) */}
       <div style={{
-        backgroundColor: 'rgba(255, 255, 255, 0.92)',
-        padding: '35px 40px',
-        borderRadius: '35px',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
-        border: '4px solid white',
+        padding: '20px',
         width: '100%',
         maxWidth: '420px',
         textAlign: 'center',
-        backdropFilter: 'blur(10px)'
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        zIndex: 10
       }}>
-        {/* Logotipo oficial */}
+        
+        {/* Logotipo oficial flotante */}
         <img 
           src={logoImg} 
           alt="LuliPop Logo" 
-          style={{ width: '220px', height: 'auto', marginBottom: '5px', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))' }} 
+          style={{ 
+            width: '260px', 
+            height: 'auto', 
+            marginBottom: '15px', 
+            filter: 'drop-shadow(0 8px 15px rgba(0,0,0,0.25))',
+            animation: 'flotarLogo 3s ease-in-out infinite'
+          }} 
         />
         
-        <p style={{ color: '#666', marginBottom: '25px', fontSize: '1.05rem', fontWeight: '500' }}>
+        <p className="texto-brillante" style={{ marginBottom: '35px', fontSize: '1.2rem', fontWeight: '900' }}>
           {isSignUp ? 'Crea tu cuenta de padre/madre' : 'Inicia sesión para entrar al mundo'}
         </p>
 
-        <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '16px', textAlign: 'left' }}>
+        <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '20px', textAlign: 'left', width: '100%' }}>
           <div>
-            <label style={{ fontSize: '0.9rem', fontWeight: '600', color: '#444', display: 'block', marginBottom: '6px' }}>Correo electrónico</label>
+            <label className="texto-brillante" style={{ fontSize: '1.1rem', fontWeight: '900', display: 'block', marginBottom: '8px', marginLeft: '5px' }}>
+              Correo electrónico
+            </label>
             <input 
               type="email" 
               placeholder="tucorreo@email.com" 
@@ -116,7 +144,9 @@ export default function Auth() {
           </div>
 
           <div>
-            <label style={{ fontSize: '0.9rem', fontWeight: '600', color: '#444', display: 'block', marginBottom: '6px' }}>Contraseña</label>
+            <label className="texto-brillante" style={{ fontSize: '1.1rem', fontWeight: '900', display: 'block', marginBottom: '8px', marginLeft: '5px' }}>
+              Contraseña
+            </label>
             <input 
               type="password" 
               placeholder="••••••••" 
@@ -133,29 +163,43 @@ export default function Auth() {
               backgroundColor: '#FF5E62', 
               color: 'white', 
               padding: '16px', 
-              border: 'none', 
-              borderRadius: '20px', 
+              border: '3px solid white', 
+              borderRadius: '25px', 
               cursor: 'pointer',
-              fontSize: '1.2rem',
-              fontWeight: '700',
-              boxShadow: '0 8px 0 #D9385E, 0 12px 20px rgba(0,0,0,0.15)',
+              fontSize: '1.3rem',
+              fontWeight: '900',
+              boxShadow: '0 8px 0 #D9385E, 0 15px 25px rgba(0,0,0,0.25)',
               transition: 'transform 0.1s',
-              marginTop: '10px'
+              marginTop: '10px',
+              fontFamily: '"Fredoka", sans-serif'
             }}
             onMouseDown={e => e.currentTarget.style.transform = 'translateY(6px)'}
             onMouseUp={e => e.currentTarget.style.transform = 'translateY(0)'}
             disabled={loading}
           >
-            {loading ? 'Procesando...' : (isSignUp ? 'Registrarse 🚀' : 'Entrar ✨')}
+            {loading ? 'Procesando... ⏳' : (isSignUp ? 'Registrarse 🚀' : 'Entrar ✨')}
           </button>
         </form>
 
-        <p 
-          onClick={() => setIsSignUp(!isSignUp)}
-          style={{ marginTop: '22px', color: '#0083B0', cursor: 'pointer', fontWeight: '600', fontSize: '0.95rem' }}
+        {/* Botón de cambio de modo adaptado para el fondo transparente */}
+        <button 
+          onClick={(e) => { e.preventDefault(); setIsSignUp(!isSignUp); }}
+          style={{ 
+            marginTop: '30px', 
+            background: 'rgba(255, 255, 255, 0.9)', 
+            border: '3px solid white',
+            padding: '12px 25px',
+            borderRadius: '30px',
+            color: '#0083B0', 
+            cursor: 'pointer', 
+            fontWeight: '900', 
+            fontSize: '1rem',
+            fontFamily: '"Fredoka", sans-serif',
+            boxShadow: '0 8px 15px rgba(0,0,0,0.15)'
+          }}
         >
           {isSignUp ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate aquí'}
-        </p>
+        </button>
       </div>
     </div>
   )
