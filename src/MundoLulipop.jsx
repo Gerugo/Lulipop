@@ -11,6 +11,15 @@ import JuegoBurbujas from './JuegoBurbujas'
 import JuegoIntruso from './JuegoIntruso'
 import fondoImg from './fondo-lulipop.png'
 
+// IMPORTACIONES DIRECTAS PARA QUE VITE LAS EMPAQUETE CORRECTAMENTE
+import iconoMemoria from './icono-memoria.png'
+import iconoTrazo from './icono-trazo.png'
+import iconoPuzzles from './icono-puzzles.png'
+import iconoNumeros from './icono-numeros.png'
+import iconoSombras from './icono-sombras.png'
+import iconoBurbujas from './icono-burbujas.png'
+import iconoIntruso from './icono-intruso.png'
+
 export default function MundoLulipop({ perfil, onVolver }) {
   const [juegoActivo, setJuegoActivo] = useState(null)
   const [pegatinasColocadas, setPegatinasColocadas] = useState([])
@@ -223,7 +232,7 @@ export default function MundoLulipop({ perfil, onVolver }) {
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', zIndex: 10 }}>
         <img 
-          src={`${baseUrl}assets/mascota.png`} 
+          src={`${baseUrl}mascota.png`} 
           alt="Lulipop Mascota"
           className="mascota-flotante"
           style={{ 
@@ -269,7 +278,8 @@ export default function MundoLulipop({ perfil, onVolver }) {
           style={{ backgroundColor: '#FF758C', boxShadow: 'inset 0px 4px 0px #FF96A7, 0px 6px 0px #C73E5B, 0px 10px 15px rgba(0,0,0,0.2)' }}
           title="Memoria"
         >
-          <img src={`${baseUrl}assets/icono-memoria.png`} alt="Memoria" />
+          <img src={iconoMemoria} alt="Memoria" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
+          <span style={{ display: 'none', fontSize: '38px' }}>🧠</span>
         </div>
 
         {/* TRAZO */}
@@ -279,10 +289,11 @@ export default function MundoLulipop({ perfil, onVolver }) {
           style={{ backgroundColor: '#66a6ff', boxShadow: 'inset 0px 4px 0px #b3d7ff, 0px 6px 0px #005580, 0px 10px 15px rgba(0,0,0,0.2)' }}
           title="Trazo"
         >
-          <img src={`${baseUrl}assets/icono-trazo.png`} alt="Trazo" />
+          <img src={iconoTrazo} alt="Trazo" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
+          <span style={{ display: 'none', fontSize: '38px' }}>✍️</span>
         </div>
 
-        {/* LETRAS (Usa trazo o el que prefieras mientras creas su icono) */}
+        {/* LETRAS */}
         <div 
           className="menu-btn-3d" 
           onClick={() => setJuegoActivo('letras')}
@@ -309,7 +320,8 @@ export default function MundoLulipop({ perfil, onVolver }) {
           style={{ backgroundColor: '#FF9966', boxShadow: 'inset 0px 4px 0px #FFC299, 0px 6px 0px #D9534F, 0px 10px 15px rgba(0,0,0,0.2)' }}
           title="Puzzles"
         >
-          <img src={`${baseUrl}assets/icono-puzzles.png`} alt="Puzzles" />
+          <img src={iconoPuzzles} alt="Puzzles" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
+          <span style={{ display: 'none', fontSize: '38px' }}>🧩</span>
         </div>
         
         {/* NÚMEROS */}
@@ -319,7 +331,8 @@ export default function MundoLulipop({ perfil, onVolver }) {
           style={{ backgroundColor: '#FFD166', boxShadow: 'inset 0px 4px 0px #FFE599, 0px 6px 0px #CCAC00, 0px 10px 15px rgba(0,0,0,0.2)' }}
           title="Números"
         >
-          <img src={`${baseUrl}assets/icono-numeros.png`} alt="Números" />
+          <img src={iconoNumeros} alt="Números" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
+          <span style={{ display: 'none', fontSize: '38px' }}>🔢</span>
         </div>
 
         {/* SOMBRAS */}
@@ -329,7 +342,8 @@ export default function MundoLulipop({ perfil, onVolver }) {
           style={{ backgroundColor: '#a18cd1', boxShadow: 'inset 0px 4px 0px #bcaae3, 0px 6px 0px #7052a6, 0px 10px 15px rgba(0,0,0,0.2)' }}
           title="Sombras"
         >
-          <img src={`${baseUrl}assets/icono-sombras.png`} alt="Sombras" />
+          <img src={iconoSombras} alt="Sombras" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
+          <span style={{ display: 'none', fontSize: '38px' }}>🌒</span>
         </div>
 
         {/* BURBUJAS */}
@@ -339,7 +353,8 @@ export default function MundoLulipop({ perfil, onVolver }) {
           style={{ backgroundColor: '#00d2d3', boxShadow: 'inset 0px 4px 0px #48dbfb, 0px 6px 0px #01a3a4, 0px 10px 15px rgba(0,0,0,0.2)' }}
           title="Burbujas"
         >
-          <img src={`${baseUrl}assets/icono-burbujas.png`} alt="Burbujas" />
+          <img src={iconoBurbujas} alt="Burbujas" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
+          <span style={{ display: 'none', fontSize: '38px' }}>🎈</span>
         </div>
 
         {/* EL INTRUSO */}
@@ -349,7 +364,8 @@ export default function MundoLulipop({ perfil, onVolver }) {
           style={{ backgroundColor: '#1dd1a1', boxShadow: 'inset 0px 4px 0px #55efc4, 0px 6px 0px #10ac84, 0px 10px 15px rgba(0,0,0,0.2)' }}
           title="El Intruso"
         >
-          <img src={`${baseUrl}assets/icono-intruso.png`} alt="El Intruso" />
+          <img src={iconoIntruso} alt="El Intruso" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
+          <span style={{ display: 'none', fontSize: '38px' }}>🔎</span>
         </div>
 
       </div>
