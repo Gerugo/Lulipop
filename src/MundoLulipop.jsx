@@ -8,7 +8,7 @@ import AlbumPegatinas from './AlbumPegatinas'
 import JuegoMemoria from './JuegoMemoria'
 import JuegoSombras from './JuegoSombras'
 import JuegoBurbujas from './JuegoBurbujas'
-import JuegoIntruso from './JuegoIntruso' // <-- NUEVO JUEGO IMPORTADO
+import JuegoIntruso from './JuegoIntruso'
 import fondoImg from './fondo-lulipop.png'
 
 export default function MundoLulipop({ perfil, onVolver }) {
@@ -52,7 +52,7 @@ export default function MundoLulipop({ perfil, onVolver }) {
   if (juegoActivo === 'memoria') return <JuegoMemoria perfil={perfil} onVolver={() => setJuegoActivo(null)} />
   if (juegoActivo === 'sombras') return <JuegoSombras perfil={perfil} onVolver={() => setJuegoActivo(null)} />
   if (juegoActivo === 'burbujas') return <JuegoBurbujas perfil={perfil} onVolver={() => setJuegoActivo(null)} />
-  if (juegoActivo === 'intruso') return <JuegoIntruso perfil={perfil} onVolver={() => setJuegoActivo(null)} /> // <-- NUEVA RUTA AL JUEGO
+  if (juegoActivo === 'intruso') return <JuegoIntruso perfil={perfil} onVolver={() => setJuegoActivo(null)} />
 
   return (
     <div 
@@ -81,7 +81,6 @@ export default function MundoLulipop({ perfil, onVolver }) {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap');
         
-        /* Animaciones Premium */
         @keyframes entrarRebotandoArriba {
           0% { transform: translateY(-50px); opacity: 0; }
           60% { transform: translateY(10px); opacity: 1; }
@@ -113,27 +112,33 @@ export default function MundoLulipop({ perfil, onVolver }) {
           animation: entrarRebotandoAbajo 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
 
-        /* Botones 3D tipo Arcilla con Responsive Design (Media Queries) */
         .menu-btn-3d {
-          width: 70px;
-          height: 70px;
+          width: 75px;
+          height: 75px;
           border-radius: 22px;
-          font-size: 32px;
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
           user-select: none;
           transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+          overflow: hidden;
+          padding: 6px;
+          box-sizing: border-box;
         }
 
-        /* Si la pantalla es ancha (Tablets o PCs), los botones se hacen más grandes */
+        .menu-btn-3d img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15));
+        }
+
         @media (min-width: 768px) {
           .menu-btn-3d {
-            width: 90px;
-            height: 90px;
+            width: 95px;
+            height: 95px;
             border-radius: 30px;
-            font-size: 45px;
           }
           .mascota-flotante {
             width: 320px !important;
@@ -147,7 +152,7 @@ export default function MundoLulipop({ perfil, onVolver }) {
 
       {modoPegatina && (
         <div style={{
-          position: 'fixed', top: '20px', left: '50%_at_50%_0', transform: 'translateX(-50%)',
+          position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)',
           backgroundColor: 'rgba(255, 209, 102, 0.95)', color: '#333', padding: '12px 30px', borderRadius: '30px',
           fontWeight: '700', fontSize: '1.2rem', zIndex: 100, 
           boxShadow: '0 10px 25px rgba(0,0,0,0.2)', border: '4px solid white',
@@ -257,86 +262,94 @@ export default function MundoLulipop({ perfil, onVolver }) {
         flexWrap: 'wrap'
       }}>
         
+        {/* MEMORIA */}
         <div 
           className="menu-btn-3d" 
           onClick={() => setJuegoActivo('memoria')}
           style={{ backgroundColor: '#FF758C', boxShadow: 'inset 0px 4px 0px #FF96A7, 0px 6px 0px #C73E5B, 0px 10px 15px rgba(0,0,0,0.2)' }}
           title="Memoria"
         >
-          🧠
+          <img src={`${baseUrl}assets/icono-memoria.png`} alt="Memoria" />
         </div>
 
+        {/* TRAZO */}
         <div 
           className="menu-btn-3d" 
           onClick={() => setJuegoActivo('trazo')}
           style={{ backgroundColor: '#66a6ff', boxShadow: 'inset 0px 4px 0px #b3d7ff, 0px 6px 0px #005580, 0px 10px 15px rgba(0,0,0,0.2)' }}
           title="Trazo"
         >
-          ✍️
+          <img src={`${baseUrl}assets/icono-trazo.png`} alt="Trazo" />
         </div>
 
+        {/* LETRAS (Usa trazo o el que prefieras mientras creas su icono) */}
         <div 
           className="menu-btn-3d" 
           onClick={() => setJuegoActivo('letras')}
           style={{ backgroundColor: '#4facfe', boxShadow: 'inset 0px 4px 0px #9ee5ff, 0px 6px 0px #0083B0, 0px 10px 15px rgba(0,0,0,0.2)' }}
           title="Letras"
         >
-          🔤
+          <span style={{ fontSize: '38px' }}>🔤</span>
         </div>
 
+        {/* ARTE */}
         <div 
           className="menu-btn-3d" 
           onClick={() => setJuegoActivo('arte')}
           style={{ backgroundColor: '#FF6B6B', boxShadow: 'inset 0px 4px 0px #FF9999, 0px 6px 0px #C0392B, 0px 10px 15px rgba(0,0,0,0.2)' }}
           title="Arte"
         >
-          🎨
+          <span style={{ fontSize: '38px' }}>🎨</span>
         </div>
         
+        {/* PUZZLES */}
         <div 
           className="menu-btn-3d" 
           onClick={() => setJuegoActivo('puzzles')}
           style={{ backgroundColor: '#FF9966', boxShadow: 'inset 0px 4px 0px #FFC299, 0px 6px 0px #D9534F, 0px 10px 15px rgba(0,0,0,0.2)' }}
           title="Puzzles"
         >
-          🧩
+          <img src={`${baseUrl}assets/icono-puzzles.png`} alt="Puzzles" />
         </div>
         
+        {/* NÚMEROS */}
         <div 
           className="menu-btn-3d" 
           onClick={() => setJuegoActivo('numeros')}
           style={{ backgroundColor: '#FFD166', boxShadow: 'inset 0px 4px 0px #FFE599, 0px 6px 0px #CCAC00, 0px 10px 15px rgba(0,0,0,0.2)' }}
           title="Números"
         >
-          🔢
+          <img src={`${baseUrl}assets/icono-numeros.png`} alt="Números" />
         </div>
 
+        {/* SOMBRAS */}
         <div 
           className="menu-btn-3d" 
           onClick={() => setJuegoActivo('sombras')}
           style={{ backgroundColor: '#a18cd1', boxShadow: 'inset 0px 4px 0px #bcaae3, 0px 6px 0px #7052a6, 0px 10px 15px rgba(0,0,0,0.2)' }}
           title="Sombras"
         >
-          🌒
+          <img src={`${baseUrl}assets/icono-sombras.png`} alt="Sombras" />
         </div>
 
+        {/* BURBUJAS */}
         <div 
           className="menu-btn-3d" 
           onClick={() => setJuegoActivo('burbujas')}
           style={{ backgroundColor: '#00d2d3', boxShadow: 'inset 0px 4px 0px #48dbfb, 0px 6px 0px #01a3a4, 0px 10px 15px rgba(0,0,0,0.2)' }}
           title="Burbujas"
         >
-          🎈
+          <img src={`${baseUrl}assets/icono-burbujas.png`} alt="Burbujas" />
         </div>
 
-        {/* NUEVO BOTÓN: EL INTRUSO */}
+        {/* EL INTRUSO */}
         <div 
           className="menu-btn-3d" 
           onClick={() => setJuegoActivo('intruso')}
           style={{ backgroundColor: '#1dd1a1', boxShadow: 'inset 0px 4px 0px #55efc4, 0px 6px 0px #10ac84, 0px 10px 15px rgba(0,0,0,0.2)' }}
           title="El Intruso"
         >
-          🔎
+          <img src={`${baseUrl}assets/icono-intruso.png`} alt="El Intruso" />
         </div>
 
       </div>
