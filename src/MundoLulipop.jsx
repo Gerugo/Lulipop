@@ -6,6 +6,7 @@ import JuegoLetras from './JuegoLetras'
 import JuegoTrazo from './JuegoTrazo'
 import AlbumPegatinas from './AlbumPegatinas'
 import JuegoMemoria from './JuegoMemoria'
+import JuegoSombras from './JuegoSombras'
 import fondoImg from './fondo-lulipop.png'
 
 export default function MundoLulipop({ perfil, onVolver }) {
@@ -47,12 +48,13 @@ export default function MundoLulipop({ perfil, onVolver }) {
   if (juegoActivo === 'trazo') return <JuegoTrazo perfil={perfil} onVolver={() => setJuegoActivo(null)} />
   if (juegoActivo === 'album') return <AlbumPegatinas perfil={perfil} onVolver={() => setJuegoActivo(null)} onSeleccionarParaPegar={(emoji) => { setModoPegatina(emoji); setJuegoActivo(null); }} />
   if (juegoActivo === 'memoria') return <JuegoMemoria perfil={perfil} onVolver={() => setJuegoActivo(null)} />
+  if (juegoActivo === 'sombras') return <JuegoSombras perfil={perfil} onVolver={() => setJuegoActivo(null)} />
 
   return (
     <div 
       onClick={manejarClickFondo}
       style={{ 
-        minHeight: '100vh', 
+        minHeight: '100dvh', 
         width: '100vw',
         backgroundImage: `url(${fondoImg})`,
         backgroundSize: 'cover',
@@ -72,7 +74,6 @@ export default function MundoLulipop({ perfil, onVolver }) {
       }}
     >
       
-      {}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap');
         
@@ -140,7 +141,6 @@ export default function MundoLulipop({ perfil, onVolver }) {
         }
       `}</style>
 
-      {}
       {modoPegatina && (
         <div style={{
           position: 'fixed', top: '20px', left: '50%_at_50%_0', transform: 'translateX(-50%)',
@@ -153,7 +153,6 @@ export default function MundoLulipop({ perfil, onVolver }) {
         </div>
       )}
 
-      {}
       {pegatinasColocadas.map((p) => (
         <div
           key={p.id}
@@ -171,7 +170,6 @@ export default function MundoLulipop({ perfil, onVolver }) {
         </div>
       ))}
 
-      {}
       <div className="animar-cabecera" style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center', zIndex: 20 }}>
         <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
           
@@ -214,7 +212,6 @@ export default function MundoLulipop({ perfil, onVolver }) {
         </div>
       </div>
 
-      {}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', zIndex: 10 }}>
         <img 
           src={`${baseUrl}assets/mascota.png`} 
@@ -240,7 +237,6 @@ export default function MundoLulipop({ perfil, onVolver }) {
         </span>
       </div>
 
-      {}
       <div className="animar-dock" style={{
         backgroundColor: 'rgba(255, 255, 255, 0.65)',
         padding: '15px 25px',
@@ -309,6 +305,15 @@ export default function MundoLulipop({ perfil, onVolver }) {
           title="Números"
         >
           🔢
+        </div>
+
+        <div 
+          className="menu-btn-3d" 
+          onClick={() => setJuegoActivo('sombras')}
+          style={{ backgroundColor: '#a18cd1', boxShadow: 'inset 0px 4px 0px #bcaae3, 0px 6px 0px #7052a6, 0px 10px 15px rgba(0,0,0,0.2)' }}
+          title="Sombras"
+        >
+          🌒
         </div>
 
       </div>
