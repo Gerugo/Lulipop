@@ -15,7 +15,7 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
   const avataresDisponibles = ['👦', '👧', '🦊', '🐱', '🦖', '🦄', '🐶', '🐰']
   const [avatarSeleccionado, setAvatarSeleccionado] = useState(avataresDisponibles[0])
 
-  // NUEVO: Colores divertidos para que cada niño tenga su botón de progreso de un color
+  // Colores divertidos para que cada niño tenga su botón de progreso de un color
   const coloresBotones = [
     { bg: '#FF5E62', shadow: '#D9385E' }, // Rojo
     { bg: '#4facfe', shadow: '#0083B0' }, // Azul
@@ -63,7 +63,7 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
 
   return (
     <div style={{ 
-      minHeight: '100dvh', /* Ajustado a dvh para móviles */
+      minHeight: '100dvh', 
       width: '100vw',
       backgroundImage: `url(${fondoImg})`,
       backgroundSize: 'cover',
@@ -189,18 +189,32 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
             
             <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
               {perfiles.map((perfil, index) => {
-                // Magia: Cada niño obtiene un color diferente de botón
                 const colorEstilo = coloresBotones[index % coloresBotones.length];
                 
                 return (
                   <div key={perfil.id} className="tarjeta-perfil">
-                    {/* Zona para entrar a jugar */}
-                    <div onClick={() => onSeleccionarPerfil(perfil)} style={{ textAlign: 'center', width: '100%' }}>
-                      <div style={{ fontSize: '75px', filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.15))', marginBottom: '10px' }}>
+                    
+                    {/* Zona para entrar a jugar (ARREGLADA) */}
+                    <div onClick={() => onSeleccionarPerfil(perfil)} style={{ 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      alignItems: 'center', 
+                      width: '100%', 
+                      gap: '8px' 
+                    }}>
+                      <div style={{ 
+                        fontSize: '70px', 
+                        lineHeight: '1', 
+                        filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.15))' 
+                      }}>
                         {perfil.avatar}
                       </div>
-                      <h4 style={{ margin: '0 0 2px 0', color: '#1E293B', fontSize: '1.5rem', fontWeight: '900' }}>{perfil.nombre}</h4>
-                      <p style={{ margin: '0', color: '#94A3B8', fontSize: '1.1rem', fontWeight: '700' }}>{perfil.edad} años</p>
+                      <h4 style={{ margin: '0', color: '#1E293B', fontSize: '1.4rem', fontWeight: '900', lineHeight: '1.1' }}>
+                        {perfil.nombre}
+                      </h4>
+                      <p style={{ margin: '0', color: '#94A3B8', fontSize: '1.1rem', fontWeight: '700' }}>
+                        {perfil.edad} años
+                      </p>
                     </div>
 
                     {/* Botón de estadísticas con colores dinámicos */}
