@@ -7,7 +7,8 @@ import JuegoTrazo from './JuegoTrazo'
 import AlbumPegatinas from './AlbumPegatinas'
 import JuegoMemoria from './JuegoMemoria'
 import JuegoSombras from './JuegoSombras'
-import JuegoBurbujas from './JuegoBurbujas' // <-- NUEVO JUEGO IMPORTADO
+import JuegoBurbujas from './JuegoBurbujas'
+import JuegoIntruso from './JuegoIntruso' // <-- NUEVO JUEGO IMPORTADO
 import fondoImg from './fondo-lulipop.png'
 
 export default function MundoLulipop({ perfil, onVolver }) {
@@ -50,7 +51,8 @@ export default function MundoLulipop({ perfil, onVolver }) {
   if (juegoActivo === 'album') return <AlbumPegatinas perfil={perfil} onVolver={() => setJuegoActivo(null)} onSeleccionarParaPegar={(emoji) => { setModoPegatina(emoji); setJuegoActivo(null); }} />
   if (juegoActivo === 'memoria') return <JuegoMemoria perfil={perfil} onVolver={() => setJuegoActivo(null)} />
   if (juegoActivo === 'sombras') return <JuegoSombras perfil={perfil} onVolver={() => setJuegoActivo(null)} />
-  if (juegoActivo === 'burbujas') return <JuegoBurbujas perfil={perfil} onVolver={() => setJuegoActivo(null)} /> // <-- NUEVA RUTA AL JUEGO
+  if (juegoActivo === 'burbujas') return <JuegoBurbujas perfil={perfil} onVolver={() => setJuegoActivo(null)} />
+  if (juegoActivo === 'intruso') return <JuegoIntruso perfil={perfil} onVolver={() => setJuegoActivo(null)} /> // <-- NUEVA RUTA AL JUEGO
 
   return (
     <div 
@@ -318,7 +320,6 @@ export default function MundoLulipop({ perfil, onVolver }) {
           🌒
         </div>
 
-        {/* NUEVO BOTÓN: BURBUJAS MÁGICAS */}
         <div 
           className="menu-btn-3d" 
           onClick={() => setJuegoActivo('burbujas')}
@@ -326,6 +327,16 @@ export default function MundoLulipop({ perfil, onVolver }) {
           title="Burbujas"
         >
           🎈
+        </div>
+
+        {/* NUEVO BOTÓN: EL INTRUSO */}
+        <div 
+          className="menu-btn-3d" 
+          onClick={() => setJuegoActivo('intruso')}
+          style={{ backgroundColor: '#1dd1a1', boxShadow: 'inset 0px 4px 0px #55efc4, 0px 6px 0px #10ac84, 0px 10px 15px rgba(0,0,0,0.2)' }}
+          title="El Intruso"
+        >
+          🔎
         </div>
 
       </div>
