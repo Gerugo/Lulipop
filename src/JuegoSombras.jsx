@@ -208,14 +208,54 @@ export default function JuegoSombras({ perfil, onVolver }) {
           </div>
         </div>
       ) : (
-        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(15px)', zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="anim-victoria" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-            <div className="anim-estrella" style={{ fontSize: '120px', filter: 'drop-shadow(0 15px 20px rgba(0,0,0,0.3))' }}>🌟</div>
-            <h1 style={{ color: '#FFD166', fontSize: '4.5rem', margin: '20px 0 10px 0', textShadow: '0 8px 0 #CCAC00, 0 15px 25px rgba(0,0,0,0.2)', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: '900' }}>¡Genial!</h1>
-            <p style={{ color: '#4facfe', fontSize: '1.6rem', fontWeight: '900', margin: '0 0 40px 0', backgroundColor: 'white', padding: '12px 35px', borderRadius: '35px', border: '4px solid #E0F2FE', boxShadow: '0 8px 0 #bae6fd' }}>
+        /* PANTALLA DE VICTORIA ARREGLADA (RESPONSIVE) */
+        <div style={{
+          position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+          backgroundColor: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(15px)',
+          zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          padding: '20px', boxSizing: 'border-box', overflowY: 'auto'
+        }}>
+          <div className="anim-victoria" style={{ 
+            display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
+            gap: '20px', width: '100%', maxWidth: '400px'
+          }}>
+            <div className="anim-estrella" style={{ 
+              fontSize: 'clamp(70px, 20vw, 120px)',
+              lineHeight: '1',
+              filter: 'drop-shadow(0 15px 20px rgba(0,0,0,0.3))' 
+            }}>🌟</div>
+            
+            <h1 style={{
+              color: '#FFD166', 
+              fontSize: 'clamp(3rem, 12vw, 5rem)',
+              margin: '0', 
+              lineHeight: '1.1',
+              textShadow: '0 8px 0 #CCAC00, 0 15px 25px rgba(0,0,0,0.2)',
+              textTransform: 'uppercase', letterSpacing: '2px', fontWeight: '900'
+            }}>¡Genial!</h1>
+            
+            <p style={{ 
+              color: '#4facfe', fontSize: 'clamp(1.2rem, 5vw, 1.8rem)', fontWeight: '900', margin: '0', 
+              backgroundColor: 'white', padding: '15px 25px', borderRadius: '35px', 
+              border: '4px solid #E0F2FE', boxShadow: '0 8px 0 #bae6fd',
+              width: '100%', boxSizing: 'border-box'
+            }}>
               ¡Eres un detective de sombras! 🕵️‍♂️
             </p>
-            <button onClick={onVolver} style={{ padding: '18px 50px', fontSize: '1.8rem', fontWeight: '900', background: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)', color: 'white', border: '4px solid white', borderRadius: '40px', cursor: 'pointer', boxShadow: '0 10px 0 #8970ba, 0 20px 30px rgba(0,0,0,0.25)', fontFamily: '"Fredoka", sans-serif', transition: 'transform 0.1s' }} onMouseDown={e => e.currentTarget.style.transform = 'translateY(10px)'} onMouseUp={e => e.currentTarget.style.transform = 'translateY(0)'}>
+            
+            <button 
+              onClick={onVolver}
+              style={{ 
+                marginTop: '10px', padding: '15px 40px', 
+                fontSize: 'clamp(1.3rem, 5vw, 1.8rem)', fontWeight: '900',
+                background: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)', color: 'white', 
+                border: '4px solid white', borderRadius: '40px', cursor: 'pointer',
+                boxShadow: '0 10px 0 #8970ba, 0 20px 30px rgba(0,0,0,0.25)',
+                fontFamily: '"Fredoka", sans-serif', transition: 'transform 0.1s'
+              }}
+              onMouseDown={e => e.currentTarget.style.transform = 'translateY(10px)'}
+              onMouseUp={e => e.currentTarget.style.transform = 'translateY(0)'}
+            >
               {guardando ? 'Guardando... ⏳' : '¡Continuar! 🚀'}
             </button>
           </div>
