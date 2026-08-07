@@ -1,13 +1,16 @@
 import { useState } from 'react'
 import { supabase } from './supabaseClient'
-import fondoImg from './fondo-lulipop.png'
 import logoImg from './Logosinfondo.png'
+// Ya no importamos fondoImg porque usaremos el video
 
 export default function Auth() {
   const [loading, setLoading] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
+
+  // Necesario para que GitHub Pages encuentre el video en la carpeta public
+  const baseUrl = import.meta.env.BASE_URL
 
   const handleAuth = async (e) => {
     e.preventDefault()
@@ -27,9 +30,7 @@ export default function Auth() {
     <div style={{
       minHeight: '100vh',
       width: '100vw',
-      backgroundImage: `url(${fondoImg})`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
+      /* Eliminamos el backgroundImage estático de aquí */
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
@@ -38,8 +39,29 @@ export default function Auth() {
       position: 'absolute',
       top: 0, left: 0,
       padding: '20px',
-      boxSizing: 'border-box'
+      boxSizing: 'border-box',
+      overflow: 'hidden' /* Importante para que el video no cree barras de desplazamiento */
     }}>
+      
+      {/* VIDEO DE FONDO */}
+      <video
+        autoPlay
+        muted
+        playsInline /* Crucial para que se reproduzca solo en móviles */
+        /* NO ponemos "loop" para que se quede congelado en el final */
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          zIndex: -1, /* Lo mandamos al fondo, detrás del formulario */
+        }}
+      >
+        <source src={`${baseUrl}assets/video_intro_logo.mp4`} type="video/mp4" />
+      </video>
+
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap');
         .input-auth {
