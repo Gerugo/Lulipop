@@ -16,6 +16,8 @@ export default function MundoLulipop({ perfil, onVolver }) {
   const [pegatinasColocadas, setPegatinasColocadas] = useState([])
   const [modoPegatina, setModoPegatina] = useState(null) 
 
+  const baseUrl = import.meta.env.BASE_URL
+
   useEffect(() => {
     const guardadas = JSON.parse(localStorage.getItem(`colocadas_${perfil.id}`) || '[]')
     setPegatinasColocadas(guardadas)
@@ -109,9 +111,9 @@ export default function MundoLulipop({ perfil, onVolver }) {
       </div>
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', zIndex: 10 }}>
-        {/* MASCOTA CORREGIDA CON RUTA RELATIVA */}
+        {/* MASCOTA CORREGIDA CON BASEURL */}
         <img 
-          src="./assets/mascota.png" 
+          src={`${baseUrl}assets/mascota.png`}
           alt="Lulipop Mascota"
           className="mascota-flotante"
           style={{ width: '260px', height: 'auto', animation: 'flotarMascota 5s ease-in-out infinite', filter: 'drop-shadow(0 25px 35px rgba(0,0,0,0.3))' }}
@@ -123,47 +125,47 @@ export default function MundoLulipop({ perfil, onVolver }) {
       <div className="animar-dock" style={{ backgroundColor: 'rgba(255, 255, 255, 0.65)', padding: '15px 25px', borderRadius: '40px', backdropFilter: 'blur(15px)', border: '5px solid rgba(255,255,255,0.9)', boxShadow: '0 20px 40px rgba(0,0,0,0.2), inset 0 10px 20px rgba(255,255,255,0.5)', display: 'flex', gap: '15px', alignItems: 'center', justifyContent: 'center', zIndex: 20, marginBottom: '15px', flexWrap: 'wrap' }}>
         
         <div className="menu-btn-3d" onClick={() => setJuegoActivo('memoria')} style={{ backgroundColor: '#FF758C', boxShadow: 'inset 0px 4px 0px #FF96A7, 0px 6px 0px #C73E5B' }}>
-          <img src="./assets/icono-memoria.png" alt="Memoria" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
+          <img src={`${baseUrl}assets/icono-memoria.png`} alt="Memoria" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
           <span style={{ display: 'none', fontSize: '38px' }}>🧠</span>
         </div>
 
         <div className="menu-btn-3d" onClick={() => setJuegoActivo('trazo')} style={{ backgroundColor: '#66a6ff', boxShadow: 'inset 0px 4px 0px #b3d7ff, 0px 6px 0px #005580' }}>
-          <img src="./assets/icono-trazo.png" alt="Trazo" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
+          <img src={`${baseUrl}assets/icono-trazo.png`} alt="Trazo" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
           <span style={{ display: 'none', fontSize: '38px' }}>✍️</span>
         </div>
 
         <div className="menu-btn-3d" onClick={() => setJuegoActivo('letras')} style={{ backgroundColor: '#4facfe', boxShadow: 'inset 0px 4px 0px #9ee5ff, 0px 6px 0px #0083B0' }}>
-          <img src="./assets/icono-letras.png" alt="Letras" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
+          <img src={`${baseUrl}assets/icono-letras.png`} alt="Letras" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
           <span style={{ display: 'none', fontSize: '38px' }}>🔤</span>
         </div>
 
         <div className="menu-btn-3d" onClick={() => setJuegoActivo('arte')} style={{ backgroundColor: '#FF6B6B', boxShadow: 'inset 0px 4px 0px #FF9999, 0px 6px 0px #C0392B' }}>
-          <img src="./assets/icono-arte.png" alt="Arte" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
+          <img src={`${baseUrl}assets/icono-arte.png`} alt="Arte" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
           <span style={{ display: 'none', fontSize: '38px' }}>🎨</span>
         </div>
         
         <div className="menu-btn-3d" onClick={() => setJuegoActivo('puzzles')} style={{ backgroundColor: '#FF9966', boxShadow: 'inset 0px 4px 0px #FFC299, 0px 6px 0px #D9534F' }}>
-          <img src="./assets/icono-puzzles.png" alt="Puzzles" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
+          <img src={`${baseUrl}assets/icono-puzzles.png`} alt="Puzzles" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
           <span style={{ display: 'none', fontSize: '38px' }}>🧩</span>
         </div>
         
         <div className="menu-btn-3d" onClick={() => setJuegoActivo('numeros')} style={{ backgroundColor: '#FFD166', boxShadow: 'inset 0px 4px 0px #FFE599, 0px 6px 0px #CCAC00' }}>
-          <img src="./assets/icono-numeros.png" alt="Números" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
+          <img src={`${baseUrl}assets/icono-numeros.png`} alt="Números" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
           <span style={{ display: 'none', fontSize: '38px' }}>🔢</span>
         </div>
 
         <div className="menu-btn-3d" onClick={() => setJuegoActivo('sombras')} style={{ backgroundColor: '#a18cd1', boxShadow: 'inset 0px 4px 0px #bcaae3, 0px 6px 0px #7052a6' }}>
-          <img src="./assets/icono-sombras.png" alt="Sombras" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
+          <img src={`${baseUrl}assets/icono-sombras.png`} alt="Sombras" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
           <span style={{ display: 'none', fontSize: '38px' }}>🌒</span>
         </div>
 
         <div className="menu-btn-3d" onClick={() => setJuegoActivo('burbujas')} style={{ backgroundColor: '#00d2d3', boxShadow: 'inset 0px 4px 0px #48dbfb, 0px 6px 0px #01a3a4' }}>
-          <img src="./assets/icono-burbujas.png" alt="Burbujas" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
+          <img src={`${baseUrl}assets/icono-burbujas.png`} alt="Burbujas" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
           <span style={{ display: 'none', fontSize: '38px' }}>🎈</span>
         </div>
 
         <div className="menu-btn-3d" onClick={() => setJuegoActivo('intruso')} style={{ backgroundColor: '#1dd1a1', boxShadow: 'inset 0px 4px 0px #55efc4, 0px 6px 0px #10ac84' }}>
-          <img src="./assets/icono-intruso.png" alt="El Intruso" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
+          <img src={`${baseUrl}assets/icono-intruso.png`} alt="El Intruso" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
           <span style={{ display: 'none', fontSize: '38px' }}>🔎</span>
         </div>
 
