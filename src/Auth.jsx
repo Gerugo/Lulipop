@@ -41,11 +41,13 @@ export default function Auth() {
       overflow: 'hidden'
     }}>
       
-      {/* VIDEO DE FONDO CON LOS ATRIBUTOS FORZADOS A TRUE */}
+      {/* VIDEO DE FONDO CORREGIDO PARA REACT */}
       <video
-        autoPlay={true}
-        muted={true}
-        playsInline={true}
+        src={`${baseUrl}assets/video_intro_logo.mp4`}
+        autoPlay
+        loop
+        muted
+        playsInline
         style={{
           position: 'absolute',
           top: 0,
@@ -55,9 +57,7 @@ export default function Auth() {
           objectFit: 'cover',
           zIndex: -1, 
         }}
-      >
-        <source src={`${baseUrl}assets/video_intro_logo.mp4`} type="video/mp4" />
-      </video>
+      />
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700;900&display=swap');
