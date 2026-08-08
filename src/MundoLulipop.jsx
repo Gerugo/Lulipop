@@ -16,8 +16,9 @@ export default function MundoLulipop({ perfil, onVolver }) {
   const [pegatinasColocadas, setPegatinasColocadas] = useState([])
   const [modoPegatina, setModoPegatina] = useState(null) 
 
-  // Helpers para resolver URLs estáticas en la carpeta public mediante Vite
-  const getAssetUrl = (filename) => new URL(`/assets/${filename}`, import.meta.url).href
+  // Helpers para resolver URLs estáticas en la carpeta public respetando el "base" de Vite (GitHub Pages)
+  const baseUrl = import.meta.env.BASE_URL
+  const getAssetUrl = (filename) => `${baseUrl}assets/${filename}`
 
   useEffect(() => {
     const guardadas = JSON.parse(localStorage.getItem(`colocadas_${perfil.id}`) || '[]')
