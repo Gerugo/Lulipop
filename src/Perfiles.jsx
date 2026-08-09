@@ -8,6 +8,7 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
   const [perfiles, setPerfiles] = useState([])
   const [nombre, setNombre] = useState('')
   const [edad, setEdad] = useState('')
+  const [limiteMinutos, setLimiteMinutos] = useState('')
   const [perfilEstadisticas, setPerfilEstadisticas] = useState(null)
   const [perfilAEliminar, setPerfilAEliminar] = useState(null)
   const [eliminando, setEliminando] = useState(false)
@@ -94,6 +95,7 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
     setPerfilEditando(null)
     setNombre('')
     setEdad('')
+    setLimiteMinutos('')
     setAvatarSeleccionado(avataresDisponibles[0])
     setMostrarFormulario(true)
   }
@@ -102,6 +104,7 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
     setPerfilEditando(perfil)
     setNombre(perfil.nombre)
     setEdad(String(perfil.edad))
+    setLimiteMinutos(perfil.limite_minutos ? String(perfil.limite_minutos) : '')
     setAvatarSeleccionado(perfil.avatar)
     setMostrarFormulario(true)
   }
@@ -109,12 +112,13 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
   const guardarPerfil = async (e) => {
     e.preventDefault()
     setGuardandoPerfil(true)
+    const limiteAGuardar = limiteMinutos.trim() !== '' ? parseInt(limiteMinutos, 10) : null
 
     if (perfilEditando) {
       // Modo edición: actualizamos el perfil existente
       const { error } = await supabase
         .from('perfiles_ninos')
-        .update({ nombre, edad: parseInt(edad), avatar: avatarSeleccionado })
+        .update({ nombre, edad: parseInt(edad), avatar: avatarSeleccionado, limite_minutos: limiteAGuardar })
         .eq('id', perfilEditando.id)
 
       if (error) {
@@ -123,6 +127,7 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
         setPerfilEditando(null)
         setNombre('')
         setEdad('')
+        setLimiteMinutos('')
         setMostrarFormulario(false)
         obtenerPerfiles()
       }
@@ -130,13 +135,14 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
       // Modo creación
       const { error } = await supabase
         .from('perfiles_ninos')
-        .insert([{ padre_id: session.user.id, nombre, edad: parseInt(edad), avatar: avatarSeleccionado }])
+        .insert([{ padre_id: session.user.id, nombre, edad: parseInt(edad), avatar: avatarSeleccionado, limite_minutos: limiteAGuardar }])
 
       if (error) {
         alert("Error: " + error.message)
       } else {
         setNombre('')
         setEdad('')
+        setLimiteMinutos('')
         setMostrarFormulario(false)
         obtenerPerfiles()
       }
@@ -357,6 +363,8 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
                         <span style={{ fontSize: '0.85rem', fontWeight: '900', color: '#C2410C' }}>{rachasPorPerfil[perfil.id]}</span>
                       </div>
                     )}
+
+                    {/* Insignia de límite de pantalla configurado */}
                     
                     {/* Zona para entrar a jugar (ARREGLADA) */}
                     <div onClick={() => onSeleccionarPerfil(perfil)} style={{ 
@@ -379,6 +387,15 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
                       <p style={{ margin: '0', color: '#94A3B8', fontSize: '1.1rem', fontWeight: '700' }}>
                         {perfil.edad} años
                       </p>
+                      {perfil.limite_minutos > 0 && (
+                        <div style={{
+                          backgroundColor: '#EFF6FF', border: '2px solid #BFDBFE', borderRadius: '14px',
+                          padding: '3px 10px', display: 'flex', alignItems: 'center', gap: '4px'
+                        }}>
+                          <span style={{ fontSize: '12px' }}>⏱️</span>
+                          <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#1D4ED8' }}>{perfil.limite_minutos} min/día</span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Botón de estadísticas con colores dinámicos */}
@@ -427,6 +444,36 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
               <div>
                 <label style={{ fontWeight: '900', color: '#334155', marginLeft: '5px', marginBottom: '8px', display: 'block' }}>Edad</label>
                 <input type="number" placeholder="Ej. 4" value={edad} onChange={(e) => setEdad(e.target.value)} className="input-moderno" required min="2" max="10" />
+              </div>
+
+              <div>
+                <label style={{ fontWeight: '900', color: '#334155', marginLeft: '5px', marginBottom: '8px', display: 'block' }}>
+                  ⏱️ Límite de pantalla al día (opcional)
+                </label>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {[
+                    { etiqueta: 'Sin límite', valor: '' },
+                    { etiqueta: '15 min', valor: '15' },
+                    { etiqueta: '30 min', valor: '30' },
+                    { etiqueta: '45 min', valor: '45' },
+                    { etiqueta: '60 min', valor: '60' },
+                  ].map((op) => (
+                    <button
+                      key={op.etiqueta}
+                      type="button"
+                      onClick={() => setLimiteMinutos(op.valor)}
+                      style={{
+                        padding: '10px 16px', borderRadius: '16px', cursor: 'pointer',
+                        fontFamily: '"Fredoka", sans-serif', fontWeight: '800', fontSize: '0.95rem',
+                        border: limiteMinutos === op.valor ? '3px solid #a18cd1' : '3px solid #E2E8F0',
+                        backgroundColor: limiteMinutos === op.valor ? '#F3E8FF' : 'white',
+                        color: limiteMinutos === op.valor ? '#7052a6' : '#64748b'
+                      }}
+                    >
+                      {op.etiqueta}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div style={{ textAlign: 'center', marginTop: '10px' }}>
