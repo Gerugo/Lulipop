@@ -64,14 +64,15 @@ export default function Auth() {
           width: '100%',
           height: '100%',
           objectFit: 'cover',
-          zIndex: -2,
+          zIndex: -1,
         }}
       />
 
       {/* VELO DE COLOR PARA DAR PROFUNDIDAD Y CONTRASTE AL VIDEO */}
       <div style={{
-        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: -1,
-        background: 'radial-gradient(circle at 50% 20%, rgba(255,154,158,0.15) 0%, rgba(0,0,0,0.15) 55%, rgba(0,0,0,0.45) 100%)'
+        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+        background: 'radial-gradient(circle at 50% 20%, rgba(255,154,158,0.15) 0%, rgba(0,0,0,0.15) 55%, rgba(0,0,0,0.45) 100%)',
+        pointerEvents: 'none'
       }} />
 
       <style>{`
