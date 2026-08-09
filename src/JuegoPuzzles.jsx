@@ -1,33 +1,52 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 import fondoImg from './fondo-lulipop.png'
+import NivelSelector from './NivelSelector'
+import useMejoresNiveles from './useMejoresNiveles'
+
+const NIVELES = [
+  { id: 'facil', nombre: 'Fácil', descripcion: '3 figuras, con pista de color', emoji: '🌱', color: '#43e97b', sombra: '#27ae60', numPiezas: 3, pistaColor: true },
+  { id: 'medio', nombre: 'Medio', descripcion: '4 figuras, con pista de color', emoji: '🌿', color: '#4facfe', sombra: '#005580', numPiezas: 4, pistaColor: true },
+  { id: 'dificil', nombre: 'Difícil', descripcion: '4 figuras, sin pistas', emoji: '🌳', color: '#FF9966', sombra: '#D9534F', numPiezas: 4, pistaColor: false },
+]
 
 export default function JuegoPuzzles({ perfil, onVolver }) {
   const baseUrl = import.meta.env.BASE_URL
 
-  const formasOriginales = [
+  const formasBase = [
     { id: 'dino', nombre: 'Dino', src: `${baseUrl}assets/dino.png`, color: '#43e97b', sombra: '#27ae60' },
     { id: 'gato', nombre: 'Gato', src: `${baseUrl}assets/gato.png`, color: '#FFD166', sombra: '#CCAC00' },
     { id: 'globo', nombre: 'Globo', src: `${baseUrl}assets/globo.png`, color: '#4facfe', sombra: '#005580' },
     { id: 'manzana', nombre: 'Manzana', src: `${baseUrl}assets/manzana.png`, color: '#FF5E62', sombra: '#C0392B' }
   ]
 
+  const [nivelId, setNivelId] = useState(null)
+  const [formasOriginales, setFormasOriginales] = useState([])
   const [completados, setCompletados] = useState([])
   const [victoria, setVictoria] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [siluetas, setSiluetas] = useState([])
 
-  // Estados para el arrastre (Drag & Drop nativo táctil/mouse)
   const [piezaArrastrada, setPiezaArrastrada] = useState(null)
   const [posicion, setPosicion] = useState({ x: 0, y: 0 })
   const [offset, setOffset] = useState({ x: 0, y: 0 })
 
+  const { mejores, guardarMejorNivel } = useMejoresNiveles('puzzles', perfil?.id)
+  const nivel = NIVELES.find((n) => n.id === nivelId)
+
+  const empezarNivel = (id) => {
+    setNivelId(id)
+  }
+
   useEffect(() => {
-    iniciarJuego()
-  }, [])
+    if (nivel) iniciarJuego()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nivelId])
 
   const iniciarJuego = () => {
-    setSiluetas([...formasOriginales].sort(() => Math.random() - 0.5))
+    const piezasNivel = [...formasBase].sort(() => Math.random() - 0.5).slice(0, nivel.numPiezas)
+    setFormasOriginales(piezasNivel)
+    setSiluetas([...piezasNivel].sort(() => Math.random() - 0.5))
     setCompletados([])
     setVictoria(false)
     setPiezaArrastrada(null)
@@ -63,18 +82,17 @@ export default function JuegoPuzzles({ perfil, onVolver }) {
       const targetId = siluetaTarget.getAttribute('data-id')
 
       if (targetId === piezaArrastrada.id) {
-        // ¡ACIERTO!
         const nuevosCompletados = [...completados, piezaArrastrada.id]
         setCompletados(nuevosCompletados)
 
         if (nuevosCompletados.length === formasOriginales.length) {
           setTimeout(() => {
             setVictoria(true)
+            guardarMejorNivel(nivelId, 3)
             guardarProgreso()
           }, 400)
         }
       } else {
-        // ¡FALLO!
         siluetaTarget.classList.add('error-shake')
         setTimeout(() => siluetaTarget.classList.remove('error-shake'), 400)
       }
@@ -99,12 +117,26 @@ export default function JuegoPuzzles({ perfil, onVolver }) {
     setGuardando(false)
   }
 
+  if (!nivel) {
+    return (
+      <NivelSelector
+        onVolver={onVolver}
+        emojiJuego="🧩"
+        titulo="Puzzles de Formas"
+        subtitulo="Elige tu reto"
+        niveles={NIVELES}
+        mejores={mejores}
+        onSeleccionar={empezarNivel}
+      />
+    )
+  }
+
   return (
     <div 
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       style={{ 
-        minHeight: '100dvh', /* Ajustado para App Nativa */
+        minHeight: '100dvh',
         width: '100vw',
         backgroundImage: `url(${fondoImg})`,
         backgroundSize: 'cover', backgroundPosition: 'center',
@@ -185,6 +217,12 @@ export default function JuegoPuzzles({ perfil, onVolver }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>❮</button>
 
+        <div style={{
+          height: '55px', padding: '0 20px', borderRadius: '18px', backgroundColor: 'rgba(255,255,255,0.9)',
+          display: 'flex', alignItems: 'center', gap: '10px', fontSize: '22px', fontWeight: '900',
+          boxShadow: '0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)'
+        }}>{nivel.emoji}</div>
+
         <button onClick={iniciarJuego} style={{
           height: '55px', padding: '0 20px', borderRadius: '18px', backgroundColor: '#FFFFFF', color: '#333', 
           border: 'none', fontSize: '22px', fontWeight: '900', cursor: 'pointer', boxShadow: '0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)',
@@ -196,19 +234,26 @@ export default function JuegoPuzzles({ perfil, onVolver }) {
         <div style={{
           position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
           backgroundColor: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(10px)',
-          zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+          zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', boxSizing: 'border-box'
         }}>
-          <div className="anim-victoria" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div className="anim-victoria" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
             <div className="anim-estrella" style={{ fontSize: '100px', filter: 'drop-shadow(0 10px 10px rgba(0,0,0,0.2))' }}>🌟</div>
-            <h1 style={{ color: '#FFD166', fontSize: '4.5rem', margin: '10px 0', textShadow: '0 6px 0 #CCAC00, 0 10px 20px rgba(0,0,0,0.2)', textTransform: 'uppercase', letterSpacing: '2px' }}>¡Súper!</h1>
-            <p style={{ color: '#4facfe', fontSize: '1.8rem', fontWeight: '900', margin: 0, backgroundColor: 'white', padding: '10px 30px', borderRadius: '30px', boxShadow: '0 5px 0 #cbd5e1' }}>
-              {guardando ? 'Guardando...' : '¡Puzzle superado!'}
+            <h1 style={{ color: '#FFD166', fontSize: 'clamp(2.5rem, 9vw, 4.5rem)', margin: '10px 0', textShadow: '0 6px 0 #CCAC00, 0 10px 20px rgba(0,0,0,0.2)', textTransform: 'uppercase', letterSpacing: '2px' }}>¡Súper!</h1>
+            <p style={{ color: '#4facfe', fontSize: '1.5rem', fontWeight: '900', margin: '0 0 20px 0', backgroundColor: 'white', padding: '10px 30px', borderRadius: '30px', boxShadow: '0 5px 0 #cbd5e1' }}>
+              ¡Nivel {nivel.nombre} completado!
             </p>
-            <button onClick={onVolver} style={{
-              marginTop: '30px', backgroundColor: '#43e97b', color: 'white', border: 'none',
-              padding: '15px 40px', borderRadius: '30px', fontSize: '1.5rem', fontWeight: '900',
-              cursor: 'pointer', boxShadow: '0 8px 0 #27ae60'
-            }}>¡Continuar! 🚀</button>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <button onClick={() => setNivelId(null)} style={{
+                backgroundColor: '#FFD166', color: '#7A5C00', border: 'none',
+                padding: '15px 30px', borderRadius: '30px', fontSize: '1.3rem', fontWeight: '900',
+                cursor: 'pointer', boxShadow: '0 8px 0 #CCAC00'
+              }}>🔁 Otro nivel</button>
+              <button onClick={onVolver} style={{
+                backgroundColor: '#43e97b', color: 'white', border: 'none',
+                padding: '15px 30px', borderRadius: '30px', fontSize: '1.3rem', fontWeight: '900',
+                cursor: 'pointer', boxShadow: '0 8px 0 #27ae60'
+              }}>¡Continuar! 🚀</button>
+            </div>
           </div>
         </div>
       )}
@@ -220,7 +265,7 @@ export default function JuegoPuzzles({ perfil, onVolver }) {
             backdropFilter: 'blur(10px)', marginBottom: '40px', border: '4px solid white',
             boxShadow: '0 15px 30px rgba(0,0,0,0.1)', textAlign: 'center'
           }}>
-            <h2 style={{ color: '#475569', fontSize: '1.6rem', margin: 0, fontWeight: '900' }}>
+            <h2 style={{ color: '#475569', fontSize: '1.5rem', margin: 0, fontWeight: '900' }}>
               ¡Arrastra cada figura a su sombra! 🧩
             </h2>
           </div>
@@ -255,13 +300,15 @@ export default function JuegoPuzzles({ perfil, onVolver }) {
           }}>
             {siluetas.map((silueta) => {
               const estaCompletado = completados.includes(silueta.id)
+              const colorPista = nivel.pistaColor ? silueta.color : '#94a3b8'
+              const sombraPista = nivel.pistaColor ? silueta.sombra : '#64748b'
               return (
                 <div 
                   key={silueta.id} data-id={silueta.id} id={`silueta-${silueta.id}`}
                   className={`silueta-box ${estaCompletado ? 'silueta-completada' : ''}`}
                   style={{
-                    borderColor: estaCompletado ? silueta.color : 'rgba(255, 255, 255, 0.7)',
-                    boxShadow: estaCompletado ? `0px 8px 0px ${silueta.sombra}` : 'inset 0 5px 15px rgba(0,0,0,0.1)'
+                    borderColor: estaCompletado ? colorPista : 'rgba(255, 255, 255, 0.7)',
+                    boxShadow: estaCompletado ? `0px 8px 0px ${sombraPista}` : 'inset 0 5px 15px rgba(0,0,0,0.1)'
                   }}
                 >
                   <img src={silueta.src} alt="Silueta" className="img-silueta" draggable="false" />

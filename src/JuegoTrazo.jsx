@@ -1,13 +1,51 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { supabase } from './supabaseClient'
 import fondoImg from './fondo-lulipop.png'
+import NivelSelector from './NivelSelector'
+import useMejoresNiveles from './useMejoresNiveles'
+
+const baseUrl = import.meta.env.BASE_URL
+
+const NIVELES = [
+  { id: 'facil', nombre: 'Fácil', descripcion: 'Vocales A-E-I-O-U', emoji: '🌱', color: '#43e97b', sombra: '#27ae60', palabras: ['A', 'E', 'I', 'O', 'U'] },
+  { id: 'medio', nombre: 'Medio', descripcion: 'Letras y palabras cortas', emoji: '🌿', color: '#4facfe', sombra: '#005580', palabras: ['B', 'M', 'S', 'P', 'L', 'SOL'] },
+  { id: 'dificil', nombre: 'Difícil', descripcion: 'Palabras y números', emoji: '🌳', color: '#FF9966', sombra: '#D9534F', palabras: ['MAMA', 'PAPA', 'LULU', '123'] },
+]
 
 export default function JuegoTrazo({ perfil, onVolver }) {
+  const [nivelId, setNivelId] = useState(null)
+  const [indicePalabraNivel, setIndicePalabraNivel] = useState(0)
   const [textoActual, setTextoActual] = useState('A')
   const [indiceLetra, setIndiceLetra] = useState(0) // NUEVO: Va letra por letra dentro de la palabra
   const [colorTrazo, setColorTrazo] = useState('#FF5E62')
   const [mostrarMenu, setMostrarMenu] = useState(false)
   const [inputPersonalizado, setInputPersonalizado] = useState('')
   const [nivelSuperado, setNivelSuperado] = useState(false)
+  const [nivelCompletoTotal, setNivelCompletoTotal] = useState(false)
+  const [guardando, setGuardando] = useState(false)
+  const [modoLibre, setModoLibre] = useState(false) // true cuando el niño elige una palabra suelta desde el menú ABC
+
+  const { mejores, guardarMejorNivel } = useMejoresNiveles('trazo', perfil?.id)
+  const nivel = NIVELES.find((n) => n.id === nivelId)
+
+  const empezarNivel = (id) => {
+    const n = NIVELES.find((x) => x.id === id)
+    setNivelId(id)
+    setIndicePalabraNivel(0)
+    setTextoActual(n.palabras[0])
+    setIndiceLetra(0)
+    setNivelSuperado(false)
+    setNivelCompletoTotal(false)
+    setModoLibre(false)
+  }
+
+  const guardarProgreso = async () => {
+    setGuardando(true)
+    await supabase.from('progreso_actividades').insert([
+      { perfil_id: perfil.id, padre_id: perfil.padre_id, actividad_id: 'trazo_letras', completado: true, estrellas: 3 }
+    ])
+    setGuardando(false)
+  }
   
   const canvasRef = useRef(null)
   const hitCanvasRef = useRef(null)
@@ -142,7 +180,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
   }
 
   const startDrawing = (e) => {
-    if (nivelSuperado) return 
+    if (nivelSuperado || nivelCompletoTotal) return 
     e.preventDefault()
     const { x, y } = getCoordinates(e, canvasRef.current)
 
@@ -266,7 +304,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
       mascotaRef.current.style.transform = `translate(${lastPosRef.current.x}px, ${lastPosRef.current.y}px) scale(0.5)`
     }
     
-    if (nivelSuperado) return
+    if (nivelSuperado || nivelCompletoTotal) return
     verificarProgresoLetra() 
   }
 
@@ -312,22 +350,61 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     updateScore(50) 
 
     setTimeout(() => {
-      const currentIndex = palabrasPreset.indexOf(textoActual)
-      let nextIndex = 0 
-      
-      if (currentIndex !== -1 && currentIndex < palabrasPreset.length - 1) {
-        nextIndex = currentIndex + 1
+      // Modo libre (menú ABC / palabra personalizada): sigue como antes, en bucle sobre los presets
+      if (modoLibre || !nivel) {
+        const currentIndex = palabrasPreset.indexOf(textoActual)
+        let nextIndex = 0
+        if (currentIndex !== -1 && currentIndex < palabrasPreset.length - 1) {
+          nextIndex = currentIndex + 1
+        }
+        setTextoActual(palabrasPreset[nextIndex])
+        setIndiceLetra(0)
+        setNivelSuperado(false)
+        return
       }
-      
-      setTextoActual(palabrasPreset[nextIndex])
-      setIndiceLetra(0) // Reinicia al principio de la nueva palabra
-      setNivelSuperado(false)
+
+      // Modo nivel: avanza a la siguiente palabra del nivel elegido
+      if (indicePalabraNivel < nivel.palabras.length - 1) {
+        const siguienteIndice = indicePalabraNivel + 1
+        setIndicePalabraNivel(siguienteIndice)
+        setTextoActual(nivel.palabras[siguienteIndice])
+        setIndiceLetra(0)
+        setNivelSuperado(false)
+      } else {
+        // ¡Nivel completo! Todas las palabras del nivel superadas
+        guardarMejorNivel(nivelId, 3)
+        guardarProgreso()
+        setNivelSuperado(false)
+        setNivelCompletoTotal(true)
+      }
     }, 2200) 
+  }
+
+  const reiniciarNivelActual = () => {
+    setIndicePalabraNivel(0)
+    setTextoActual(nivel.palabras[0])
+    setIndiceLetra(0)
+    setNivelCompletoTotal(false)
+  }
+
+  if (!nivel) {
+    return (
+      <NivelSelector
+        onVolver={onVolver}
+        emojiJuego="✍️"
+        titulo="Trazo de Letras"
+        subtitulo="Elige tu reto"
+        niveles={NIVELES}
+        mejores={mejores}
+        onSeleccionar={empezarNivel}
+      />
+    )
   }
 
   const guardarPersonalizada = (e) => {
     e.preventDefault()
     if (inputPersonalizado.trim() !== '') {
+      setModoLibre(true)
       setTextoActual(inputPersonalizado.toUpperCase().substring(0, 7))
       setIndiceLetra(0)
       setMostrarMenu(false)
@@ -360,10 +437,31 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         @keyframes rotaEstrella { 100% { transform: rotate(360deg); } }
       `}</style>
 
+      {/* INDICADOR DE PROGRESO DEL NIVEL (una palabra tras otra) */}
+      {!modoLibre && !nivelCompletoTotal && (
+        <div style={{
+          position: 'absolute', top: '90px', left: '50%', transform: 'translateX(-50%)',
+          backgroundColor: 'rgba(255, 255, 255, 0.9)', padding: '6px 16px', borderRadius: '20px',
+          border: '3px solid white', boxShadow: '0 8px 16px rgba(0,0,0,0.12)',
+          display: 'flex', alignItems: 'center', gap: '8px', zIndex: 20, pointerEvents: 'none'
+        }}>
+          <span style={{ fontSize: '16px', backgroundColor: nivel.color, borderRadius: '8px', padding: '2px 6px' }}>{nivel.emoji}</span>
+          <div style={{ display: 'flex', gap: '5px' }}>
+            {nivel.palabras.map((_, idx) => (
+              <div key={idx} style={{
+                width: '12px', height: '12px', borderRadius: '50%',
+                backgroundColor: idx < indicePalabraNivel ? '#43e97b' : idx === indicePalabraNivel ? '#FFD166' : '#E2E8F0',
+                border: '2px solid white'
+              }} />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* INDICADOR VISUAL DE LETRAS (SI ES UNA PALABRA O NUMERO LARGO) */}
       {textoActual.length > 1 && (
         <div style={{
-          position: 'absolute', top: '95px', left: '50%', transform: 'translateX(-50%)',
+          position: 'absolute', top: '140px', left: '50%', transform: 'translateX(-50%)',
           display: 'flex', gap: '8px', zIndex: 20, pointerEvents: 'none'
         }}>
           {textoActual.split('').map((letra, idx) => (
@@ -400,13 +498,13 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         }}
       >
         <img 
-          src="./assets/mascota.png" 
+          src={`${baseUrl}assets/mascota.png`} 
           alt="Mascota Lulipop" 
           style={{ width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none' }} 
         />
       </div>
 
-      {/* PANTALLA DE VICTORIA FINAL */}
+      {/* PANTALLA DE VICTORIA POR PALABRA */}
       {nivelSuperado && (
         <div style={{
           position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
@@ -423,6 +521,58 @@ export default function JuegoTrazo({ perfil, onVolver }) {
             <p style={{ color: '#4facfe', fontSize: '1.8rem', fontWeight: '900', margin: 0, backgroundColor: 'white', padding: '10px 30px', borderRadius: '30px', boxShadow: '0 5px 0 #cbd5e1' }}>
               +50 puntos
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* PANTALLA DE NIVEL COMPLETO (todas las palabras del nivel superadas) */}
+      {nivelCompletoTotal && (
+        <div style={{
+          position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+          backgroundColor: 'rgba(255, 255, 255, 0.85)', backdropFilter: 'blur(15px)',
+          zIndex: 210, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          padding: '20px', boxSizing: 'border-box'
+        }}>
+          <div className="anim-victoria" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+            <div className="anim-estrella" style={{ fontSize: 'clamp(70px, 20vw, 110px)', filter: 'drop-shadow(0 15px 20px rgba(0,0,0,0.3))' }}>✍️🌟</div>
+            <h1 style={{
+              color: '#FFD166', fontSize: 'clamp(2.5rem, 9vw, 4rem)', margin: '15px 0 8px 0',
+              textShadow: '0 8px 0 #CCAC00, 0 15px 25px rgba(0,0,0,0.2)',
+              textTransform: 'uppercase', letterSpacing: '2px', fontWeight: '900'
+            }}>¡Súper trazo!</h1>
+            <p style={{ 
+              color: '#4facfe', fontSize: 'clamp(1.1rem, 4.5vw, 1.6rem)', fontWeight: '900', margin: '0 0 30px 0', 
+              backgroundColor: 'white', padding: '14px 28px', borderRadius: '35px', 
+              border: '4px solid #E0F2FE', boxShadow: '0 8px 0 #bae6fd'
+            }}>
+              ¡Nivel {nivel.nombre} completado! ✍️
+            </p>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <button 
+                onClick={() => setNivelId(null)}
+                style={{ 
+                  padding: '14px 28px', fontSize: 'clamp(1.1rem, 4.5vw, 1.4rem)', fontWeight: '900',
+                  background: 'linear-gradient(135deg, #FFD166 0%, #FFB347 100%)', color: '#7A5C00', 
+                  border: '4px solid white', borderRadius: '35px', cursor: 'pointer',
+                  boxShadow: '0 8px 0 #CCAC00, 0 16px 25px rgba(0,0,0,0.2)',
+                  fontFamily: '"Fredoka", sans-serif'
+                }}
+              >
+                🔁 Otro nivel
+              </button>
+              <button 
+                onClick={onVolver}
+                style={{ 
+                  padding: '14px 28px', fontSize: 'clamp(1.1rem, 4.5vw, 1.4rem)', fontWeight: '900',
+                  background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', color: 'white', 
+                  border: '4px solid white', borderRadius: '35px', cursor: 'pointer',
+                  boxShadow: '0 8px 0 #27ae60, 0 16px 25px rgba(0,0,0,0.2)',
+                  fontFamily: '"Fredoka", sans-serif'
+                }}
+              >
+                {guardando ? 'Guardando... ⏳' : '¡Continuar! 🚀'}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -517,7 +667,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
             
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
               {palabrasPreset.map(p => (
-                <button key={p} onClick={() => { setTextoActual(p); setIndiceLetra(0); setMostrarMenu(false); }} style={{ 
+                <button key={p} onClick={() => { setModoLibre(true); setTextoActual(p); setIndiceLetra(0); setMostrarMenu(false); }} style={{ 
                   backgroundColor: '#F1F5F9', border: 'none', padding: '14px 22px', borderRadius: '20px',
                   fontSize: '1.3rem', fontWeight: '900', color: '#475569', cursor: 'pointer',
                   boxShadow: '0 5px 0 #CBD5E1', transition: 'transform 0.1s'

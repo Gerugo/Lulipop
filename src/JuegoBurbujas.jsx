@@ -1,28 +1,44 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabaseClient'
 import fondoImg from './fondo-lulipop.png'
+import NivelSelector from './NivelSelector'
+import useMejoresNiveles from './useMejoresNiveles'
+
+const NIVELES = [
+  { id: 'facil', nombre: 'Fácil', descripcion: 'Burbujas grandes y lentas', emoji: '🌱', color: '#43e97b', sombra: '#27ae60', meta: 10, intervaloMs: 1000, tamMin: 95, tamMax: 140, duracionMin: 5, duracionMax: 8 },
+  { id: 'medio', nombre: 'Medio', descripcion: 'Ritmo normal', emoji: '🌿', color: '#4facfe', sombra: '#005580', meta: 15, intervaloMs: 800, tamMin: 80, tamMax: 120, duracionMin: 4, duracionMax: 7 },
+  { id: 'dificil', nombre: 'Difícil', descripcion: 'Burbujas rápidas y pequeñas', emoji: '🌳', color: '#FF9966', sombra: '#D9534F', meta: 22, intervaloMs: 550, tamMin: 65, tamMax: 95, duracionMin: 3, duracionMax: 5 },
+]
 
 export default function JuegoBurbujas({ perfil, onVolver }) {
+  const [nivelId, setNivelId] = useState(null)
   const [burbujas, setBurbujas] = useState([])
   const [puntuacion, setPuntuacion] = useState(0)
   const [victoria, setVictoria] = useState(false)
   const [guardando, setGuardando] = useState(false)
-  
-  const meta = 15 // Burbujas que hay que explotar para ganar
+
   const requestRef = useRef()
   const generadorRef = useRef()
 
+  const { mejores, guardarMejorNivel } = useMejoresNiveles('burbujas', perfil?.id)
+  const nivel = NIVELES.find((n) => n.id === nivelId)
+
   const animales = ['🐶', '🐱', '🐰', '🦊', '🐻', '🐼', '🐯', '🦁', '🐸', '🦄', '🐙', '🐢']
 
-  useEffect(() => {
-    if (victoria) return
+  const empezarNivel = (id) => {
+    setNivelId(id)
+    setPuntuacion(0)
+    setBurbujas([])
+    setVictoria(false)
+  }
 
-    // Generador de burbujas (crea una nueva cada 800ms)
+  useEffect(() => {
+    if (!nivel || victoria) return
+
     generadorRef.current = setInterval(() => {
       crearBurbuja()
-    }, 800)
+    }, nivel.intervaloMs)
 
-    // Limpieza de burbujas que ya han salido de la pantalla (para no consumir memoria)
     const limpiarFueraDePantalla = () => {
       setBurbujas(prev => prev.filter(b => !b.explotada && b.y > -20))
       requestRef.current = requestAnimationFrame(limpiarFueraDePantalla)
@@ -33,28 +49,30 @@ export default function JuegoBurbujas({ perfil, onVolver }) {
       clearInterval(generadorRef.current)
       cancelAnimationFrame(requestRef.current)
     }
-  }, [victoria])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nivelId, victoria])
 
   const crearBurbuja = () => {
     const id = Date.now() + Math.random()
-    const size = Math.floor(Math.random() * 40) + 80 // Tamaño entre 80px y 120px
-    const left = Math.floor(Math.random() * 70) + 10 // Posición X entre 10% y 80%
-    const duracion = Math.floor(Math.random() * 3) + 4 // Duración de subida entre 4s y 7s
+    const size = Math.floor(Math.random() * (nivel.tamMax - nivel.tamMin)) + nivel.tamMin
+    const left = Math.floor(Math.random() * 70) + 10
+    const duracion = Math.floor(Math.random() * (nivel.duracionMax - nivel.duracionMin + 1)) + nivel.duracionMin
     const animal = animales[Math.floor(Math.random() * animales.length)]
 
     setBurbujas(prev => [...prev, { id, size, left, duracion, animal, explotada: false, y: 110 }])
   }
 
   const explotarBurbuja = (e, id) => {
-    e.preventDefault() // Evita comportamientos raros en táctil
-    
+    e.preventDefault()
+
     setBurbujas(prev => prev.map(b => b.id === id ? { ...b, explotada: true } : b))
-    
+
     setPuntuacion(prev => {
       const nueva = prev + 1
-      if (nueva >= meta) {
+      if (nueva >= nivel.meta) {
         setTimeout(() => {
           setVictoria(true)
+          guardarMejorNivel(nivelId, 3)
           guardarProgreso()
         }, 500)
       }
@@ -70,8 +88,21 @@ export default function JuegoBurbujas({ perfil, onVolver }) {
     setGuardando(false)
   }
 
-  // Calculamos el porcentaje de la barra de progreso
-  const porcentajeProgreso = Math.min((puntuacion / meta) * 100, 100)
+  if (!nivel) {
+    return (
+      <NivelSelector
+        onVolver={onVolver}
+        emojiJuego="🫧"
+        titulo="Burbujas Mágicas"
+        subtitulo="Elige tu reto"
+        niveles={NIVELES}
+        mejores={mejores}
+        onSeleccionar={empezarNivel}
+      />
+    )
+  }
+
+  const porcentajeProgreso = Math.min((puntuacion / nivel.meta) * 100, 100)
 
   return (
     <div style={{ 
@@ -79,13 +110,12 @@ export default function JuegoBurbujas({ perfil, onVolver }) {
       backgroundImage: `url(${fondoImg})`,
       backgroundSize: 'cover', backgroundPosition: 'center',
       position: 'absolute', top: 0, left: 0, zIndex: 10,
-      overflow: 'hidden', userSelect: 'none', touchAction: 'none' // Clave para juegos táctiles rápidos
+      overflow: 'hidden', userSelect: 'none', touchAction: 'none'
     }}>
       
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700;900&display=swap');
         
-        /* Animación de la burbuja subiendo y balanceándose */
         @keyframes flotarArriba {
           0% { transform: translateY(110dvh) translateX(0) scale(1); opacity: 0; }
           10% { opacity: 1; }
@@ -93,14 +123,12 @@ export default function JuegoBurbujas({ perfil, onVolver }) {
           100% { transform: translateY(-20dvh) translateX(-25px) scale(1); opacity: 1; }
         }
 
-        /* Animación espectacular al explotar */
         @keyframes estallarPop {
           0% { transform: scale(1); opacity: 1; filter: brightness(1); }
           40% { transform: scale(1.4); opacity: 0.8; filter: brightness(1.5); }
           100% { transform: scale(2.5); opacity: 0; filter: brightness(2); display: none; }
         }
 
-        /* Estilo hiperrealista de pompa de jabón */
         .burbuja-jabon {
           position: absolute;
           border-radius: 50%;
@@ -115,7 +143,6 @@ export default function JuegoBurbujas({ perfil, onVolver }) {
           -webkit-tap-highlight-color: transparent;
         }
 
-        /* El brillito blanco curvo de la burbuja */
         .burbuja-jabon::after {
           content: '';
           position: absolute;
@@ -132,7 +159,6 @@ export default function JuegoBurbujas({ perfil, onVolver }) {
         @keyframes victoria { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
       `}</style>
 
-      {/* HEADER: Botón Volver y Barra de Progreso Dinámica */}
       <div style={{ position: 'absolute', top: '25px', left: '20px', right: '20px', display: 'flex', alignItems: 'center', gap: '15px', zIndex: 50 }}>
         <button 
           onClick={onVolver}
@@ -154,7 +180,6 @@ export default function JuegoBurbujas({ perfil, onVolver }) {
             boxShadow: 'inset 0 4px 6px rgba(0,0,0,0.1), 0 10px 15px rgba(0,0,0,0.1)',
             position: 'relative'
           }}>
-            {/* Relleno de la barra que crece */}
             <div style={{
               width: `${porcentajeProgreso}%`, height: '100%',
               background: 'linear-gradient(90deg, #4facfe 0%, #00f2fe 100%)',
@@ -167,43 +192,37 @@ export default function JuegoBurbujas({ perfil, onVolver }) {
               color: '#1E293B', fontWeight: '900', fontSize: '1.2rem', fontFamily: '"Fredoka", sans-serif',
               textShadow: '0 2px 2px rgba(255,255,255,0.8)'
             }}>
-              {puntuacion} / {meta}
+              {nivel.emoji} {puntuacion} / {nivel.meta}
             </div>
           </div>
         )}
       </div>
 
-      {/* ZONA DE JUEGO: Renderizado de las burbujas */}
       {!victoria && burbujas.map(burbuja => (
         <div 
           key={burbuja.id}
           className="burbuja-jabon"
-          // Usamos onPointerDown en lugar de onClick para que la respuesta sea INSTANTÁNEA al tocar en móviles
           onPointerDown={(e) => !burbuja.explotada && explotarBurbuja(e, burbuja.id)}
           style={{
             left: `${burbuja.left}%`,
             width: `${burbuja.size}px`,
             height: `${burbuja.size}px`,
-            // Si explota, cambiamos la animación al efecto POP. Si no, sigue flotando.
             animation: burbuja.explotada 
               ? `estallarPop 0.3s forwards` 
               : `flotarArriba ${burbuja.duracion}s linear forwards`,
-            // Congelamos la posición de la burbuja en el sitio exacto donde la tocaron para que la explosión ocurra ahí
-            animationPlayState: burbuja.explotada ? 'running' : 'running'
+            animationPlayState: 'running'
           }}
         >
-          {/* El animalito de dentro */}
           <span style={{ 
             fontSize: `${burbuja.size * 0.45}px`, 
             filter: 'drop-shadow(0 4px 4px rgba(0,0,0,0.2))',
-            pointerEvents: 'none' // Para que el clic vaya siempre a la burbuja
+            pointerEvents: 'none'
           }}>
             {burbuja.animal}
           </span>
         </div>
       ))}
 
-      {/* PANTALLA DE VICTORIA */}
       {victoria && (
         <div style={{
           position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
@@ -223,23 +242,37 @@ export default function JuegoBurbujas({ perfil, onVolver }) {
             </h1>
             
             <p style={{ color: '#FF5E62', fontSize: 'clamp(1.2rem, 5vw, 1.8rem)', fontWeight: '900', margin: '0', backgroundColor: 'white', padding: '15px 25px', borderRadius: '35px', border: '4px solid #FFE4E6', boxShadow: '0 8px 0 #fda4af', width: '100%', boxSizing: 'border-box' }}>
-              ¡Salvaste a todos! 🐾
+              ¡Nivel {nivel.nombre} superado! 🐾
             </p>
             
-            <button 
-              onClick={onVolver}
-              style={{ 
-                marginTop: '10px', padding: '15px 40px', fontSize: 'clamp(1.3rem, 5vw, 1.8rem)', fontWeight: '900',
-                background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', color: 'white', 
-                border: '4px solid white', borderRadius: '40px', cursor: 'pointer',
-                boxShadow: '0 10px 0 #0083B0, 0 20px 30px rgba(0,0,0,0.25)',
-                fontFamily: '"Fredoka", sans-serif', transition: 'transform 0.1s'
-              }}
-              onMouseDown={e => e.currentTarget.style.transform = 'translateY(10px)'}
-              onMouseUp={e => e.currentTarget.style.transform = 'translateY(0)'}
-            >
-              {guardando ? 'Guardando... ⏳' : '¡Continuar! 🚀'}
-            </button>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <button 
+                onClick={() => setNivelId(null)}
+                style={{ 
+                  padding: '14px 28px', fontSize: 'clamp(1.1rem, 4.5vw, 1.4rem)', fontWeight: '900',
+                  background: 'linear-gradient(135deg, #FFD166 0%, #FFB347 100%)', color: '#7A5C00', 
+                  border: '4px solid white', borderRadius: '35px', cursor: 'pointer',
+                  boxShadow: '0 8px 0 #CCAC00, 0 16px 25px rgba(0,0,0,0.2)',
+                  fontFamily: '"Fredoka", sans-serif'
+                }}
+              >
+                🔁 Otro nivel
+              </button>
+              <button 
+                onClick={onVolver}
+                style={{ 
+                  padding: '14px 28px', fontSize: 'clamp(1.1rem, 4.5vw, 1.4rem)', fontWeight: '900',
+                  background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', color: 'white', 
+                  border: '4px solid white', borderRadius: '40px', cursor: 'pointer',
+                  boxShadow: '0 10px 0 #0083B0, 0 20px 30px rgba(0,0,0,0.25)',
+                  fontFamily: '"Fredoka", sans-serif', transition: 'transform 0.1s'
+                }}
+                onMouseDown={e => e.currentTarget.style.transform = 'translateY(10px)'}
+                onMouseUp={e => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                {guardando ? 'Guardando... ⏳' : '¡Continuar! 🚀'}
+              </button>
+            </div>
           </div>
         </div>
       )}

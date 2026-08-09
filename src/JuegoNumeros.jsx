@@ -1,8 +1,17 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 import fondoImg from './fondo-lulipop.png'
+import NivelSelector from './NivelSelector'
+import useMejoresNiveles from './useMejoresNiveles'
+
+const NIVELES = [
+  { id: 'facil', nombre: 'Fácil', descripcion: 'Cuenta del 1 al 5', emoji: '🌱', color: '#43e97b', sombra: '#27ae60', rangoMax: 5, numOpciones: 3, rondas: 5 },
+  { id: 'medio', nombre: 'Medio', descripcion: 'Cuenta del 1 al 10', emoji: '🌿', color: '#4facfe', sombra: '#005580', rangoMax: 10, numOpciones: 3, rondas: 6 },
+  { id: 'dificil', nombre: 'Difícil', descripcion: 'Cuenta del 1 al 15', emoji: '🌳', color: '#FF9966', sombra: '#D9534F', rangoMax: 15, numOpciones: 4, rondas: 7 },
+]
 
 export default function JuegoNumeros({ perfil, onVolver }) {
+  const [nivelId, setNivelId] = useState(null)
   const [ronda, setRonda] = useState(1)
   const [retoActual, setRetoActual] = useState(null)
   const [seleccionado, setSeleccionado] = useState(null)
@@ -10,6 +19,9 @@ export default function JuegoNumeros({ perfil, onVolver }) {
   const [estadoRespuesta, setEstadoRespuesta] = useState(null) // 'correcto' | 'incorrecto'
   const [victoria, setVictoria] = useState(false)
   const [guardando, setGuardando] = useState(false)
+
+  const { mejores, guardarMejorNivel } = useMejoresNiveles('numeros', perfil?.id)
+  const nivel = NIVELES.find((n) => n.id === nivelId)
 
   const baseUrl = import.meta.env.BASE_URL
   const itemsDisponibles = [
@@ -26,22 +38,27 @@ export default function JuegoNumeros({ perfil, onVolver }) {
     { bg: '#FF5E62', shadow: '#C0392B', text: '#FFFFFF' },
     { bg: '#4facfe', shadow: '#005580', text: '#FFFFFF' },
     { bg: '#FFD166', shadow: '#CCAC00', text: '#7A5C00' },
+    { bg: '#a18cd1', shadow: '#6b4c9a', text: '#FFFFFF' },
   ]
 
-  const totalRondasMaximas = 5
-
   useEffect(() => {
-    generarNuevoReto()
-  }, [])
+    if (nivel) generarNuevoReto()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nivelId])
+
+  const empezarNivel = (id) => {
+    setNivelId(id)
+    setRonda(1)
+    setVictoria(false)
+  }
 
   const generarNuevoReto = () => {
-    const cantidad = Math.floor(Math.random() * 5) + 1 // Entre 1 y 5
+    const cantidad = Math.floor(Math.random() * nivel.rangoMax) + 1
     const itemAleatorio = itemsDisponibles[Math.floor(Math.random() * itemsDisponibles.length)]
-    
-    // Generar opciones únicas (sin números repetidos)
+
     const opcionesSet = new Set([cantidad])
-    while (opcionesSet.size < 3) {
-      const aleatorio = Math.floor(Math.random() * 5) + 1
+    while (opcionesSet.size < nivel.numOpciones) {
+      const aleatorio = Math.floor(Math.random() * nivel.rangoMax) + 1
       opcionesSet.add(aleatorio)
     }
     const opciones = Array.from(opcionesSet).sort(() => Math.random() - 0.5)
@@ -56,25 +73,26 @@ export default function JuegoNumeros({ perfil, onVolver }) {
   }
 
   const verificarRespuesta = (opcion) => {
-    if (seleccionado !== null || victoria) return 
+    if (seleccionado !== null || victoria) return
     setSeleccionado(opcion)
 
     if (opcion === retoActual.correcto) {
       setEstadoRespuesta('correcto')
       setMensaje('¡Súper! 🌟')
-      
+
       setTimeout(() => {
         setSeleccionado(null)
         setEstadoRespuesta(null)
         setMensaje('')
-        
+
         setRonda(prevRonda => {
           const siguienteRonda = prevRonda + 1
-          if (siguienteRonda <= totalRondasMaximas) {
+          if (siguienteRonda <= nivel.rondas) {
             generarNuevoReto()
             return siguienteRonda
           } else {
             setVictoria(true)
+            guardarMejorNivel(nivelId, 3)
             guardarProgreso()
             return prevRonda
           }
@@ -83,7 +101,7 @@ export default function JuegoNumeros({ perfil, onVolver }) {
     } else {
       setEstadoRespuesta('incorrecto')
       setMensaje('¡Casi! Inténtalo de nuevo 💪')
-      
+
       setTimeout(() => {
         setSeleccionado(null)
         setEstadoRespuesta(null)
@@ -98,6 +116,20 @@ export default function JuegoNumeros({ perfil, onVolver }) {
       { perfil_id: perfil.id, padre_id: perfil.padre_id, actividad_id: 'juego_numeros', completado: true, estrellas: 3 }
     ])
     setGuardando(false)
+  }
+
+  if (!nivel) {
+    return (
+      <NivelSelector
+        onVolver={onVolver}
+        emojiJuego="🔢"
+        titulo="Contando Números"
+        subtitulo="Elige tu reto"
+        niveles={NIVELES}
+        mejores={mejores}
+        onSeleccionar={empezarNivel}
+      />
+    )
   }
 
   if (!retoActual) return null
@@ -142,9 +174,9 @@ export default function JuegoNumeros({ perfil, onVolver }) {
         @keyframes rotaEstrella { 100% { transform: rotate(360deg); } }
 
         .btn-arcilla {
-          width: 100px; height: 100px;
-          border-radius: 30px;
-          font-size: 3.5rem;
+          width: 90px; height: 90px;
+          border-radius: 28px;
+          font-size: 3rem;
           font-weight: 900;
           cursor: pointer;
           transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
@@ -165,15 +197,15 @@ export default function JuegoNumeros({ perfil, onVolver }) {
         }
 
         .grafico-juego {
-          width: 75px;
-          height: 75px;
+          width: 65px;
+          height: 65px;
           object-fit: contain;
           filter: drop-shadow(0 10px 15px rgba(0,0,0,0.2));
           animation: flotarElemento 3s ease-in-out infinite;
         }
       `}</style>
 
-      {/* HEADER: Botón Volver y Progreso */}
+      {/* HEADER: Botón Volver, Nivel y Progreso */}
       <div style={{ position: 'absolute', top: '25px', left: '25px', right: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 20 }}>
         <button 
           onClick={onVolver}
@@ -190,12 +222,12 @@ export default function JuegoNumeros({ perfil, onVolver }) {
 
         {/* Indicador de progreso con el avatar del niño */}
         {!victoria && (
-          <div className="glass-panel" style={{ padding: '8px 20px', display: 'flex', alignItems: 'center', gap: '15px', border: '4px solid white', borderRadius: '25px' }}>
-            <span style={{ fontSize: '24px' }}>{perfil?.avatar || '👦'}</span>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              {Array.from({ length: totalRondasMaximas }).map((_, idx) => (
+          <div className="glass-panel" style={{ padding: '8px 20px', display: 'flex', alignItems: 'center', gap: '12px', border: '4px solid white', borderRadius: '25px' }}>
+            <span style={{ fontSize: '20px', backgroundColor: nivel.color, borderRadius: '10px', padding: '4px 8px' }}>{nivel.emoji}</span>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              {Array.from({ length: nivel.rondas }).map((_, idx) => (
                 <div key={idx} style={{
-                  width: '18px', height: '18px', borderRadius: '50%',
+                  width: '16px', height: '16px', borderRadius: '50%',
                   backgroundColor: idx < ronda - 1 ? '#43e97b' : idx === ronda - 1 ? '#FFD166' : '#E2E8F0',
                   border: '3px solid white', boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
                   transform: idx === ronda - 1 ? 'scale(1.3)' : 'scale(1)',
@@ -236,7 +268,7 @@ export default function JuegoNumeros({ perfil, onVolver }) {
               flexWrap: 'wrap',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '15px',
+              gap: '12px',
               padding: '20px',
               boxSizing: 'border-box',
               border: '3px dashed #CBD5E1',
@@ -257,7 +289,7 @@ export default function JuegoNumeros({ perfil, onVolver }) {
                   <span 
                     style={{ 
                       display: 'none', 
-                      fontSize: '65px', 
+                      fontSize: '55px', 
                       filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.2))',
                       animation: `flotarElemento 3s ease-in-out infinite`,
                       animationDelay: `${i * 0.15}s`
@@ -271,7 +303,7 @@ export default function JuegoNumeros({ perfil, onVolver }) {
           </div>
 
           {/* Opciones de números (Botones Arcilla 3D) */}
-          <div className={estadoRespuesta === 'incorrecto' ? 'anim-shake' : ''} style={{ display: 'flex', gap: '25px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <div className={estadoRespuesta === 'incorrecto' ? 'anim-shake' : ''} style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
             {retoActual.opciones.map((opcion, idx) => {
               const estiloColor = coloresBotones[idx % coloresBotones.length]
               const esSeleccionado = seleccionado === opcion
@@ -337,27 +369,39 @@ export default function JuegoNumeros({ perfil, onVolver }) {
               textTransform: 'uppercase', letterSpacing: '3px', fontWeight: '900'
             }}>¡Súper!</h1>
             <p style={{ 
-              color: '#4facfe', fontSize: '1.8rem', fontWeight: '900', margin: '0 0 40px 0', 
+              color: '#4facfe', fontSize: '1.8rem', fontWeight: '900', margin: '0 0 30px 0', 
               backgroundColor: 'white', padding: '12px 35px', borderRadius: '35px', 
               border: '4px solid #E0F2FE', boxShadow: '0 8px 0 #bae6fd' 
             }}>
-              ¡Reto de números completado!
+              ¡Nivel {nivel.nombre} completado!
             </p>
             
-            <button 
-              onClick={onVolver}
-              style={{ 
-                padding: '18px 50px', fontSize: '1.8rem', fontWeight: '900',
-                background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', color: 'white', 
-                border: '4px solid white', borderRadius: '40px', cursor: 'pointer',
-                boxShadow: '0 10px 0 #27ae60, 0 20px 30px rgba(0,0,0,0.25)',
-                fontFamily: '"Fredoka", sans-serif', transition: 'transform 0.1s'
-              }}
-              onMouseDown={e => e.currentTarget.style.transform = 'translateY(10px)'}
-              onMouseUp={e => e.currentTarget.style.transform = 'translateY(0)'}
-            >
-              {guardando ? 'Guardando... ⏳' : '¡Continuar! 🚀'}
-            </button>
+            <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <button 
+                onClick={() => setNivelId(null)}
+                style={{ 
+                  padding: '16px 35px', fontSize: '1.4rem', fontWeight: '900',
+                  background: 'linear-gradient(135deg, #FFD166 0%, #FFB347 100%)', color: '#7A5C00', 
+                  border: '4px solid white', borderRadius: '35px', cursor: 'pointer',
+                  boxShadow: '0 8px 0 #CCAC00, 0 16px 25px rgba(0,0,0,0.2)',
+                  fontFamily: '"Fredoka", sans-serif'
+                }}
+              >
+                🔁 Otro nivel
+              </button>
+              <button 
+                onClick={onVolver}
+                style={{ 
+                  padding: '16px 35px', fontSize: '1.4rem', fontWeight: '900',
+                  background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', color: 'white', 
+                  border: '4px solid white', borderRadius: '35px', cursor: 'pointer',
+                  boxShadow: '0 8px 0 #27ae60, 0 16px 25px rgba(0,0,0,0.2)',
+                  fontFamily: '"Fredoka", sans-serif'
+                }}
+              >
+                {guardando ? 'Guardando... ⏳' : '¡Continuar! 🚀'}
+              </button>
+            </div>
           </div>
         </div>
       )}

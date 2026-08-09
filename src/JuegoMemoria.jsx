@@ -1,37 +1,56 @@
 import React, { useState, useEffect } from 'react'
+import { supabase } from './supabaseClient'
 import fondoImg from './fondo-lulipop.png'
+import NivelSelector from './NivelSelector'
+import useMejoresNiveles from './useMejoresNiveles'
+
+const NIVELES = [
+  { id: 'facil', nombre: 'Fácil', descripcion: '4 parejas', emoji: '🌱', color: '#43e97b', sombra: '#27ae60', numParejas: 4, columnas: 4 },
+  { id: 'medio', nombre: 'Medio', descripcion: '6 parejas', emoji: '🌿', color: '#4facfe', sombra: '#005580', numParejas: 6, columnas: 4 },
+  { id: 'dificil', nombre: 'Difícil', descripcion: '7 parejas', emoji: '🌳', color: '#FF9966', sombra: '#D9534F', numParejas: 7, columnas: 4 },
+]
 
 export default function JuegoMemoria({ perfil, onVolver }) {
-  // Magia de Vite para GitHub Pages: Asegura que la ruta base sea correcta en producción
   const baseUrl = import.meta.env.BASE_URL
 
-  // Construimos las rutas usando el baseUrl
   const IMAGENES_CARTAS = [
     `${baseUrl}assets/dino.png`,
     `${baseUrl}assets/estrella.png`,
     `${baseUrl}assets/gato.png`,
     `${baseUrl}assets/globo.png`,
     `${baseUrl}assets/manzana.png`,
-    `${baseUrl}assets/pez.png`
+    `${baseUrl}assets/pez.png`,
+    `${baseUrl}assets/platano.png`,
   ]
 
+  const [nivelId, setNivelId] = useState(null)
   const [baraja, setBaraja] = useState([])
   const [cartasVolteadas, setCartasVolteadas] = useState([])
   const [parejasEncontradas, setParejasEncontradas] = useState([])
   const [bloqueado, setBloqueado] = useState(false)
   
   const [puntos, setPuntos] = useState(0)
+  const [erroresRonda, setErroresRonda] = useState(0)
   const [nivelSuperado, setNivelSuperado] = useState(false)
   const [cartasError, setCartasError] = useState([]) 
+  const [guardando, setGuardando] = useState(false)
+
+  const { mejores, guardarMejorNivel } = useMejoresNiveles('memoria', perfil?.id)
+  const nivel = NIVELES.find((n) => n.id === nivelId)
+
+  const empezarNivel = (id) => {
+    setNivelId(id)
+  }
 
   useEffect(() => {
-    iniciarJuego()
-  }, [])
+    if (nivel) iniciarJuego()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nivelId])
 
   const iniciarJuego = () => {
-    const mazo = [...IMAGENES_CARTAS, ...IMAGENES_CARTAS]
+    const imagenesNivel = [...IMAGENES_CARTAS].sort(() => Math.random() - 0.5).slice(0, nivel.numParejas)
+    const mazo = [...imagenesNivel, ...imagenesNivel]
     
-    // Barajamos (Algoritmo Fisher-Yates)
     for (let i = mazo.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1))
       ;[mazo[i], mazo[j]] = [mazo[j], mazo[i]]
@@ -47,6 +66,7 @@ export default function JuegoMemoria({ perfil, onVolver }) {
     setParejasEncontradas([])
     setCartasError([])
     setPuntos(0)
+    setErroresRonda(0)
     setNivelSuperado(false)
     setBloqueado(false)
   }
@@ -92,10 +112,13 @@ export default function JuegoMemoria({ perfil, onVolver }) {
         setTimeout(() => {
           setParejasEncontradas(prev => {
             const nuevasParejas = [...prev, carta1.img]
-            if (nuevasParejas.length === IMAGENES_CARTAS.length) {
+            if (nuevasParejas.length === nivel.numParejas) {
               setTimeout(() => {
                 setNivelSuperado(true)
                 updateScore(50)
+                const estrellas = erroresRonda <= 1 ? 3 : erroresRonda <= 4 ? 2 : 1
+                guardarMejorNivel(nivelId, estrellas)
+                guardarProgreso()
               }, 500)
             }
             return nuevasParejas
@@ -106,6 +129,7 @@ export default function JuegoMemoria({ perfil, onVolver }) {
         }, 600)
       } else {
         updateScore(-2) 
+        setErroresRonda(prev => prev + 1)
         setCartasError([...nuevasVolteadas]) 
         
         setTimeout(() => {
@@ -115,6 +139,28 @@ export default function JuegoMemoria({ perfil, onVolver }) {
         }, 1000) 
       }
     }
+  }
+
+  const guardarProgreso = async () => {
+    setGuardando(true)
+    await supabase.from('progreso_actividades').insert([
+      { perfil_id: perfil.id, padre_id: perfil.padre_id, actividad_id: 'juego_memoria', completado: true, estrellas: 3 }
+    ])
+    setGuardando(false)
+  }
+
+  if (!nivel) {
+    return (
+      <NivelSelector
+        onVolver={onVolver}
+        emojiJuego="🧠"
+        titulo="Memoria de Parejas"
+        subtitulo="Elige tu reto"
+        niveles={NIVELES}
+        mejores={mejores}
+        onSeleccionar={empezarNivel}
+      />
+    )
   }
 
   return (
@@ -130,7 +176,6 @@ export default function JuegoMemoria({ perfil, onVolver }) {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;900&display=swap');
         
-        /* 🚀 MOTOR 3D PARA LAS CARTAS */
         .carta-contenedor {
           perspective: 1000px;
           cursor: pointer;
@@ -145,29 +190,25 @@ export default function JuegoMemoria({ perfil, onVolver }) {
           transform: rotateY(180deg);
         }
         
-        /* Caras de la carta */
         .carta-cara {
           position: absolute;
           width: 100%; height: 100%;
-          backface-visibility: hidden; /* 🔥 ESTO ARREGLA LA PIRULETA INVERTIDA 🔥 */
+          backface-visibility: hidden;
           border-radius: 20px;
           box-shadow: 0 10px 20px rgba(0,0,0,0.15);
           display: flex; justify-content: center; align-items: center;
           border: 4px solid white;
         }
         
-        /* Parte Trasera (Piruleta) */
         .carta-frente {
           background: linear-gradient(135deg, #B5C6FF 0%, #FFB5E8 100%); 
         }
         
-        /* Parte Delantera (La imagen oculta) */
         .carta-dorso {
           background-color: white;
           transform: rotateY(180deg);
         }
 
-        /* Animaciones */
         .anim-victoria { animation: victoria 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         @keyframes victoria { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
         
@@ -185,33 +226,38 @@ export default function JuegoMemoria({ perfil, onVolver }) {
         }
       `}</style>
 
-      {/* PANTALLA DE VICTORIA */}
       {nivelSuperado && (
         <div style={{
           position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
           backgroundColor: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(10px)',
-          zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+          zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', boxSizing: 'border-box'
         }}>
-          <div className="anim-victoria" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div className="anim-victoria" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
             <div className="anim-estrella" style={{ fontSize: '100px', filter: 'drop-shadow(0 10px 10px rgba(0,0,0,0.2))' }}>🌟</div>
             <h1 style={{
-              color: '#FFD166', fontSize: '4.5rem', margin: '10px 0',
+              color: '#FFD166', fontSize: 'clamp(2.5rem, 9vw, 4.5rem)', margin: '10px 0',
               textShadow: '0 6px 0 #CCAC00, 0 10px 20px rgba(0,0,0,0.2)',
               textTransform: 'uppercase', letterSpacing: '2px'
             }}>¡Súper!</h1>
-            <p style={{ color: '#4facfe', fontSize: '1.8rem', fontWeight: '900', margin: 0, backgroundColor: 'white', padding: '10px 30px', borderRadius: '30px', boxShadow: '0 5px 0 #cbd5e1' }}>
-              +50 puntos
+            <p style={{ color: '#4facfe', fontSize: '1.5rem', fontWeight: '900', margin: '0 0 20px 0', backgroundColor: 'white', padding: '10px 30px', borderRadius: '30px', boxShadow: '0 5px 0 #cbd5e1' }}>
+              ¡Nivel {nivel.nombre} completado!
             </p>
-            <button onClick={iniciarJuego} style={{
-              marginTop: '30px', backgroundColor: '#43e97b', color: 'white', border: 'none',
-              padding: '15px 40px', borderRadius: '30px', fontSize: '1.5rem', fontWeight: '900',
-              cursor: 'pointer', boxShadow: '0 8px 0 #27ae60'
-            }}>Jugar de nuevo</button>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <button onClick={() => setNivelId(null)} style={{
+                backgroundColor: '#FFD166', color: '#7A5C00', border: 'none',
+                padding: '15px 30px', borderRadius: '30px', fontSize: '1.3rem', fontWeight: '900',
+                cursor: 'pointer', boxShadow: '0 8px 0 #CCAC00'
+              }}>🔁 Otro nivel</button>
+              <button onClick={onVolver} style={{
+                backgroundColor: '#43e97b', color: 'white', border: 'none',
+                padding: '15px 30px', borderRadius: '30px', fontSize: '1.3rem', fontWeight: '900',
+                cursor: 'pointer', boxShadow: '0 8px 0 #27ae60'
+              }}>{guardando ? 'Guardando...' : '¡Continuar! 🚀'}</button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* BOTONES SUPERIORES */}
       <div style={{ 
         position: 'absolute', top: '25px', left: '20px', right: '20px', 
         display: 'flex', justifyContent: 'space-between', zIndex: 50 
@@ -233,18 +279,16 @@ export default function JuegoMemoria({ perfil, onVolver }) {
         }}>🧹</button>
       </div>
 
-      {/* MARCADOR DE PUNTOS */}
       <div style={{
         position: 'absolute', top: '25px', left: '50%', transform: 'translateX(-50%)',
-        backgroundColor: 'rgba(255, 255, 255, 0.95)', padding: '12px 30px',
+        backgroundColor: 'rgba(255, 255, 255, 0.95)', padding: '12px 26px',
         borderRadius: '30px', border: '4px solid white',
         boxShadow: '0 12px 30px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center',
-        gap: '12px', zIndex: 20, fontSize: '32px', fontWeight: '900'
+        gap: '10px', zIndex: 20, fontSize: '28px', fontWeight: '900'
       }}>
-        ⭐ <span id="marcador-puntos-parejas" style={{ color: '#FFD166', transition: 'all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1)', textShadow: '0 4px 0 #CCAC00', minWidth: '80px', textAlign: 'center', display: 'inline-block' }}>{puntos}</span>
+        {nivel.emoji} ⭐ <span id="marcador-puntos-parejas" style={{ color: '#FFD166', transition: 'all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1)', textShadow: '0 4px 0 #CCAC00', minWidth: '70px', textAlign: 'center', display: 'inline-block' }}>{puntos}</span>
       </div>
 
-      {/* TABLERO DE JUEGO */}
       <div style={{
         marginTop: '130px',
         backgroundColor: 'rgba(255, 255, 255, 0.6)',
@@ -257,14 +301,14 @@ export default function JuegoMemoria({ perfil, onVolver }) {
       }}>
         
         <h2 style={{ 
-          color: '#334155', fontSize: '1.8rem', margin: '0 0 20px 0',
-          backgroundColor: 'white', padding: '10px 30px', borderRadius: '25px',
+          color: '#334155', fontSize: '1.6rem', margin: '0 0 20px 0',
+          backgroundColor: 'white', padding: '10px 26px', borderRadius: '25px',
           boxShadow: '0 5px 0 #e2e8f0'
         }}>¡Encuentra las parejas!</h2>
 
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
+          gridTemplateColumns: `repeat(${nivel.columnas}, 1fr)`,
           gap: '15px',
           width: '95vw',
           maxWidth: '500px'
@@ -289,12 +333,10 @@ export default function JuegoMemoria({ perfil, onVolver }) {
                 onClick={() => voltearCarta(index)}
               >
                 <div className="carta-inner">
-                  {/* FRENTE: La piruleta */}
                   <div className="carta-cara carta-frente">
                     <span style={{ fontSize: '35px' }}>🍭</span>
                   </div>
                   
-                  {/* DORSO: La imagen cargada correctamente en GitHub Pages */}
                   <div className={claseDorso}>
                     <img 
                       src={carta.img} 
@@ -302,7 +344,6 @@ export default function JuegoMemoria({ perfil, onVolver }) {
                       style={{ width: '65%', height: '65%', objectFit: 'contain' }}
                       draggable="false"
                       onError={(e) => {
-                         // Fallback visual en caso de que alguna imagen tarde en cargar
                          e.target.style.display = 'none';
                          e.target.parentElement.innerHTML += '<span style="font-size:40px">❓</span>';
                       }}

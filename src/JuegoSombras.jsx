@@ -1,8 +1,17 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 import fondoImg from './fondo-lulipop.png'
+import NivelSelector from './NivelSelector'
+import useMejoresNiveles from './useMejoresNiveles'
+
+const NIVELES = [
+  { id: 'facil', nombre: 'Fácil', descripcion: '2 sombras a elegir', emoji: '🌱', color: '#43e97b', sombra: '#27ae60', numOpciones: 2, rondas: 4 },
+  { id: 'medio', nombre: 'Medio', descripcion: '3 sombras a elegir', emoji: '🌿', color: '#4facfe', sombra: '#005580', numOpciones: 3, rondas: 5 },
+  { id: 'dificil', nombre: 'Difícil', descripcion: '4 sombras a elegir', emoji: '🌳', color: '#FF9966', sombra: '#D9534F', numOpciones: 4, rondas: 6 },
+]
 
 export default function JuegoSombras({ perfil, onVolver }) {
+  const [nivelId, setNivelId] = useState(null)
   const [ronda, setRonda] = useState(1)
   const [retoActual, setRetoActual] = useState(null)
   const [seleccionado, setSeleccionado] = useState(null)
@@ -10,6 +19,9 @@ export default function JuegoSombras({ perfil, onVolver }) {
   const [estadoRespuesta, setEstadoRespuesta] = useState(null)
   const [victoria, setVictoria] = useState(false)
   const [guardando, setGuardando] = useState(false)
+
+  const { mejores, guardarMejorNivel } = useMejoresNiveles('sombras', perfil?.id)
+  const nivel = NIVELES.find((n) => n.id === nivelId)
 
   const baseUrl = import.meta.env.BASE_URL
   
@@ -23,16 +35,21 @@ export default function JuegoSombras({ perfil, onVolver }) {
     { id: 'dino', src: `${baseUrl}assets/dino.png`, fallback: '🦖', color: '#4ade80' }
   ]
 
-  const totalRondasMaximas = 5
+  const empezarNivel = (id) => {
+    setNivelId(id)
+    setRonda(1)
+    setVictoria(false)
+  }
 
   useEffect(() => {
-    generarNuevoReto()
-  }, [])
+    if (nivel) generarNuevoReto()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nivelId])
 
   const generarNuevoReto = () => {
     const mezclados = [...itemsDisponibles].sort(() => 0.5 - Math.random())
-    const opciones = mezclados.slice(0, 3)
-    const correcto = opciones[Math.floor(Math.random() * 3)]
+    const opciones = mezclados.slice(0, nivel.numOpciones)
+    const correcto = opciones[Math.floor(Math.random() * opciones.length)]
 
     setRetoActual({ correcto, opciones, titulo: '¿De quién es esta sombra?' })
   }
@@ -50,11 +67,12 @@ export default function JuegoSombras({ perfil, onVolver }) {
         setEstadoRespuesta(null)
         setMensaje('')
         
-        if (ronda < totalRondasMaximas) {
+        if (ronda < nivel.rondas) {
           setRonda(prev => prev + 1)
           generarNuevoReto()
         } else {
           setVictoria(true)
+          guardarMejorNivel(nivelId, 3)
           guardarProgreso()
         }
       }, 1500)
@@ -76,6 +94,20 @@ export default function JuegoSombras({ perfil, onVolver }) {
       { perfil_id: perfil.id, padre_id: perfil.padre_id, actividad_id: 'juego_sombras', completado: true, estrellas: 3 }
     ])
     setGuardando(false)
+  }
+
+  if (!nivel) {
+    return (
+      <NivelSelector
+        onVolver={onVolver}
+        emojiJuego="🌒"
+        titulo="Detective de Sombras"
+        subtitulo="Elige tu reto"
+        niveles={NIVELES}
+        mejores={mejores}
+        onSeleccionar={empezarNivel}
+      />
+    )
   }
 
   if (!retoActual) return null
@@ -118,7 +150,7 @@ export default function JuegoSombras({ perfil, onVolver }) {
         }
 
         .btn-imagen-arcilla {
-          width: 105px; height: 105px; border-radius: 30px; cursor: pointer;
+          width: clamp(80px, 22vw, 105px); height: clamp(80px, 22vw, 105px); border-radius: 30px; cursor: pointer;
           transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
           border: 4px solid rgba(255,255,255,0.7); display: flex; justify-content: center; align-items: center;
           background: rgba(255, 255, 255, 0.9); box-shadow: inset 0px -8px 0px rgba(0,0,0,0.1), 0px 15px 25px rgba(0,0,0,0.15);
@@ -135,12 +167,12 @@ export default function JuegoSombras({ perfil, onVolver }) {
         }}>❮</button>
 
         {!victoria && (
-          <div className="glass-panel" style={{ padding: '8px 20px', display: 'flex', alignItems: 'center', gap: '15px', border: '4px solid white', borderRadius: '25px' }}>
-            <span style={{ fontSize: '24px' }}>{perfil?.avatar || '👦'}</span>
+          <div className="glass-panel" style={{ padding: '8px 20px', display: 'flex', alignItems: 'center', gap: '12px', border: '4px solid white', borderRadius: '25px' }}>
+            <span style={{ fontSize: '20px', backgroundColor: nivel.color, borderRadius: '10px', padding: '4px 8px' }}>{nivel.emoji}</span>
             <div style={{ display: 'flex', gap: '8px' }}>
-              {Array.from({ length: totalRondasMaximas }).map((_, idx) => (
+              {Array.from({ length: nivel.rondas }).map((_, idx) => (
                 <div key={idx} style={{
-                  width: '18px', height: '18px', borderRadius: '50%',
+                  width: '16px', height: '16px', borderRadius: '50%',
                   backgroundColor: idx < ronda - 1 ? '#43e97b' : idx === ronda - 1 ? '#FFD166' : '#E2E8F0',
                   border: '3px solid white', boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
                   transform: idx === ronda - 1 ? 'scale(1.3)' : 'scale(1)', transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
@@ -154,24 +186,24 @@ export default function JuegoSombras({ perfil, onVolver }) {
       {!victoria ? (
         <div className="anim-pop" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '550px', marginTop: '30px' }}>
           
-          <div className="glass-panel" style={{ padding: '40px 30px', marginBottom: '35px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', width: '100%', boxSizing: 'border-box' }}>
-            <h2 style={{ color: '#334155', fontSize: '2rem', margin: 0, fontWeight: '900', textShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>{retoActual.titulo}</h2>
-            <div className="anim-flotar" style={{ width: '180px', height: '180px', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.5)', borderRadius: '50%', border: '4px dashed #CBD5E1' }}>
+          <div className="glass-panel" style={{ padding: '35px 25px', marginBottom: '30px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', width: '100%', boxSizing: 'border-box' }}>
+            <h2 style={{ color: '#334155', fontSize: '1.8rem', margin: 0, fontWeight: '900', textShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>{retoActual.titulo}</h2>
+            <div className="anim-flotar" style={{ width: '170px', height: '170px', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.5)', borderRadius: '50%', border: '4px dashed #CBD5E1' }}>
               <img 
                 src={retoActual.correcto.src} alt="Sombra misteriosa"
                 className={estadoRespuesta === 'correcto' ? 'anim-revelar' : ''}
                 style={{ 
-                  width: '130px', height: '130px', objectFit: 'contain',
+                  width: '125px', height: '125px', objectFit: 'contain',
                   filter: estadoRespuesta === 'correcto' ? 'none' : 'brightness(0) drop-shadow(0 15px 15px rgba(0,0,0,0.4))',
                   transition: 'filter 0.5s'
                 }}
                 onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }}
               />
-              <span style={{ display: 'none', fontSize: '100px', filter: estadoRespuesta === 'correcto' ? 'none' : 'brightness(0)' }}>{retoActual.correcto.fallback}</span>
+              <span style={{ display: 'none', fontSize: '95px', filter: estadoRespuesta === 'correcto' ? 'none' : 'brightness(0)' }}>{retoActual.correcto.fallback}</span>
             </div>
           </div>
 
-          <div className={estadoRespuesta === 'incorrecto' ? 'anim-shake' : ''} style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <div className={estadoRespuesta === 'incorrecto' ? 'anim-shake' : ''} style={{ display: 'flex', gap: '18px', flexWrap: 'wrap', justifyContent: 'center' }}>
             {retoActual.opciones.map((opcion) => {
               const esSeleccionado = seleccionado?.id === opcion.id
               const esCorrecto = esSeleccionado && estadoRespuesta === 'correcto'
@@ -190,7 +222,7 @@ export default function JuegoSombras({ perfil, onVolver }) {
                     boxShadow: esCorrecto ? '0 0 20px rgba(67, 233, 123, 0.5), inset 0px -8px 0px rgba(0,0,0,0.05)' : 'inset 0px -8px 0px rgba(0,0,0,0.1), 0px 15px 25px rgba(0,0,0,0.15)'
                   }}
                 >
-                  <img src={opcion.src} alt={opcion.id} style={{ width: '65px', height: '65px', objectFit: 'contain' }} />
+                  <img src={opcion.src} alt={opcion.id} style={{ width: '60%', height: '60%', objectFit: 'contain' }} />
                 </button>
               )
             })}
@@ -208,7 +240,6 @@ export default function JuegoSombras({ perfil, onVolver }) {
           </div>
         </div>
       ) : (
-        /* PANTALLA DE VICTORIA ARREGLADA (RESPONSIVE) */
         <div style={{
           position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
           backgroundColor: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(15px)',
@@ -240,24 +271,38 @@ export default function JuegoSombras({ perfil, onVolver }) {
               border: '4px solid #E0F2FE', boxShadow: '0 8px 0 #bae6fd',
               width: '100%', boxSizing: 'border-box'
             }}>
-              ¡Eres un detective de sombras! 🕵️‍♂️
+              ¡Nivel {nivel.nombre} completado! 🕵️‍♂️
             </p>
             
-            <button 
-              onClick={onVolver}
-              style={{ 
-                marginTop: '10px', padding: '15px 40px', 
-                fontSize: 'clamp(1.3rem, 5vw, 1.8rem)', fontWeight: '900',
-                background: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)', color: 'white', 
-                border: '4px solid white', borderRadius: '40px', cursor: 'pointer',
-                boxShadow: '0 10px 0 #8970ba, 0 20px 30px rgba(0,0,0,0.25)',
-                fontFamily: '"Fredoka", sans-serif', transition: 'transform 0.1s'
-              }}
-              onMouseDown={e => e.currentTarget.style.transform = 'translateY(10px)'}
-              onMouseUp={e => e.currentTarget.style.transform = 'translateY(0)'}
-            >
-              {guardando ? 'Guardando... ⏳' : '¡Continuar! 🚀'}
-            </button>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <button 
+                onClick={() => setNivelId(null)}
+                style={{ 
+                  padding: '14px 28px', fontSize: 'clamp(1.1rem, 4.5vw, 1.4rem)', fontWeight: '900',
+                  background: 'linear-gradient(135deg, #FFD166 0%, #FFB347 100%)', color: '#7A5C00', 
+                  border: '4px solid white', borderRadius: '35px', cursor: 'pointer',
+                  boxShadow: '0 8px 0 #CCAC00, 0 16px 25px rgba(0,0,0,0.2)',
+                  fontFamily: '"Fredoka", sans-serif'
+                }}
+              >
+                🔁 Otro nivel
+              </button>
+              <button 
+                onClick={onVolver}
+                style={{ 
+                  marginTop: '0', padding: '14px 28px', 
+                  fontSize: 'clamp(1.1rem, 4.5vw, 1.4rem)', fontWeight: '900',
+                  background: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)', color: 'white', 
+                  border: '4px solid white', borderRadius: '40px', cursor: 'pointer',
+                  boxShadow: '0 10px 0 #8970ba, 0 20px 30px rgba(0,0,0,0.25)',
+                  fontFamily: '"Fredoka", sans-serif', transition: 'transform 0.1s'
+                }}
+                onMouseDown={e => e.currentTarget.style.transform = 'translateY(10px)'}
+                onMouseUp={e => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                {guardando ? 'Guardando... ⏳' : '¡Continuar! 🚀'}
+              </button>
+            </div>
           </div>
         </div>
       )}
