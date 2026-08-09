@@ -37,13 +37,40 @@ export default function DashboardPadres({ perfil, onVolver }) {
   const estrellasNivelActual = totalEstrellas % ESTRELLAS_POR_NIVEL
   const porcentajeProgreso = (estrellasNivelActual / ESTRELLAS_POR_NIVEL) * 100
 
+  // Racha de días jugados seguidos (cuenta hasta hoy, o hasta ayer si hoy aún no ha jugado)
+  const calcularRacha = () => {
+    const diasUnicos = new Set(
+      progreso.filter((p) => p.created_at).map((p) => new Date(p.created_at).toDateString())
+    )
+    if (diasUnicos.size === 0) return 0
+
+    let racha = 0
+    const cursor = new Date()
+    cursor.setHours(0, 0, 0, 0)
+
+    if (!diasUnicos.has(cursor.toDateString())) {
+      cursor.setDate(cursor.getDate() - 1)
+    }
+    while (diasUnicos.has(cursor.toDateString())) {
+      racha++
+      cursor.setDate(cursor.getDate() - 1)
+    }
+    return racha
+  }
+  const racha = calcularRacha()
+
   // Mapeo de nombres de actividades
   const nombresActividades = {
     'juego_numeros': { nombre: 'Contando Números', icono: '🔢', bg: '#e0f2fe' },
     'puzzles_formas': { nombre: 'Puzzles de Formas', icono: '🧩', bg: '#dcfce7' },
     'arte_creativo': { nombre: 'Taller de Arte', icono: '🎨', bg: '#f3e8ff' },
     'letras_vocabulario': { nombre: 'Vocabulario', icono: '🔤', bg: '#fef3c7' },
-    'trazo_letras': { nombre: 'Trazo Guiado', icono: '✍️', bg: '#ffe4e6' }
+    'trazo_letras': { nombre: 'Trazo Guiado', icono: '✍️', bg: '#ffe4e6' },
+    'juego_memoria': { nombre: 'Memoria de Parejas', icono: '🧠', bg: '#ede9fe' },
+    'juego_sombras': { nombre: 'Detective de Sombras', icono: '🌒', bg: '#e0f2fe' },
+    'juego_burbujas': { nombre: 'Burbujas Mágicas', icono: '🫧', bg: '#cffafe' },
+    'juego_intruso': { nombre: 'El Intruso', icono: '🔎', bg: '#d1fae5' },
+    'juego_cocina': { nombre: 'La Cocina de Lulipop', icono: '👨‍🍳', bg: '#ffedd5' }
   }
 
   return (
@@ -145,6 +172,19 @@ export default function DashboardPadres({ perfil, onVolver }) {
                   <span style={{ fontWeight: '900', color: '#D97706', fontSize: '1.4rem' }}>{totalEstrellas}</span>
                 </div>
               </div>
+
+              {racha > 0 && (
+                <div style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '8px', marginTop: '10px',
+                  backgroundColor: '#FFF7ED', border: '3px solid #FED7AA',
+                  padding: '6px 16px', borderRadius: '20px'
+                }}>
+                  <span style={{ fontSize: '20px' }}>🔥</span>
+                  <span style={{ fontWeight: '900', color: '#C2410C', fontSize: '1.1rem' }}>
+                    {racha} {racha === 1 ? 'día seguido' : 'días seguidos'} jugando
+                  </span>
+                </div>
+              )}
 
               <div style={{ width: '100%' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
