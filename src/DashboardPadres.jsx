@@ -70,7 +70,8 @@ export default function DashboardPadres({ perfil, onVolver }) {
     'juego_sombras': { nombre: 'Detective de Sombras', icono: '🌒', bg: '#e0f2fe' },
     'juego_burbujas': { nombre: 'Burbujas Mágicas', icono: '🫧', bg: '#cffafe' },
     'juego_intruso': { nombre: 'El Intruso', icono: '🔎', bg: '#d1fae5' },
-    'juego_cocina': { nombre: 'La Cocina de Lulipop', icono: '👨‍🍳', bg: '#ffedd5' }
+    'juego_cocina': { nombre: 'La Cocina de Lulipop', icono: '👨‍🍳', bg: '#ffedd5' },
+    'constructor_3d': { nombre: 'Constructor Mágico 3D', icono: '🧱', bg: '#ede9fe' }
   }
 
   return (

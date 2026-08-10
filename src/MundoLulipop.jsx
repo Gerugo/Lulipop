@@ -10,6 +10,7 @@ import JuegoSombras from './JuegoSombras'
 import JuegoBurbujas from './JuegoBurbujas'
 import JuegoIntruso from './JuegoIntruso'
 import JuegoCocina from './JuegoCocina'
+import JuegoConstructor3D from './JuegoConstructor3D'
 import fondoImg from './fondo-lulipop.png'
 
 export default function MundoLulipop({ perfil, onVolver }) {
@@ -57,6 +58,7 @@ export default function MundoLulipop({ perfil, onVolver }) {
   if (juegoActivo === 'burbujas') return <JuegoBurbujas perfil={perfil} onVolver={() => setJuegoActivo(null)} />
   if (juegoActivo === 'intruso') return <JuegoIntruso perfil={perfil} onVolver={() => setJuegoActivo(null)} />
   if (juegoActivo === 'cocina') return <JuegoCocina perfil={perfil} onVolver={() => setJuegoActivo(null)} />
+  if (juegoActivo === 'constructor3d') return <JuegoConstructor3D perfil={perfil} onVolver={() => setJuegoActivo(null)} />
 
   return (
     <div 
@@ -175,6 +177,11 @@ export default function MundoLulipop({ perfil, onVolver }) {
         <div className="menu-btn-3d" onClick={() => setJuegoActivo('cocina')} style={{ backgroundColor: '#FF9966', boxShadow: 'inset 0px 4px 0px #FFC299, 0px 6px 0px #D9534F' }}>
           <img src={getAssetUrl('icono-cocina.png')} alt="Cocina" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
           <span style={{ display: 'none', fontSize: '38px' }}>👨‍🍳</span>
+        </div>
+
+        <div className="menu-btn-3d" onClick={() => setJuegoActivo('constructor3d')} style={{ backgroundColor: '#a18cd1', boxShadow: 'inset 0px 4px 0px #d4c4f0, 0px 6px 0px #7052a6' }}>
+          <img src={getAssetUrl('icono-constructor3d.png')} alt="Constructor 3D" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
+          <span style={{ display: 'none', fontSize: '38px' }}>🧱</span>
         </div>
 
       </div>
