@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react'
 import * as THREE from 'three'
 import fondoImg from './fondo-lulipop.png'
 
-// SINTETIZADOR DE AUDIO (Mantenemos la misma magia)
+// --- SINTETIZADOR DE AUDIO ---
 function usarSonidosRunner() {
   const ctxRef = useRef(null)
   const obtenerContexto = () => {
@@ -32,13 +32,13 @@ function usarSonidosRunner() {
   }
 
   return {
-    sonidoSalto: () => { crearTono(300, 600, 0, 0.25, 'sine', 0.2) }, 
+    sonidoSalto: () => { crearTono(400, 800, 0, 0.3, 'sine', 0.2) }, // Salto más alegre
     sonidoEstrella: () => { 
       crearTono(880, null, 0, 0.1, 'sine', 0.1)
       crearTono(1318, null, 0.08, 0.15, 'sine', 0.1)
       crearTono(1760, null, 0.16, 0.2, 'sine', 0.15)
     }, 
-    sonidoChoque: () => { crearTono(200, 100, 0, 0.3, 'sawtooth', 0.1) } 
+    sonidoChoque: () => { crearTono(150, 80, 0, 0.4, 'sawtooth', 0.15) } // Choque más notorio
   }
 }
 
@@ -52,20 +52,23 @@ export default function JuegoRunner({ perfil, onVolver }) {
 
   const { sonidoSalto, sonidoEstrella, sonidoChoque } = usarSonidosRunner()
 
-  const lulipopRef = useRef(null)
-  const piesRef = useRef([]) // Para animar las zapatillas
+  const lulipopSpriteRef = useRef(null) // Referencia al sprite 2D de Lulipop
   const obstaculosRef = useRef([]) 
   const nubesRef = useRef([]) 
   const colisionCooldownRef = useRef(0) 
   
+  // baseUrl para cargar la textura correcta de mascota.png
+  const baseUrl = import.meta.env.BASE_URL
+
   const fisicas = useRef({
     vy: 0,
-    gravedad: 0.018, // Un pelín más de gravedad para que el salto se sienta más "pesado"
-    salto: 0.30,
-    sueloY: 0.5,
+    // Ajustes de salto más "flotantes" y permisivos
+    gravedad: 0.012, 
+    salto: 0.26,
+    sueloY: -0.2, // Ajustado para que el sprite pise bien el césped
     enSuelo: true,
-    velocidadJuego: 0.12,
-    tiempo: 0 // Para calcular animaciones
+    velocidadJuego: 0.10, // Un poco más lento para mejor sincronización
+    tiempo: 0 
   })
 
   useEffect(() => {
@@ -74,11 +77,11 @@ export default function JuegoRunner({ perfil, onVolver }) {
 
     const escena = new THREE.Scene()
     
-    // Cámara ortográfica para ese look plano pero 3D
+    // Cámara más cercana para ver bien a la mascota
     const aspecto = contenedor.clientWidth / contenedor.clientHeight
-    const tamanoCamara = 5.5
+    const tamanoCamara = 4.5 
     const camara = new THREE.OrthographicCamera(-tamanoCamara * aspecto, tamanoCamara * aspecto, tamanoCamara, -tamanoCamara, 0.1, 100)
-    camara.position.set(0, 2.5, 10)
+    camara.position.set(0, 1.5, 10)
 
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true })
     renderer.setSize(contenedor.clientWidth, contenedor.clientHeight)
@@ -86,7 +89,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap
     contenedor.appendChild(renderer.domElement)
 
-    // LUCES (Más cálidas para el estilo arcilla)
+    // LUCES
     const luzAmbiente = new THREE.HemisphereLight('#ffffff', '#FFD8E4', 0.8)
     escena.add(luzAmbiente)
     const luzSol = new THREE.DirectionalLight('#FFF3E0', 1.2)
@@ -97,15 +100,31 @@ export default function JuegoRunner({ perfil, onVolver }) {
     escena.add(luzSol)
 
     // ----------------------------------------------------------------
-    // EL MUNDO (Suelo estilo Keiki)
+    // EL SUELO DE CÉSPED
     // ----------------------------------------------------------------
-    const materialSuelo = new THREE.MeshStandardMaterial({ color: '#A8E6CF', roughness: 0.6 })
-    const suelo = new THREE.Mesh(new THREE.BoxGeometry(30, 2, 3), materialSuelo)
-    suelo.position.y = -0.5
-    suelo.receiveShadow = true
-    escena.add(suelo)
+    const materialSuelo = new THREE.MeshStandardMaterial({ 
+      color: '#7bed9f', // Verde césped vibrante
+      roughness: 1,
+    })
+    
+    // Añadimos una franja de tierra debajo del césped para darle profundidad
+    const materialTierra = new THREE.MeshStandardMaterial({ color: '#eccc68', roughness: 1 })
+    
+    const grupoSuelo = new THREE.Group()
+    
+    const cesped = new THREE.Mesh(new THREE.BoxGeometry(30, 0.4, 3), materialSuelo)
+    cesped.position.y = -0.2
+    cesped.receiveShadow = true
+    grupoSuelo.add(cesped)
 
-    // Nubes de fondo decorativas
+    const tierra = new THREE.Mesh(new THREE.BoxGeometry(30, 2, 3), materialTierra)
+    tierra.position.y = -1.4
+    grupoSuelo.add(tierra)
+
+    grupoSuelo.position.y = -1
+    escena.add(grupoSuelo)
+
+    // Nubes
     const matNube = new THREE.MeshStandardMaterial({ color: '#FFFFFF', roughness: 1 })
     for(let i=0; i<4; i++) {
       const nube = new THREE.Group()
@@ -115,84 +134,57 @@ export default function JuegoRunner({ perfil, onVolver }) {
       const n3 = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), matNube)
       n3.position.set(-0.6, -0.2, 0)
       nube.add(n1, n2, n3)
-      nube.position.set(Math.random() * 20 - 10, 3 + Math.random() * 2, -3)
+      nube.position.set(Math.random() * 20 - 10, 2.5 + Math.random() * 2, -3)
       escena.add(nube)
       nubesRef.current.push(nube)
     }
 
     // ----------------------------------------------------------------
-    // EL PROTAGONISTA: LULIPOP
+    // EL PROTAGONISTA: SPRITE DE LULIPOP (mascota.png)
     // ----------------------------------------------------------------
+    const textureLoader = new THREE.TextureLoader()
+    
     const grupoLulipop = new THREE.Group()
     
-    // Cabeza de caramelo (Cilindro aplanado)
-    const cabeza = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.7, 0.7, 0.25, 32),
-      new THREE.MeshStandardMaterial({ color: '#FFB3BA', roughness: 0.4 })
-    )
-    cabeza.rotation.x = Math.PI / 2
-    cabeza.position.y = 0.8
-    cabeza.castShadow = true
-    grupoLulipop.add(cabeza)
-
-    // Carita (Ojos y mofletes)
-    const matOjo = new THREE.MeshBasicMaterial({ color: '#2D3436' })
-    const matRubor = new THREE.MeshBasicMaterial({ color: '#FF758C' })
-    
-    const ojoI = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), matOjo)
-    ojoI.position.set(-0.25, 0.9, 0.13)
-    const ojoD = ojoI.clone(); ojoD.position.set(0.25, 0.9, 0.13)
-    
-    const ruborI = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.05, 16), matRubor)
-    ruborI.rotation.x = Math.PI / 2
-    ruborI.position.set(-0.45, 0.75, 0.13)
-    const ruborD = ruborI.clone(); ruborD.position.set(0.45, 0.75, 0.13)
-    
-    grupoLulipop.add(ojoI, ojoD, ruborI, ruborD)
-
-    // Palito
-    const palito = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.08, 0.08, 0.8, 16),
-      new THREE.MeshStandardMaterial({ color: '#FFF3E0' })
-    )
-    palito.position.y = 0.2
-    palito.castShadow = true
-    grupoLulipop.add(palito)
-
-    // Zapatillas
-    const matZapa = new THREE.MeshStandardMaterial({ color: '#AEE1FF', roughness: 0.3 })
-    const pieI = new THREE.Mesh(new THREE.CapsuleGeometry(0.12, 0.2, 4, 12), matZapa)
-    pieI.position.set(-0.25, -0.2, 0)
-    pieI.rotation.z = Math.PI / 2
-    pieI.castShadow = true
-    const pieD = pieI.clone()
-    pieD.position.set(0.25, -0.2, 0)
-    
-    grupoLulipop.add(pieI, pieD)
-    piesRef.current = [pieI, pieD]
+    // Cargamos la imagen real de la mascota
+    textureLoader.load(`${baseUrl}assets/mascota.png`, (textura) => {
+      const materialLulipop = new THREE.SpriteMaterial({ map: textura, color: 0xffffff })
+      const spriteLulipop = new THREE.Sprite(materialLulipop)
+      
+      // Ajustamos la escala para que tenga buen tamaño
+      spriteLulipop.scale.set(2.2, 2.2, 1) 
+      
+      // Lo movemos un poco hacia arriba dentro de su grupo para que el pivote (centro) sea la base de los pies
+      spriteLulipop.position.y = 1.1 
+      
+      grupoLulipop.add(spriteLulipop)
+      lulipopSpriteRef.current = spriteLulipop // Guardamos ref para animarlo
+    })
 
     grupoLulipop.position.set(-3.5, fisicas.current.sueloY, 0)
     escena.add(grupoLulipop)
-    lulipopRef.current = grupoLulipop
 
     // ----------------------------------------------------------------
-    // OBSTÁCULOS (Arbustos) Y PREMIOS (Donuts Dorados)
+    // OBSTÁCULOS (Arbustos) Y PREMIOS (Donuts)
     // ----------------------------------------------------------------
-    const matArbusto = new THREE.MeshStandardMaterial({ color: '#10ac84', roughness: 0.9 })
-    const matPremio = new THREE.MeshStandardMaterial({ color: '#FFD166', metalness: 0.2, roughness: 0.1 })
+    const matArbusto = new THREE.MeshStandardMaterial({ color: '#2ed573', roughness: 0.9 })
+    const matPremio = new THREE.MeshStandardMaterial({ color: '#ffa502', metalness: 0.3, roughness: 0.2 })
     
-    // Función para crear un arbustito mono
     const crearArbusto = () => {
       const g = new THREE.Group()
-      const c = new THREE.Mesh(new THREE.SphereGeometry(0.45, 16, 16), matArbusto)
-      const l = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), matArbusto); l.position.set(-0.35, -0.15, 0)
-      const r = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), matArbusto); r.position.set(0.35, -0.15, 0)
+      // Arbusto más redondito y amigable
+      const c = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), matArbusto)
+      c.position.y = 0.5
+      const l = new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 16), matArbusto)
+      l.position.set(-0.4, 0.35, 0)
+      const r = new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 16), matArbusto)
+      r.position.set(0.4, 0.35, 0)
       g.add(c, l, r)
       g.children.forEach(ch => ch.castShadow = true)
       return g
     }
     
-    const geoDonut = new THREE.TorusGeometry(0.35, 0.15, 12, 24)
+    const geoDonut = new THREE.TorusGeometry(0.4, 0.15, 12, 24)
 
     for (let i = 0; i < 5; i++) {
       const esPremio = Math.random() > 0.5
@@ -205,12 +197,13 @@ export default function JuegoRunner({ perfil, onVolver }) {
         objeto = crearArbusto()
       }
 
-      objeto.position.set(6 + i * 4.5, fisicas.current.sueloY + (esPremio ? 1.2 : 0.2), 0) 
+      objeto.position.set(6 + i * 5, fisicas.current.sueloY + (esPremio ? 1.5 : 0), 0) 
       objeto.userData = { tipo: esPremio ? 'premio' : 'obstaculo', activo: true }
       escena.add(objeto)
       obstaculosRef.current.push(objeto)
     }
 
+    // HITBOXES (Cajas de colisión invisibles)
     const boxLulipop = new THREE.Box3()
     const boxObjeto = new THREE.Box3()
 
@@ -221,45 +214,44 @@ export default function JuegoRunner({ perfil, onVolver }) {
       animFrameRef.current = requestAnimationFrame(loop)
       fisicas.current.tiempo += 0.1
 
-      // A. ANIMACIONES DE LULIPOP
-      if (fisicas.current.enSuelo) {
-        // Animación de correr: Mover las zapatillas adelante y atrás
-        piesRef.current[0].position.x = -0.25 + Math.sin(fisicas.current.tiempo * 2.5) * 0.2
-        piesRef.current[1].position.x = 0.25 + Math.cos(fisicas.current.tiempo * 2.5) * 0.2
-      } else {
-        // Zapatillas quietas en el aire
-        piesRef.current[0].position.x = -0.25
-        piesRef.current[1].position.x = 0.25
+      // A. ANIMACIÓN DE LULIPOP (Mascota real)
+      if (lulipopSpriteRef.current) {
+        if (fisicas.current.enSuelo) {
+          // Balanceo al correr
+          lulipopSpriteRef.current.material.rotation = Math.sin(fisicas.current.tiempo * 1.5) * 0.1
+        } else {
+          // Rotación fija al saltar
+          lulipopSpriteRef.current.material.rotation = 0.15
+        }
       }
 
       // B. FÍSICAS DE SALTO
       if (!fisicas.current.enSuelo) {
         fisicas.current.vy -= fisicas.current.gravedad 
         grupoLulipop.position.y += fisicas.current.vy
-        
-        // Efecto visual: inclinarse ligeramente al saltar
-        grupoLulipop.rotation.z = fisicas.current.vy * 0.5
 
         if (grupoLulipop.position.y <= fisicas.current.sueloY) {
           grupoLulipop.position.y = fisicas.current.sueloY
           fisicas.current.enSuelo = true
           fisicas.current.vy = 0
-          grupoLulipop.rotation.z = 0 
+          if (lulipopSpriteRef.current) lulipopSpriteRef.current.material.rotation = 0
         }
       }
 
       // C. ANIMAR NUBES
       nubesRef.current.forEach(nube => {
-        nube.position.x -= fisicas.current.velocidadJuego * 0.2 // Parallax suave
+        nube.position.x -= fisicas.current.velocidadJuego * 0.2 
         if (nube.position.x < -10) nube.position.x = 10
       })
 
-      // D. MOVER EL MUNDO Y COLISIONES
+      // D. MOVER OBJETOS Y DETECTAR COLISIONES (MUY PERMISIVAS)
       if (colisionCooldownRef.current > 0) colisionCooldownRef.current -= 1
       
-      // Achicamos un poco la caja de colisión de Lulipop para que sea más permisivo con los peques
-      boxLulipop.setFromObject(grupoLulipop) 
-      boxLulipop.expandByScalar(-0.15) 
+      // Actualizar hitbox de Lulipop. 
+      boxLulipop.setFromObject(grupoLulipop)
+      // REDUCIMOS DRÁSTICAMENTE LA HITBOX DEL PROTAGONISTA
+      // Hacemos que sea un cuadradito muy pequeño en el centro de Lulipop
+      boxLulipop.expandByScalar(-0.6) 
 
       obstaculosRef.current.forEach(obj => {
         if (!obj.userData.activo) return
@@ -271,41 +263,43 @@ export default function JuegoRunner({ perfil, onVolver }) {
         }
 
         boxObjeto.setFromObject(obj)
+        // Reducimos también la hitbox de los obstáculos/premios
+        boxObjeto.expandByScalar(-0.1)
+
         if (boxLulipop.intersectsBox(boxObjeto) && colisionCooldownRef.current === 0) {
           if (obj.userData.tipo === 'premio') {
             sonidoEstrella()
             setPuntos(p => p + 1)
-            obj.position.y += 10 // Ocultar
+            obj.position.y += 10 
           } else {
             sonidoChoque()
             setMensaje('¡Uy! 😅')
             setTimeout(() => setMensaje('¡Toca para saltar!'), 1000)
             
-            // Efecto visual de daño (Frenazo y rotación hacia atrás)
+            // Efecto visual de daño
             fisicas.current.velocidadJuego = 0.03 
-            grupoLulipop.rotation.z = 0.5
+            if(lulipopSpriteRef.current) lulipopSpriteRef.current.material.rotation = -0.3
             setTimeout(() => { 
-              fisicas.current.velocidadJuego = 0.12
-              if(fisicas.current.enSuelo) grupoLulipop.rotation.z = 0
+              fisicas.current.velocidadJuego = 0.10
+              if(fisicas.current.enSuelo && lulipopSpriteRef.current) lulipopSpriteRef.current.material.rotation = 0
             }, 800)
             
-            colisionCooldownRef.current = 40 // Inmunidad más larga
+            colisionCooldownRef.current = 40 
           }
         }
 
-        // Reciclar objetos fuera de pantalla
+        // Reciclar objetos (Se ha aumentado la distancia entre ellos `Math.random() * 6` para que sea más fácil)
         if (obj.position.x < -6) {
-          obj.position.x = 12 + Math.random() * 4 
+          obj.position.x = 12 + Math.random() * 6 
           const esPremio = Math.random() > 0.4
           
-          // Reconstruimos el objeto según lo que toque
           obj.clear() 
           if (esPremio) {
             obj.add(new THREE.Mesh(geoDonut, matPremio))
             obj.position.y = fisicas.current.sueloY + 1.2 + Math.random() * 1.5
           } else {
             obj.add(crearArbusto())
-            obj.position.y = fisicas.current.sueloY + 0.2
+            obj.position.y = fisicas.current.sueloY 
           }
           
           obj.userData = { tipo: esPremio ? 'premio' : 'obstaculo', activo: true }
@@ -340,16 +334,14 @@ export default function JuegoRunner({ perfil, onVolver }) {
       onPointerDown={manejarToque}
       style={{
         width: '100vw', height: '100dvh',
-        background: 'linear-gradient(180deg, #E0F7FA 0%, #B2EBF2 100%)', // Cielo azul pastel
+        background: 'linear-gradient(180deg, #c7ecee 0%, #dff9fb 100%)', // Cielo suave
         position: 'absolute', top: 0, left: 0, zIndex: 10,
         overflow: 'hidden', touchAction: 'none', userSelect: 'none',
         fontFamily: '"Fredoka", sans-serif'
       }}
     >
-      {/* CAPA 3D */}
       <div ref={mountRef} style={{ position: 'absolute', width: '100%', height: '100%', zIndex: 1 }} />
 
-      {/* INTERFAZ UI */}
       <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', display: 'flex', justifyContent: 'space-between', zIndex: 10 }}>
         <button onClick={onVolver} style={{
           width: '55px', height: '55px', borderRadius: '20px', backgroundColor: 'rgba(255, 255, 255, 0.9)', color: '#FF5E62',
@@ -370,7 +362,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
       <div className="anim-pop" style={{
         position: 'absolute', bottom: '40px', left: '50%', transform: 'translateX(-50%)',
         backgroundColor: 'rgba(255,255,255,0.85)', padding: '12px 30px', borderRadius: '30px',
-        border: '3px solid white', fontWeight: '900', fontSize: '1.2rem', color: '#4facfe',
+        border: '3px solid white', fontWeight: '900', fontSize: '1.2rem', color: '#2ed573', // Verde a juego con arbustos
         boxShadow: '0 10px 20px rgba(0,0,0,0.1)', backdropFilter: 'blur(5px)', zIndex: 10,
         pointerEvents: 'none'
       }}>
