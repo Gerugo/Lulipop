@@ -86,13 +86,20 @@ const CANDY_ASSETS = [
   { archivo: 'piruleta-naranja.png', w: 370, h: 717 },
   { archivo: 'piruleta-rosa.png', w: 261, h: 719 }
 ]
-const materialesCandy = CANDY_ASSETS.map(({ archivo }) => {
-  const mat = new THREE.SpriteMaterial({ transparent: true })
-  cargadorObstaculos.load(`${BASE_ASSETS}assets/obstaculos/${archivo}`, (tex) => {
-    if ('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace
-    mat.map = tex
-    mat.needsUpdate = true
-  })
+const COLORES_RESPALDO = ['#a9ecc7', '#a9ecc7', '#8fe0b8', '#ffb454', '#ff9fc7']
+const materialesCandy = CANDY_ASSETS.map(({ archivo }, i) => {
+  const mat = new THREE.SpriteMaterial({ transparent: true, color: COLORES_RESPALDO[i] })
+  cargadorObstaculos.load(
+    `${BASE_ASSETS}assets/obstaculos/${archivo}`,
+    (tex) => {
+      if ('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace
+      mat.map = tex
+      mat.color.set('#ffffff')
+      mat.needsUpdate = true
+    },
+    undefined,
+    (error) => { console.warn('No se pudo cargar la textura de obstáculo:', archivo, error) }
+  )
   return mat
 })
 
@@ -145,6 +152,7 @@ function elegirTipo(vidasActuales) {
 // Rellena un grupo (carril) ya existente con el contenido visual de un tipo
 function poblarObjeto(grupo, tipo, sueloY) {
   grupo.clear()
+  grupo.scale.set(1, 1, 1)
   if (tipo === 'obstaculo') {
     grupo.add(crearObstaculoCandy())
     grupo.position.y = sueloY
@@ -277,26 +285,49 @@ export default function JuegoRunner({ perfil, onVolver }) {
     // SUELO DE CÉSPED (con textura real, tipo "cinta transportadora")
     // ----------------------------------------------------------------
     const textureLoader = new THREE.TextureLoader()
-    const materialTierra = new THREE.MeshStandardMaterial({ color: '#eccc68', roughness: 1 })
+
+    // Degradado vertical procedural para la tierra (en vez de un marrón plano)
+    const canvasGradiente = document.createElement('canvas')
+    canvasGradiente.width = 8
+    canvasGradiente.height = 128
+    const ctxGradiente = canvasGradiente.getContext('2d')
+    const degradado = ctxGradiente.createLinearGradient(0, 0, 0, 128)
+    degradado.addColorStop(0, '#e0b463')
+    degradado.addColorStop(0.35, '#c99a52')
+    degradado.addColorStop(1, '#9c7539')
+    ctxGradiente.fillStyle = degradado
+    ctxGradiente.fillRect(0, 0, 8, 128)
+    const texturaTierra = new THREE.CanvasTexture(canvasGradiente)
+    const materialTierra = new THREE.MeshStandardMaterial({ map: texturaTierra, roughness: 1 })
+
     const texturaCesped = textureLoader.load(`${baseUrl}assets/textura-cesped.jpg`)
     texturaCesped.wrapS = THREE.RepeatWrapping
     texturaCesped.wrapT = THREE.RepeatWrapping
-    texturaCesped.repeat.set(10, 1)
+    texturaCesped.repeat.set(48, 1.4)
     if ('colorSpace' in texturaCesped) texturaCesped.colorSpace = THREE.SRGBColorSpace
     const materialSuelo = new THREE.MeshStandardMaterial({ map: texturaCesped, roughness: 1 })
 
-    const grupoSuelo = new THREE.Group()
-    const cesped = new THREE.Mesh(new THREE.BoxGeometry(30, 0.4, 3), materialSuelo)
-    cesped.position.y = -0.2
+    // La parte de arriba del césped debe coincidir EXACTAMENTE con fisicas.sueloY,
+    // si no el personaje parece flotar sobre el suelo.
+    const alturaCesped = 0.55
+    const alturaTierra = 3
+    const cesped = new THREE.Mesh(new THREE.BoxGeometry(34, alturaCesped, 3), materialSuelo)
+    cesped.position.set(0, fisicas.current.sueloY - alturaCesped / 2, -1.6)
     cesped.receiveShadow = true
-    grupoSuelo.add(cesped)
+    escena.add(cesped)
 
-    const tierra = new THREE.Mesh(new THREE.BoxGeometry(30, 2, 3), materialTierra)
-    tierra.position.y = -1.4
-    grupoSuelo.add(tierra)
+    const tierra = new THREE.Mesh(new THREE.BoxGeometry(34, alturaTierra, 3), materialTierra)
+    tierra.position.set(0, fisicas.current.sueloY - alturaCesped - alturaTierra / 2, -1.6)
+    escena.add(tierra)
 
-    grupoSuelo.position.y = -1
-    escena.add(grupoSuelo)
+    // Sombra elíptica bajo Lulipop: ancla visualmente al personaje al suelo,
+    // se encoge y se desvanece un poco cuando salta más alto
+    const sombraLulipop = new THREE.Mesh(
+      new THREE.CircleGeometry(0.55, 24),
+      new THREE.MeshBasicMaterial({ color: '#2f3542', transparent: true, opacity: 0.22 })
+    )
+    sombraLulipop.position.set(-3.5, fisicas.current.sueloY + 0.02, 0.4)
+    escena.add(sombraLulipop)
 
     // ----------------------------------------------------------------
     // PROTAGONISTA: SPRITE DE LULIPOP
@@ -324,8 +355,9 @@ export default function JuegoRunner({ perfil, onVolver }) {
 
     for (let i = 0; i < NUM_CARRILES; i++) {
       const grupo = new THREE.Group()
-      // Los dos primeros carriles son siempre premios amistosos para un inicio suave
-      const tipo = i < 2 ? 'premio' : elegirTipo(VIDAS_MAX)
+      // Los dos primeros carriles son siempre premios amistosos para un inicio suave,
+      // y el tercero siempre es un obstáculo para que se vean desde el principio
+      const tipo = i < 2 ? 'premio' : i === 2 ? 'obstaculo' : elegirTipo(VIDAS_MAX)
       poblarObjeto(grupo, tipo, fisicas.current.sueloY)
       grupo.position.x = proximoSpawnX
       proximoSpawnX += 4.5 + Math.random() * 2.2
@@ -409,13 +441,17 @@ export default function JuegoRunner({ perfil, onVolver }) {
 
     const manejarRecogida = (tipo, obj) => {
       obj.userData.activo = false
-      obj.position.y += 20
+      const posicionOrigen = obj.position.clone()
+
+      // Pequeño "pop" de escala antes de esconder el objeto: se siente mucho
+      // más satisfactorio que desaparecer de golpe
+      obj.userData.animRecogida = { t: 0, total: 10 }
 
       if (tipo === 'premio') {
         comboRef.current += 1
         if (montadoRef.current) setCombo(comboRef.current)
         sonidoEstrella()
-        dispararParticulas(obj.position, '#ffd166', 8)
+        dispararParticulas(posicionOrigen, '#ffd166', 10)
         let extra = 0
         if (comboRef.current % 5 === 0) {
           extra = 1
@@ -431,12 +467,12 @@ export default function JuegoRunner({ perfil, onVolver }) {
         comboRef.current += 1
         if (montadoRef.current) setCombo(comboRef.current)
         sonidoGema()
-        dispararParticulas(obj.position, '#7d5fff', 10)
+        dispararParticulas(posicionOrigen, '#7d5fff', 12)
         puntosRef.current += 3
         if (montadoRef.current) setPuntos(puntosRef.current)
       } else if (tipo === 'corazon') {
         sonidoVida()
-        dispararParticulas(obj.position, '#ff6b81', 10)
+        dispararParticulas(posicionOrigen, '#ff6b81', 12)
         if (vidasRef.current < VIDAS_MAX) {
           vidasRef.current += 1
           if (montadoRef.current) {
@@ -494,7 +530,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
 
       let siguienteX = 6
       obstaculosRef.current.forEach((obj, i) => {
-        const tipo = i < 2 ? 'premio' : elegirTipo(VIDAS_MAX)
+        const tipo = i < 2 ? 'premio' : i === 2 ? 'obstaculo' : elegirTipo(VIDAS_MAX)
         poblarObjeto(obj, tipo, fisicas.current.sueloY)
         obj.position.x = siguienteX
         siguienteX += 4.5 + Math.random() * 2.2
@@ -576,6 +612,13 @@ export default function JuegoRunner({ perfil, onVolver }) {
 
         if (colisionCooldownRef.current > 0) colisionCooldownRef.current -= 1
 
+        // La sombra sigue a Lulipop y se encoge/desvanece cuanto más alto salta
+        const alturaSalto = Math.max(0, grupoLulipop.position.y - fisicas.current.sueloY)
+        const factorSombra = Math.max(0.35, 1 - alturaSalto / 3)
+        sombraLulipop.position.x = grupoLulipop.position.x
+        sombraLulipop.scale.set(factorSombra, factorSombra, 1)
+        sombraLulipop.material.opacity = 0.22 * factorSombra
+
         boxLulipop.setFromObject(grupoLulipop)
         boxLulipop.expandByScalar(-0.6)
 
@@ -596,6 +639,21 @@ export default function JuegoRunner({ perfil, onVolver }) {
             if (colisionCooldownRef.current === 0 && boxLulipop.intersectsBox(boxObjeto)) {
               if (tipo === 'obstaculo') manejarColision()
               else manejarRecogida(tipo, obj)
+            }
+          }
+
+          if (obj.userData.animRecogida) {
+            const anim = obj.userData.animRecogida
+            anim.t += 1
+            const progreso = anim.t / anim.total
+            const escalaPop = progreso < 0.4
+              ? 1 + 0.5 * (progreso / 0.4)
+              : Math.max(0, 1.5 * (1 - (progreso - 0.4) / 0.6))
+            obj.scale.set(escalaPop, escalaPop, escalaPop)
+            if (anim.t >= anim.total) {
+              obj.userData.animRecogida = null
+              obj.scale.set(1, 1, 1)
+              obj.position.y += 20
             }
           }
 
@@ -657,6 +715,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
       particulasRef.current.forEach(p => { p.geometry.dispose(); p.material.dispose() })
       particulasRef.current = []
       texturaCesped.dispose()
+      texturaTierra.dispose()
       renderer.dispose()
       if (contenedor) contenedor.innerHTML = ''
     }
