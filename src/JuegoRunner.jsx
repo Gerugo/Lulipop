@@ -103,13 +103,41 @@ const materialesCandy = CANDY_ASSETS.map(({ archivo }, i) => {
   return mat
 })
 
+function crearTexturaSombraGenerica() {
+  const c = document.createElement('canvas')
+  c.width = 128
+  c.height = 128
+  const ctx = c.getContext('2d')
+  const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64)
+  g.addColorStop(0, 'rgba(40,40,50,0.4)')
+  g.addColorStop(0.7, 'rgba(40,40,50,0.18)')
+  g.addColorStop(1, 'rgba(40,40,50,0)')
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, 128, 128)
+  return new THREE.CanvasTexture(c)
+}
+const matSombraObstaculo = new THREE.MeshBasicMaterial({
+  map: crearTexturaSombraGenerica(), transparent: true, depthWrite: false
+})
+
 function crearObstaculoCandy() {
   const indice = Math.floor(Math.random() * CANDY_ASSETS.length)
   const { w, h } = CANDY_ASSETS[indice]
-  const alturaMundo = 1.85
+  // Pequeña variación de tamaño entre golosinas para que no se vean todas
+  // idénticas y den algo de sensación de profundidad
+  const variacion = 0.92 + Math.random() * 0.26
+  const alturaMundo = 2.05 * variacion
   const anchoMundo = alturaMundo * (w / h)
 
   const g = new THREE.Group()
+
+  const sombra = new THREE.Mesh(
+    new THREE.PlaneGeometry(anchoMundo * 0.85, anchoMundo * 0.35),
+    matSombraObstaculo
+  )
+  sombra.position.set(0, 0.03, 0.05)
+  g.add(sombra)
+
   const sprite = new THREE.Sprite(materialesCandy[indice])
   sprite.scale.set(anchoMundo, alturaMundo, 1)
   sprite.position.y = alturaMundo / 2
@@ -268,6 +296,33 @@ export default function JuegoRunner({ perfil, onVolver }) {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap
     contenedor.appendChild(renderer.domElement)
 
+    // Ajustar cámara y canvas al tamaño real del contenedor. Sin esto, en
+    // móvil (donde el viewport cambia al aparecer/ocultarse la barra del
+    // navegador, o al rotar la pantalla) el juego se quedaba con las
+    // medidas de la primera carga y se veía cortado o mal encajado.
+    const ajustarTamano = () => {
+      const w = contenedor.clientWidth
+      const h = contenedor.clientHeight
+      if (!w || !h) return
+      const nuevoAspecto = w / h
+      camara.left = -tamanoCamara * nuevoAspecto
+      camara.right = tamanoCamara * nuevoAspecto
+      camara.top = tamanoCamara
+      camara.bottom = -tamanoCamara
+      camara.updateProjectionMatrix()
+      renderer.setSize(w, h)
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
+    }
+    ajustarTamano()
+
+    window.addEventListener('resize', ajustarTamano)
+    window.addEventListener('orientationchange', ajustarTamano)
+    let observadorTamano = null
+    if (typeof ResizeObserver !== 'undefined') {
+      observadorTamano = new ResizeObserver(ajustarTamano)
+      observadorTamano.observe(contenedor)
+    }
+
     // LUCES
     const luzAmbiente = new THREE.HemisphereLight('#ffffff', '#FFD8E4', 0.8)
     escena.add(luzAmbiente)
@@ -282,11 +337,12 @@ export default function JuegoRunner({ perfil, onVolver }) {
     // en capas CSS detrás del canvas (ver el JSX), así que aquí solo queda el suelo.
 
     // ----------------------------------------------------------------
-    // SUELO DE CÉSPED (con textura real, tipo "cinta transportadora")
+    // SUELO DE CÉSPED (dibujado a medida: una foto real se ve fatal
+    // estirada en una franja delgada de canto, así que lo pintamos
+    // nosotros pensado exactamente para esa franja)
     // ----------------------------------------------------------------
-    const textureLoader = new THREE.TextureLoader()
 
-    // Degradado vertical procedural para la tierra (en vez de un marrón plano)
+    // Degradado vertical procedural para la tierra
     const canvasGradiente = document.createElement('canvas')
     canvasGradiente.width = 8
     canvasGradiente.height = 128
@@ -300,16 +356,64 @@ export default function JuegoRunner({ perfil, onVolver }) {
     const texturaTierra = new THREE.CanvasTexture(canvasGradiente)
     const materialTierra = new THREE.MeshStandardMaterial({ map: texturaTierra, roughness: 1 })
 
-    const texturaCesped = textureLoader.load(`${baseUrl}assets/textura-cesped.jpg`)
+    // Franja de césped: base sólida + hierba festoneada arriba + lunares,
+    // todo con posiciones fijas (no aleatorias) para que el mosaico encaje sin costuras
+    const anchoTexCesped = 256
+    const altoTexCesped = 110
+    const canvasCesped = document.createElement('canvas')
+    canvasCesped.width = anchoTexCesped
+    canvasCesped.height = altoTexCesped
+    const cctx = canvasCesped.getContext('2d')
+
+    cctx.fillStyle = '#8ee6a8'
+    cctx.fillRect(0, 0, anchoTexCesped, altoTexCesped)
+
+    // Lunares más oscuros (posiciones fijas, patrón repetible)
+    cctx.fillStyle = '#7ad696'
+    for (let i = 0; i < 8; i++) {
+      const cx = (i + 0.5) * (anchoTexCesped / 8)
+      const cy = 55 + 18 * Math.sin(i * 1.7)
+      const r = 14 + 5 * Math.cos(i * 0.9)
+      cctx.beginPath()
+      cctx.ellipse(cx, cy, r, r * 0.55, 0, 0, Math.PI * 2)
+      cctx.fill()
+    }
+
+    // Hierba festoneada en el borde superior
+    const numBriznas = 26
+    cctx.fillStyle = '#5fc47f'
+    for (let i = 0; i < numBriznas; i++) {
+      const x = (i / numBriznas) * anchoTexCesped
+      const h = 16 + 8 * Math.sin(i * 1.3)
+      cctx.beginPath()
+      cctx.moveTo(x - 5, 30)
+      cctx.quadraticCurveTo(x - 3, 30 - h * 0.7, x, 30 - h)
+      cctx.quadraticCurveTo(x + 3, 30 - h * 0.7, x + 5, 30)
+      cctx.closePath()
+      cctx.fill()
+    }
+
+    // Puntitos de flores diminutas (patrón fijo, tonos golosina)
+    const coloresFlor = ['#ffd166', '#ff9fc7', '#ffffff']
+    for (let i = 0; i < 12; i++) {
+      cctx.fillStyle = coloresFlor[i % coloresFlor.length]
+      const x = (i + 0.5) * (anchoTexCesped / 12)
+      const y = 66 + 20 * Math.cos(i * 2.1)
+      cctx.beginPath()
+      cctx.arc(x, y, 2.6, 0, Math.PI * 2)
+      cctx.fill()
+    }
+
+    const texturaCesped = new THREE.CanvasTexture(canvasCesped)
     texturaCesped.wrapS = THREE.RepeatWrapping
-    texturaCesped.wrapT = THREE.RepeatWrapping
-    texturaCesped.repeat.set(48, 1.4)
+    texturaCesped.wrapT = THREE.ClampToEdgeWrapping
+    texturaCesped.repeat.set(14, 1)
     if ('colorSpace' in texturaCesped) texturaCesped.colorSpace = THREE.SRGBColorSpace
     const materialSuelo = new THREE.MeshStandardMaterial({ map: texturaCesped, roughness: 1 })
 
     // La parte de arriba del césped debe coincidir EXACTAMENTE con fisicas.sueloY,
     // si no el personaje parece flotar sobre el suelo.
-    const alturaCesped = 0.55
+    const alturaCesped = 0.7
     const alturaTierra = 3
     const cesped = new THREE.Mesh(new THREE.BoxGeometry(34, alturaCesped, 3), materialSuelo)
     cesped.position.set(0, fisicas.current.sueloY - alturaCesped / 2, -1.6)
@@ -320,13 +424,25 @@ export default function JuegoRunner({ perfil, onVolver }) {
     tierra.position.set(0, fisicas.current.sueloY - alturaCesped - alturaTierra / 2, -1.6)
     escena.add(tierra)
 
-    // Sombra elíptica bajo Lulipop: ancla visualmente al personaje al suelo,
-    // se encoge y se desvanece un poco cuando salta más alto
+    // Sombra elíptica (degradado suave) bajo Lulipop: ancla visualmente al
+    // personaje al suelo, se encoge y se desvanece un poco al saltar
+    const canvasSombra = document.createElement('canvas')
+    canvasSombra.width = 128
+    canvasSombra.height = 128
+    const ctxSombra = canvasSombra.getContext('2d')
+    const gradienteSombra = ctxSombra.createRadialGradient(64, 64, 0, 64, 64, 64)
+    gradienteSombra.addColorStop(0, 'rgba(40,40,50,0.45)')
+    gradienteSombra.addColorStop(0.7, 'rgba(40,40,50,0.22)')
+    gradienteSombra.addColorStop(1, 'rgba(40,40,50,0)')
+    ctxSombra.fillStyle = gradienteSombra
+    ctxSombra.fillRect(0, 0, 128, 128)
+    const texturaSombra = new THREE.CanvasTexture(canvasSombra)
+
     const sombraLulipop = new THREE.Mesh(
-      new THREE.CircleGeometry(0.55, 24),
-      new THREE.MeshBasicMaterial({ color: '#2f3542', transparent: true, opacity: 0.22 })
+      new THREE.PlaneGeometry(1.3, 0.55),
+      new THREE.MeshBasicMaterial({ map: texturaSombra, transparent: true, depthWrite: false })
     )
-    sombraLulipop.position.set(-3.5, fisicas.current.sueloY + 0.02, 0.4)
+    sombraLulipop.position.set(-3.5, fisicas.current.sueloY + 0.03, 0.35)
     escena.add(sombraLulipop)
 
     // ----------------------------------------------------------------
@@ -334,6 +450,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
     // ----------------------------------------------------------------
     const grupoLulipop = new THREE.Group()
     const escalaBaseSprite = 2.2
+    const textureLoader = new THREE.TextureLoader()
 
     textureLoader.load(`${baseUrl}assets/mascota.png`, (textura) => {
       const materialLulipop = new THREE.SpriteMaterial({ map: textura, color: 0xffffff })
@@ -617,7 +734,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
         const factorSombra = Math.max(0.35, 1 - alturaSalto / 3)
         sombraLulipop.position.x = grupoLulipop.position.x
         sombraLulipop.scale.set(factorSombra, factorSombra, 1)
-        sombraLulipop.material.opacity = 0.22 * factorSombra
+        sombraLulipop.material.opacity = factorSombra
 
         boxLulipop.setFromObject(grupoLulipop)
         boxLulipop.expandByScalar(-0.6)
@@ -627,10 +744,12 @@ export default function JuegoRunner({ perfil, onVolver }) {
 
           const tipo = obj.userData.tipo
           if (tipo === 'premio' || tipo === 'gema') {
-            obj.rotation.y += 0.04
+            // Giro en el eje Z: como una moneda de frente a cámara.
+            // (Antes giraba en Y y, al verse "de canto", parecía una raya vertical)
+            obj.rotation.z += 0.045
           } else if (tipo === 'corazon') {
             obj.position.y = obj.userData.baseY + Math.sin(fisicas.current.tiempo * 3 + obj.userData.offset) * 0.15
-            obj.rotation.y += 0.02
+            obj.rotation.z += 0.02
           }
 
           if (obj.userData.activo) {
@@ -711,11 +830,15 @@ export default function JuegoRunner({ perfil, onVolver }) {
       timeoutsRef.current.forEach(id => clearTimeout(id))
       timeoutsRef.current = []
       window.removeEventListener('keydown', manejarTecla)
+      window.removeEventListener('resize', ajustarTamano)
+      window.removeEventListener('orientationchange', ajustarTamano)
+      if (observadorTamano) observadorTamano.disconnect()
       cancelAnimationFrame(animFrameRef.current)
       particulasRef.current.forEach(p => { p.geometry.dispose(); p.material.dispose() })
       particulasRef.current = []
       texturaCesped.dispose()
       texturaTierra.dispose()
+      texturaSombra.dispose()
       renderer.dispose()
       if (contenedor) contenedor.innerHTML = ''
     }
@@ -730,8 +853,8 @@ export default function JuegoRunner({ perfil, onVolver }) {
   return (
     <div
       onPointerDown={manejarToque}
+      className="lulipop-runner-raiz"
       style={{
-        width: '100vw', height: '100dvh',
         background: 'linear-gradient(180deg, #c7ecee 0%, #dff9fb 100%)',
         position: 'absolute', top: 0, left: 0, zIndex: 10,
         overflow: 'hidden', touchAction: 'none', userSelect: 'none',
@@ -896,6 +1019,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
       )}
 
       <style>{`
+        .lulipop-runner-raiz { width: 100vw; height: 100vh; height: 100dvh; }
         .anim-pop { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         @keyframes popIn { 0% { transform: translateX(-50%) scale(0.8); opacity: 0; } 100% { transform: translateX(-50%) scale(1); opacity: 1; } }
         .anim-fade-scale { animation: fadeScaleIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
