@@ -737,7 +737,13 @@ export default function JuegoRunner({ perfil, onVolver }) {
         sombraLulipop.material.opacity = factorSombra
 
         boxLulipop.setFromObject(grupoLulipop)
-        boxLulipop.expandByScalar(-0.6)
+        // OJO: no usar expandByScalar aquí. Lulipop es un sprite plano (grosor
+        // real en Z = 0), así que encoger también el eje Z invierte el rango
+        // (min.z > max.z) y Box3.intersectsBox() da SIEMPRE false, sin importar
+        // cuánto se solapen en X/Y. Por eso nunca se recogía nada. Encogemos
+        // solo X e Y y dejamos Z tal cual.
+        boxLulipop.min.x += 0.6; boxLulipop.max.x -= 0.6
+        boxLulipop.min.y += 0.6; boxLulipop.max.y -= 0.6
 
         obstaculosRef.current.forEach(obj => {
           obj.position.x -= fisicas.current.velocidadJuego
@@ -754,7 +760,11 @@ export default function JuegoRunner({ perfil, onVolver }) {
 
           if (obj.userData.activo) {
             boxObjeto.setFromObject(obj)
-            boxObjeto.expandByScalar(tipo === 'obstaculo' ? -0.32 : -0.1)
+            // Igual que con Lulipop: los obstáculos-golosina son sprites planos,
+            // así que encogemos solo X/Y y dejamos Z intacto (ver nota arriba).
+            const margen = tipo === 'obstaculo' ? 0.32 : 0.1
+            boxObjeto.min.x += margen; boxObjeto.max.x -= margen
+            boxObjeto.min.y += margen; boxObjeto.max.y -= margen
             if (colisionCooldownRef.current === 0 && boxLulipop.intersectsBox(boxObjeto)) {
               if (tipo === 'obstaculo') manejarColision()
               else manejarRecogida(tipo, obj)
