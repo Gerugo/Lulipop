@@ -74,8 +74,8 @@ const matGema = new THREE.MeshStandardMaterial({ color: '#7d5fff', emissive: '#7
 const matCorazon = new THREE.MeshStandardMaterial({ color: '#ff6b81', emissive: '#ff4757', emissiveIntensity: 0.3, roughness: 0.3 })
 
 // ----------------------------------------------------------------
-// OBSTÁCULOS "GOLOSINA": árboles de caramelo y piruletas reales
-// (sprites 2D con transparencia, siempre mirando a cámara)
+// DECORACIÓN DE FONDO: árboles de caramelo y piruletas (NO son
+// obstáculos, solo dan ambiente detrás de la zona jugable)
 // ----------------------------------------------------------------
 const BASE_ASSETS = import.meta.env.BASE_URL
 const cargadorObstaculos = new THREE.TextureLoader()
@@ -88,7 +88,7 @@ const CANDY_ASSETS = [
 ]
 const COLORES_RESPALDO = ['#a9ecc7', '#a9ecc7', '#8fe0b8', '#ffb454', '#ff9fc7']
 const materialesCandy = CANDY_ASSETS.map(({ archivo }, i) => {
-  const mat = new THREE.SpriteMaterial({ transparent: true, color: COLORES_RESPALDO[i] })
+  const mat = new THREE.SpriteMaterial({ transparent: true, color: COLORES_RESPALDO[i], opacity: 0.9 })
   cargadorObstaculos.load(
     `${BASE_ASSETS}assets/obstaculos/${archivo}`,
     (tex) => {
@@ -98,10 +98,25 @@ const materialesCandy = CANDY_ASSETS.map(({ archivo }, i) => {
       mat.needsUpdate = true
     },
     undefined,
-    (error) => { console.warn('No se pudo cargar la textura de obstáculo:', archivo, error) }
+    (error) => { console.warn('No se pudo cargar la textura decorativa:', archivo, error) }
   )
   return mat
 })
+
+function crearDecoracionCandy() {
+  const indice = Math.floor(Math.random() * CANDY_ASSETS.length)
+  const { w, h } = CANDY_ASSETS[indice]
+  const variacion = 0.85 + Math.random() * 0.3
+  const alturaMundo = 1.7 * variacion
+  const anchoMundo = alturaMundo * (w / h)
+
+  const g = new THREE.Group()
+  const sprite = new THREE.Sprite(materialesCandy[indice])
+  sprite.scale.set(anchoMundo, alturaMundo, 1)
+  sprite.position.y = alturaMundo / 2
+  g.add(sprite)
+  return g
+}
 
 function crearTexturaSombraGenerica() {
   const c = document.createElement('canvas')
@@ -120,28 +135,52 @@ const matSombraObstaculo = new THREE.MeshBasicMaterial({
   map: crearTexturaSombraGenerica(), transparent: true, depthWrite: false
 })
 
-function crearObstaculoCandy() {
-  const indice = Math.floor(Math.random() * CANDY_ASSETS.length)
-  const { w, h } = CANDY_ASSETS[indice]
-  // Pequeña variación de tamaño entre golosinas para que no se vean todas
-  // idénticas y den algo de sensación de profundidad
-  const variacion = 0.92 + Math.random() * 0.26
-  const alturaMundo = 2.05 * variacion
-  const anchoMundo = alturaMundo * (w / h)
+// ----------------------------------------------------------------
+// OBSTÁCULOS DE VERDAD: caramelos cuadrados (volumen 3D real, con
+// envoltorio a los lados, así que ya no dependen de sprites planos)
+// ----------------------------------------------------------------
+const COLORES_CARAMELO = ['#ff6b81', '#ffa502', '#7d5fff', '#2ed573', '#ff9ff3', '#54a0ff']
+
+function crearObstaculoCaramelo() {
+  const color = COLORES_CARAMELO[Math.floor(Math.random() * COLORES_CARAMELO.length)]
+  const tam = 0.8 + Math.random() * 0.25
+  const matCuerpo = new THREE.MeshStandardMaterial({ color, roughness: 0.3, metalness: 0.1 })
+  const matEnvoltorio = new THREE.MeshStandardMaterial({ color, roughness: 0.5 })
+  const matBrillo = new THREE.MeshStandardMaterial({
+    color: '#ffffff', transparent: true, opacity: 0.45, roughness: 0.1
+  })
 
   const g = new THREE.Group()
 
   const sombra = new THREE.Mesh(
-    new THREE.PlaneGeometry(anchoMundo * 0.85, anchoMundo * 0.35),
+    new THREE.PlaneGeometry(tam * 1.6, tam * 0.6),
     matSombraObstaculo
   )
   sombra.position.set(0, 0.03, 0.05)
   g.add(sombra)
 
-  const sprite = new THREE.Sprite(materialesCandy[indice])
-  sprite.scale.set(anchoMundo, alturaMundo, 1)
-  sprite.position.y = alturaMundo / 2
-  g.add(sprite)
+  const cuerpo = new THREE.Mesh(new THREE.BoxGeometry(tam, tam, tam), matCuerpo)
+  cuerpo.position.y = tam / 2
+  cuerpo.castShadow = true
+  g.add(cuerpo)
+
+  const brillo = new THREE.Mesh(new THREE.BoxGeometry(tam * 0.2, tam * 0.8, tam * 1.01), matBrillo)
+  brillo.position.set(-tam * 0.22, tam / 2, 0)
+  brillo.rotation.z = 0.5
+  g.add(brillo)
+
+  // Puntas de envoltorio, como un caramelo clásico
+  const envIzq = new THREE.Mesh(new THREE.ConeGeometry(tam * 0.34, tam * 0.42, 6), matEnvoltorio)
+  envIzq.rotation.z = Math.PI / 2
+  envIzq.position.set(-tam * 0.64, tam / 2, 0)
+  envIzq.castShadow = true
+  g.add(envIzq)
+
+  const envDer = envIzq.clone()
+  envDer.rotation.z = -Math.PI / 2
+  envDer.position.set(tam * 0.64, tam / 2, 0)
+  g.add(envDer)
+
   return g
 }
 
@@ -182,7 +221,7 @@ function poblarObjeto(grupo, tipo, sueloY) {
   grupo.clear()
   grupo.scale.set(1, 1, 1)
   if (tipo === 'obstaculo') {
-    grupo.add(crearObstaculoCandy())
+    grupo.add(crearObstaculoCaramelo())
     grupo.position.y = sueloY
   } else if (tipo === 'premio') {
     const donut = new THREE.Mesh(geoDonut, matPremio)
@@ -238,6 +277,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
 
   const lulipopSpriteRef = useRef(null)
   const obstaculosRef = useRef([])
+  const decorativosRef = useRef([])
   const particulasRef = useRef([])
   const colisionCooldownRef = useRef(0)
   const spriteAnimRef = useRef({ tipo: null, t: 0, total: 1 })
@@ -249,7 +289,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
     vy: 0,
     gravedad: 0.012,
     salto: 0.26,
-    sueloY: -0.2,
+    sueloY: -1.6,
     enSuelo: true,
     velocidadBase: 0.10,
     velocidadJuego: 0.10,
@@ -482,6 +522,19 @@ export default function JuegoRunner({ perfil, onVolver }) {
       obstaculosRef.current.push(grupo)
     }
 
+    // ----------------------------------------------------------------
+    // DECORACIÓN DE FONDO: árboles y piruletas, solo ambiente (sin
+    // colisión), más atrás que la zona jugable y a menor velocidad
+    // para dar sensación de profundidad (parallax)
+    // ----------------------------------------------------------------
+    const NUM_DECOR = 5
+    for (let i = 0; i < NUM_DECOR; i++) {
+      const deco = crearDecoracionCandy()
+      deco.position.set(-6 + i * 6.5 + Math.random() * 3, fisicas.current.sueloY, -1.1)
+      escena.add(deco)
+      decorativosRef.current.push(deco)
+    }
+
     const boxLulipop = new THREE.Box3()
     const boxObjeto = new THREE.Box3()
 
@@ -680,6 +733,14 @@ export default function JuegoRunner({ perfil, onVolver }) {
       // con un pequeño avance de fondo en las pantallas de inicio/fin
       texturaCesped.offset.x -= (jugandoRef.current ? fisicas.current.velocidadJuego : 0.01) * 0.35
 
+      // Los árboles/piruletas de fondo se mueven más despacio que el carril de
+      // juego (parallax): dan sensación de profundidad sin ser obstáculos
+      const velocidadDecor = jugandoRef.current ? fisicas.current.velocidadJuego * 0.45 : 0.008
+      decorativosRef.current.forEach(deco => {
+        deco.position.x -= velocidadDecor
+        if (deco.position.x < -9) deco.position.x = 9 + Math.random() * 4
+      })
+
       if (jugandoRef.current) {
         fisicas.current.tiempo += 0.1
 
@@ -762,7 +823,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
             boxObjeto.setFromObject(obj)
             // Igual que con Lulipop: los obstáculos-golosina son sprites planos,
             // así que encogemos solo X/Y y dejamos Z intacto (ver nota arriba).
-            const margen = tipo === 'obstaculo' ? 0.32 : 0.1
+            const margen = tipo === 'obstaculo' ? 0.12 : 0.1
             boxObjeto.min.x += margen; boxObjeto.max.x -= margen
             boxObjeto.min.y += margen; boxObjeto.max.y -= margen
             if (colisionCooldownRef.current === 0 && boxLulipop.intersectsBox(boxObjeto)) {
@@ -881,7 +942,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
 
       {/* COLINAS: ilustración real con flores, capa intermedia con parallax más rápido */}
       <div className="capa-colinas" style={{
-        position: 'absolute', bottom: 0, left: 0, width: '200%', height: '42%',
+        position: 'absolute', bottom: 0, left: 0, width: '200%', height: '48%',
         backgroundImage: `url(${baseUrl}assets/fondo-colinas.png)`,
         backgroundRepeat: 'repeat-x', backgroundSize: 'auto 100%', backgroundPosition: 'left bottom',
         zIndex: 0
