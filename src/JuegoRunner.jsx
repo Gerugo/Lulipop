@@ -139,7 +139,9 @@ const matSombraObstaculo = new THREE.MeshBasicMaterial({
 // OBSTÁCULOS DE VERDAD: caramelos cuadrados (volumen 3D real, con
 // envoltorio a los lados, así que ya no dependen de sprites planos)
 // ----------------------------------------------------------------
-const COLORES_CARAMELO = ['#ff6b81', '#ffa502', '#7d5fff', '#2ed573', '#ff9ff3', '#54a0ff']
+// Tonos de "peligro" bien diferenciados de los coleccionables (el donut es
+// naranja, la gema morada y el corazón rosa, así que evitamos esos tonos)
+const COLORES_CARAMELO = ['#e84150', '#c0392b', '#8b4513', '#3d3d5c', '#2f3542']
 
 function crearObstaculoCaramelo() {
   const color = COLORES_CARAMELO[Math.floor(Math.random() * COLORES_CARAMELO.length)]
@@ -181,6 +183,41 @@ function crearObstaculoCaramelo() {
   envDer.position.set(tam * 0.64, tam / 2, 0)
   g.add(envDer)
 
+  return g
+}
+
+// ----------------------------------------------------------------
+// PLATAFORMAS: barras de caramelo a las que hay que saltar para
+// seguir avanzando en alto (no son coleccionables ni obstáculos,
+// sirven de "suelo" temporal)
+// ----------------------------------------------------------------
+const COLORES_PLATAFORMA = ['#ffb3c6', '#bcd4ff', '#c9f2c7', '#ffe4a3']
+
+function crearPlataforma() {
+  const ancho = 1.7 + Math.random() * 0.7
+  const alto = 0.32
+  const profundo = 0.85
+  const color = COLORES_PLATAFORMA[Math.floor(Math.random() * COLORES_PLATAFORMA.length)]
+  const matCuerpo = new THREE.MeshStandardMaterial({ color, roughness: 0.4 })
+  const matRaya = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.45 })
+
+  const g = new THREE.Group()
+
+  const cuerpo = new THREE.Mesh(new THREE.BoxGeometry(ancho, alto, profundo), matCuerpo)
+  cuerpo.castShadow = true
+  cuerpo.receiveShadow = true
+  g.add(cuerpo)
+
+  // Rayas de caramelo encima, como decoración
+  const numRayas = 3
+  for (let i = 0; i < numRayas; i++) {
+    const raya = new THREE.Mesh(new THREE.BoxGeometry(ancho * 0.14, alto * 1.02, profundo * 1.02), matRaya)
+    raya.position.x = (i - (numRayas - 1) / 2) * (ancho / numRayas)
+    g.add(raya)
+  }
+
+  g.userData.ancho = ancho
+  g.userData.alto = alto
   return g
 }
 
@@ -278,6 +315,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
   const lulipopSpriteRef = useRef(null)
   const obstaculosRef = useRef([])
   const decorativosRef = useRef([])
+  const plataformasRef = useRef([])
   const particulasRef = useRef([])
   const colisionCooldownRef = useRef(0)
   const spriteAnimRef = useRef({ tipo: null, t: 0, total: 1 })
@@ -535,6 +573,34 @@ export default function JuegoRunner({ perfil, onVolver }) {
       decorativosRef.current.push(deco)
     }
 
+    // ----------------------------------------------------------------
+    // PLATAFORMAS: hay que saltar encima para tomar altura; cuando se
+    // desplazan fuera de los pies, Lulipop vuelve a caer al suelo normal
+    // ----------------------------------------------------------------
+    const NUM_PLATAFORMAS = 3
+    let proximoSpawnPlataforma = 14
+    for (let i = 0; i < NUM_PLATAFORMAS; i++) {
+      const plat = crearPlataforma()
+      plat.position.set(proximoSpawnPlataforma, fisicas.current.sueloY + 1.0 + Math.random() * 0.5, 0)
+      proximoSpawnPlataforma += 9 + Math.random() * 5
+      escena.add(plat)
+      plataformasRef.current.push(plat)
+    }
+
+    // Altura del suelo "efectivo" bajo Lulipop: la del suelo normal, o la
+    // de la plataforma más alta que tenga debajo en ese momento
+    const calcularSueloEnX = (x) => {
+      let mejor = fisicas.current.sueloY
+      plataformasRef.current.forEach(p => {
+        const mitad = p.userData.ancho / 2
+        if (x > p.position.x - mitad && x < p.position.x + mitad) {
+          const tope = p.position.y + p.userData.alto / 2
+          if (tope > mejor) mejor = tope
+        }
+      })
+      return mejor
+    }
+
     const boxLulipop = new THREE.Box3()
     const boxObjeto = new THREE.Box3()
 
@@ -705,6 +771,15 @@ export default function JuegoRunner({ perfil, onVolver }) {
         obj.position.x = siguienteX
         siguienteX += 4.5 + Math.random() * 2.2
       })
+      proximoSpawnX = siguienteX
+
+      let siguientePlataforma = 14
+      plataformasRef.current.forEach(plat => {
+        plat.position.x = siguientePlataforma
+        plat.position.y = fisicas.current.sueloY + 1.0 + Math.random() * 0.5
+        siguientePlataforma += 9 + Math.random() * 5
+      })
+      proximoSpawnPlataforma = siguientePlataforma
 
       if (montadoRef.current) setEsNuevoRecord(false)
       if (montadoRef.current) setMensaje('')
@@ -774,13 +849,25 @@ export default function JuegoRunner({ perfil, onVolver }) {
           lulipopSpriteRef.current.scale.set(escalaBaseSprite * escalaX, escalaBaseSprite * escalaY, 1)
         }
 
+        // Suelo "efectivo" bajo los pies: el suelo normal, o el borde superior
+        // de una plataforma si hay una justo debajo
+        const sueloActual = calcularSueloEnX(grupoLulipop.position.x)
+
+        if (fisicas.current.enSuelo && grupoLulipop.position.y > sueloActual + 0.05) {
+          // El apoyo bajo los pies desapareció (la plataforma siguió su camino
+          // sin nosotros): empezamos a caer. Si en cambio aparece una plataforma
+          // MÁS ALTA bajo un Lulipop que ya está en el suelo, no le "teletransportamos"
+          // hacia arriba: tiene que saltar para alcanzarla, como es natural.
+          fisicas.current.enSuelo = false
+        }
+
         // Físicas de salto
         if (!fisicas.current.enSuelo) {
           fisicas.current.vy -= fisicas.current.gravedad
           grupoLulipop.position.y += fisicas.current.vy
 
-          if (grupoLulipop.position.y <= fisicas.current.sueloY) {
-            grupoLulipop.position.y = fisicas.current.sueloY
+          if (grupoLulipop.position.y <= sueloActual) {
+            grupoLulipop.position.y = sueloActual
             fisicas.current.enSuelo = true
             fisicas.current.vy = 0
             spriteAnimRef.current = { tipo: 'aterrizaje', t: 10, total: 10 }
@@ -791,9 +878,10 @@ export default function JuegoRunner({ perfil, onVolver }) {
         if (colisionCooldownRef.current > 0) colisionCooldownRef.current -= 1
 
         // La sombra sigue a Lulipop y se encoge/desvanece cuanto más alto salta
-        const alturaSalto = Math.max(0, grupoLulipop.position.y - fisicas.current.sueloY)
+        const alturaSalto = Math.max(0, grupoLulipop.position.y - sueloActual)
         const factorSombra = Math.max(0.35, 1 - alturaSalto / 3)
         sombraLulipop.position.x = grupoLulipop.position.x
+        sombraLulipop.position.y = sueloActual + 0.03
         sombraLulipop.scale.set(factorSombra, factorSombra, 1)
         sombraLulipop.material.opacity = factorSombra
 
@@ -852,6 +940,16 @@ export default function JuegoRunner({ perfil, onVolver }) {
             obj.position.x = proximoSpawnX
             proximoSpawnX += gap
             poblarObjeto(obj, elegirTipo(vidasRef.current), fisicas.current.sueloY)
+          }
+        })
+
+        plataformasRef.current.forEach(plat => {
+          plat.position.x -= fisicas.current.velocidadJuego
+          if (plat.position.x < -6 - plat.userData.ancho / 2) {
+            const gap = 9 + Math.random() * 5
+            plat.position.x = proximoSpawnPlataforma
+            proximoSpawnPlataforma += gap
+            plat.position.y = fisicas.current.sueloY + 1.0 + Math.random() * 0.5
           }
         })
       } else if (estadoRef.current === 'inicio') {
