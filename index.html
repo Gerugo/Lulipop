@@ -2,7 +2,7 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="./assets/mascota.png" />
     
     <!-- 1. BLOQUEAR ZOOM Y ADAPTAR A PANTALLA COMPLETA -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
@@ -16,9 +16,14 @@
     <!-- 3. ENLACE AL ARCHIVO MANIFIESTO -->
     <link rel="manifest" href="./manifest.json" />
 
+    <!-- 4. TIPOGRAFÍA GLOBAL FREDOKA -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700;800;900&display=swap" rel="stylesheet">
+
     <title>Lulipop</title>
   </head>
-  <body>
+  <body style="margin: 0; padding: 0; overflow: hidden; background-color: #c7ecee;">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
