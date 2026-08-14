@@ -291,6 +291,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
   // --- Estado visible en React ---
   const [estado, setEstado] = useState('inicio') // 'inicio' | 'jugando' | 'gameover'
   const [puntos, setPuntos] = useState(0)
+  const [distancia, setDistancia] = useState(0)
   const [vidas, setVidas] = useState(VIDAS_MAX)
   const [combo, setCombo] = useState(0)
   const [mensaje, setMensaje] = useState('')
@@ -307,12 +308,18 @@ export default function JuegoRunner({ perfil, onVolver }) {
   const jugandoRef = useRef(false)
   const vidasRef = useRef(VIDAS_MAX)
   const puntosRef = useRef(0)
+  const distanciaRef = useRef(0)
+  const distanciaMostradaRef = useRef(0)
+  const comboMaxRef = useRef(0)
+  const ultimoHitoRef = useRef(0)
   const comboRef = useRef(0)
   const montadoRef = useRef(true)
   const timeoutsRef = useRef([])
   const accionesRef = useRef({}) // puente entre React (botones/toques) y el mundo Three.js
 
   const lulipopSpriteRef = useRef(null)
+  const piernaIzqRef = useRef(null)
+  const piernaDerRef = useRef(null)
   const obstaculosRef = useRef([])
   const decorativosRef = useRef([])
   const plataformasRef = useRef([])
@@ -524,19 +531,43 @@ export default function JuegoRunner({ perfil, onVolver }) {
     escena.add(sombraLulipop)
 
     // ----------------------------------------------------------------
-    // PROTAGONISTA: SPRITE DE LULIPOP
+    // PROTAGONISTA: LULIPOP EN 3 PIEZAS (cuerpo + pierna izq + pierna
+    // der) para poder animar el paso al correr, en vez de un sprite fijo
     // ----------------------------------------------------------------
     const grupoLulipop = new THREE.Group()
-    const escalaBaseSprite = 2.2
+    const grupoVisual = new THREE.Group()
+    grupoLulipop.add(grupoVisual)
     const textureLoader = new THREE.TextureLoader()
 
-    textureLoader.load(`${baseUrl}assets/mascota.png`, (textura) => {
-      const materialLulipop = new THREE.SpriteMaterial({ map: textura, color: 0xffffff })
-      const spriteLulipop = new THREE.Sprite(materialLulipop)
-      spriteLulipop.scale.set(escalaBaseSprite, escalaBaseSprite, 1)
-      spriteLulipop.position.y = 1.1
-      grupoLulipop.add(spriteLulipop)
-      lulipopSpriteRef.current = spriteLulipop
+    // Todas las medidas salen de la imagen original (500px = 2.2 unidades),
+    // así que cuerpo y piernas encajan exactamente sin huecos ni saltos
+    const ESCALA_PX = 2.2 / 500
+    const ALTURA_PIERNA = 66 * ESCALA_PX
+
+    const cargarParte = (archivo, w, h, anclaY) => new Promise((resolve) => {
+      textureLoader.load(`${baseUrl}assets/${archivo}`, (tex) => {
+        if ('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace
+        const mat = new THREE.SpriteMaterial({ map: tex, color: 0xffffff })
+        const sprite = new THREE.Sprite(mat)
+        sprite.center.set(0.5, anclaY)
+        sprite.scale.set(w * ESCALA_PX, h * ESCALA_PX, 1)
+        resolve(sprite)
+      })
+    })
+
+    Promise.all([
+      cargarParte('mascota-cuerpo.png', 500, 389, 0),   // ancla abajo (se apoya en la cadera)
+      cargarParte('mascota-pierna-izq.png', 73, 66, 1),  // ancla arriba (pivota en la cadera)
+      cargarParte('mascota-pierna-der.png', 107, 66, 1)
+    ]).then(([spriteCuerpo, spritePiernaIzq, spritePiernaDer]) => {
+      spriteCuerpo.position.y = ALTURA_PIERNA
+      spritePiernaIzq.position.set(-0.301, ALTURA_PIERNA, 0.01)
+      spritePiernaDer.position.set(0.227, ALTURA_PIERNA, 0.01)
+
+      grupoVisual.add(spritePiernaIzq, spritePiernaDer, spriteCuerpo)
+      lulipopSpriteRef.current = spriteCuerpo
+      piernaIzqRef.current = spritePiernaIzq
+      piernaDerRef.current = spritePiernaDer
     })
 
     grupoLulipop.position.set(-3.5, fisicas.current.sueloY, 0)
@@ -751,6 +782,11 @@ export default function JuegoRunner({ perfil, onVolver }) {
       if (montadoRef.current) setVidas(VIDAS_MAX)
       comboRef.current = 0
       if (montadoRef.current) setCombo(0)
+      distanciaRef.current = 0
+      distanciaMostradaRef.current = 0
+      if (montadoRef.current) setDistancia(0)
+      comboMaxRef.current = 0
+      ultimoHitoRef.current = 0
 
       fisicas.current.vy = 0
       fisicas.current.enSuelo = true
@@ -761,8 +797,10 @@ export default function JuegoRunner({ perfil, onVolver }) {
 
       if (lulipopSpriteRef.current) {
         lulipopSpriteRef.current.material.rotation = 0
-        lulipopSpriteRef.current.scale.set(escalaBaseSprite, escalaBaseSprite, 1)
+        grupoVisual.scale.set(1, 1, 1)
       }
+      if (piernaIzqRef.current) piernaIzqRef.current.rotation.z = 0
+      if (piernaDerRef.current) piernaDerRef.current.rotation.z = 0
 
       let siguienteX = 6
       obstaculosRef.current.forEach((obj, i) => {
@@ -823,16 +861,48 @@ export default function JuegoRunner({ perfil, onVolver }) {
         fisicas.current.velocidadBase = Math.min(0.10 + puntosRef.current * 0.0025, 0.20)
         fisicas.current.velocidadJuego += (fisicas.current.velocidadBase - fisicas.current.velocidadJuego) * 0.04
 
-        // Animación de correr / saltar (balanceo)
-        if (lulipopSpriteRef.current) {
-          if (fisicas.current.enSuelo) {
-            lulipopSpriteRef.current.material.rotation = Math.sin(fisicas.current.tiempo * 1.5) * 0.1
-          } else {
-            lulipopSpriteRef.current.material.rotation = 0.15
+        // Distancia recorrida (solo para mostrar progreso; no afecta a la física)
+        distanciaRef.current += fisicas.current.velocidadJuego * 0.6
+        const metros = Math.floor(distanciaRef.current)
+        if (metros !== distanciaMostradaRef.current) {
+          distanciaMostradaRef.current = metros
+          if (montadoRef.current) setDistancia(metros)
+        }
+        if (comboRef.current > comboMaxRef.current) comboMaxRef.current = comboRef.current
+
+        // Hito cada 15 puntos: pequeña celebración de confeti
+        const hitoActual = Math.floor(puntosRef.current / 15)
+        if (hitoActual > ultimoHitoRef.current && puntosRef.current > 0) {
+          ultimoHitoRef.current = hitoActual
+          dispararParticulas(grupoLulipop.position, '#ffd166', 6)
+          dispararParticulas(grupoLulipop.position, '#7d5fff', 6)
+          dispararParticulas(grupoLulipop.position, '#ff6b81', 6)
+          sonidoCombo()
+          if (montadoRef.current) {
+            setMensaje('¡Racha imparable! 🎉')
+            programarTimeout(() => setMensaje(''), 1300)
           }
         }
 
-        // Squash & stretch al saltar/aterrizar
+        // Animación de correr / saltar (balanceo + zancada de piernas)
+        if (lulipopSpriteRef.current) {
+          if (fisicas.current.enSuelo) {
+            lulipopSpriteRef.current.material.rotation = Math.sin(fisicas.current.tiempo * 1.5) * 0.1
+            // Piernas alternando como al correr; el ritmo se acelera un poco
+            // con la velocidad del juego
+            const fase = fisicas.current.tiempo * (16 + fisicas.current.velocidadJuego * 30)
+            const zancada = Math.sin(fase) * 0.6
+            if (piernaIzqRef.current) piernaIzqRef.current.rotation.z = zancada
+            if (piernaDerRef.current) piernaDerRef.current.rotation.z = -zancada
+          } else {
+            lulipopSpriteRef.current.material.rotation = 0.15
+            // En el aire: piernas recogidas hacia atrás, como en un saltito
+            if (piernaIzqRef.current) piernaIzqRef.current.rotation.z += (0.45 - piernaIzqRef.current.rotation.z) * 0.2
+            if (piernaDerRef.current) piernaDerRef.current.rotation.z += (0.3 - piernaDerRef.current.rotation.z) * 0.2
+          }
+        }
+
+        // Squash & stretch al saltar/aterrizar (afecta a cuerpo + piernas juntos)
         let escalaX = 1, escalaY = 1
         if (spriteAnimRef.current.t > 0) {
           const progreso = spriteAnimRef.current.t / spriteAnimRef.current.total
@@ -845,9 +915,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
           }
           spriteAnimRef.current.t -= 1
         }
-        if (lulipopSpriteRef.current) {
-          lulipopSpriteRef.current.scale.set(escalaBaseSprite * escalaX, escalaBaseSprite * escalaY, 1)
-        }
+        grupoVisual.scale.set(escalaX, escalaY, 1)
 
         // Suelo "efectivo" bajo los pies: el suelo normal, o el borde superior
         // de una plataforma si hay una justo debajo
@@ -872,6 +940,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
             fisicas.current.vy = 0
             spriteAnimRef.current = { tipo: 'aterrizaje', t: 10, total: 10 }
             if (lulipopSpriteRef.current) lulipopSpriteRef.current.material.rotation = 0
+            dispararParticulas(grupoLulipop.position, '#e8d4b0', 5)
           }
         }
 
@@ -1050,11 +1119,23 @@ export default function JuegoRunner({ perfil, onVolver }) {
 
       {/* BARRA SUPERIOR */}
       <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', zIndex: 10 }}>
-        <button onClick={onVolver} style={{
-          width: '55px', height: '55px', borderRadius: '20px', backgroundColor: 'rgba(255, 255, 255, 0.9)', color: '#FF5E62',
-          border: '3px solid white', fontSize: '24px', cursor: 'pointer', boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)'
-        }}>❮</button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <button onClick={onVolver} style={{
+            width: '55px', height: '55px', borderRadius: '20px', backgroundColor: 'rgba(255, 255, 255, 0.9)', color: '#FF5E62',
+            border: '3px solid white', fontSize: '24px', cursor: 'pointer', boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)'
+          }}>❮</button>
+
+          {estado === 'jugando' && (
+            <div style={{
+              backgroundColor: 'rgba(255,255,255,0.75)', padding: '5px 14px',
+              borderRadius: '16px', fontWeight: '800', fontSize: '0.9rem', color: '#576574',
+              display: 'inline-flex', alignItems: 'center', gap: '5px', width: 'fit-content'
+            }}>
+              🏃 {distancia} m
+            </div>
+          )}
+        </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
           <div style={{
@@ -1155,6 +1236,9 @@ export default function JuegoRunner({ perfil, onVolver }) {
             </div>
             <div style={{ fontSize: '1.1rem', color: '#576574', marginBottom: '4px' }}>
               Puntuación: <strong style={{ color: '#FFD166' }}>{puntos} 🍩</strong>
+            </div>
+            <div style={{ fontSize: '0.95rem', color: '#576574', marginBottom: '4px' }}>
+              🏃 {distancia} m recorridos · 🔥 Mejor racha: {comboMaxRef.current}
             </div>
             <div style={{ fontSize: '0.95rem', color: '#a6660b', fontWeight: '700', marginBottom: '20px' }}>
               🏆 Mejor puntuación: {record}
