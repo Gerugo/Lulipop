@@ -62,10 +62,9 @@ function usarSonidosRunner() {
 }
 
 // ============================================================
-// CONSTANTES Y HELPERS DE ESCENA (sin dependencias de React)
+// CONSTANTES Y HELPERS DE ESCENA
 // ============================================================
 const VIDAS_MAX = 3
-
 const claveRecord = (perfilId) => `lulipop_runner_record_${perfilId || 'anon'}`
 
 const geoDonut = new THREE.TorusGeometry(0.4, 0.15, 12, 24)
@@ -73,10 +72,6 @@ const matPremio = new THREE.MeshStandardMaterial({ color: '#ffa502', metalness: 
 const matGema = new THREE.MeshStandardMaterial({ color: '#7d5fff', emissive: '#7d5fff', emissiveIntensity: 0.45, metalness: 0.5, roughness: 0.2 })
 const matCorazon = new THREE.MeshStandardMaterial({ color: '#ff6b81', emissive: '#ff4757', emissiveIntensity: 0.3, roughness: 0.3 })
 
-// ----------------------------------------------------------------
-// DECORACIÓN DE FONDO: árboles de caramelo y piruletas (NO son
-// obstáculos, solo dan ambiente detrás de la zona jugable)
-// ----------------------------------------------------------------
 const BASE_ASSETS = import.meta.env.BASE_URL
 const cargadorObstaculos = new THREE.TextureLoader()
 const CANDY_ASSETS = [
@@ -135,12 +130,6 @@ const matSombraObstaculo = new THREE.MeshBasicMaterial({
   map: crearTexturaSombraGenerica(), transparent: true, depthWrite: false
 })
 
-// ----------------------------------------------------------------
-// OBSTÁCULOS DE VERDAD: caramelos cuadrados (volumen 3D real, con
-// envoltorio a los lados, así que ya no dependen de sprites planos)
-// ----------------------------------------------------------------
-// Tonos de "peligro" bien diferenciados de los coleccionables (el donut es
-// naranja, la gema morada y el corazón rosa, así que evitamos esos tonos)
 const COLORES_CARAMELO = ['#e84150', '#c0392b', '#8b4513', '#3d3d5c', '#2f3542']
 
 function crearObstaculoCaramelo() {
@@ -171,7 +160,6 @@ function crearObstaculoCaramelo() {
   brillo.rotation.z = 0.5
   g.add(brillo)
 
-  // Puntas de envoltorio, como un caramelo clásico
   const envIzq = new THREE.Mesh(new THREE.ConeGeometry(tam * 0.34, tam * 0.42, 6), matEnvoltorio)
   envIzq.rotation.z = Math.PI / 2
   envIzq.position.set(-tam * 0.64, tam / 2, 0)
@@ -186,11 +174,6 @@ function crearObstaculoCaramelo() {
   return g
 }
 
-// ----------------------------------------------------------------
-// PLATAFORMAS: barras de caramelo a las que hay que saltar para
-// seguir avanzando en alto (no son coleccionables ni obstáculos,
-// sirven de "suelo" temporal)
-// ----------------------------------------------------------------
 const COLORES_PLATAFORMA = ['#ffb3c6', '#bcd4ff', '#c9f2c7', '#ffe4a3']
 
 function crearPlataforma() {
@@ -208,7 +191,6 @@ function crearPlataforma() {
   cuerpo.receiveShadow = true
   g.add(cuerpo)
 
-  // Rayas de caramelo encima, como decoración
   const numRayas = 3
   for (let i = 0; i < numRayas; i++) {
     const raya = new THREE.Mesh(new THREE.BoxGeometry(ancho * 0.14, alto * 1.02, profundo * 1.02), matRaya)
@@ -244,7 +226,6 @@ function crearCorazon() {
   return g
 }
 
-// Elige el tipo de objeto que aparecerá en un carril reciclado
 function elegirTipo(vidasActuales) {
   const r = Math.random()
   if (r < 0.42) return 'obstaculo'
@@ -253,7 +234,6 @@ function elegirTipo(vidasActuales) {
   return 'premio'
 }
 
-// Rellena un grupo (carril) ya existente con el contenido visual de un tipo
 function poblarObjeto(grupo, tipo, sueloY) {
   grupo.clear()
   grupo.scale.set(1, 1, 1)
@@ -288,8 +268,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
   const mountRef = useRef(null)
   const animFrameRef = useRef(null)
 
-  // --- Estado visible en React ---
-  const [estado, setEstado] = useState('inicio') // 'inicio' | 'jugando' | 'gameover'
+  const [estado, setEstado] = useState('inicio')
   const [puntos, setPuntos] = useState(0)
   const [distancia, setDistancia] = useState(0)
   const [vidas, setVidas] = useState(VIDAS_MAX)
@@ -303,7 +282,6 @@ export default function JuegoRunner({ perfil, onVolver }) {
     sonidoCombo, sonidoChoque, sonidoGameOver, sonidoInicio
   } = usarSonidosRunner()
 
-  // --- Refs "espejo" para usar dentro del bucle de animación sin closures viejas ---
   const estadoRef = useRef('inicio')
   const jugandoRef = useRef(false)
   const vidasRef = useRef(VIDAS_MAX)
@@ -315,7 +293,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
   const comboRef = useRef(0)
   const montadoRef = useRef(true)
   const timeoutsRef = useRef([])
-  const accionesRef = useRef({}) // puente entre React (botones/toques) y el mundo Three.js
+  const accionesRef = useRef({})
 
   const lulipopSpriteRef = useRef(null)
   const piernaIzqRef = useRef(null)
@@ -352,12 +330,11 @@ export default function JuegoRunner({ perfil, onVolver }) {
     if (montadoRef.current) setEstado(nuevo)
   }
 
-  // --- Cargar mejor puntuación guardada ---
   useEffect(() => {
     try {
       const guardado = parseInt(localStorage.getItem(claveRecord(perfil?.id)) || '0', 10)
       if (!Number.isNaN(guardado)) setRecord(guardado)
-    } catch { /* localStorage no disponible: seguimos sin récord persistente */ }
+    } catch { /* continuar sin localStorage */ }
   }, [perfil?.id])
 
   useEffect(() => {
@@ -367,6 +344,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
     montadoRef.current = true
 
     const escena = new THREE.Scene()
+    const textureLoader = new THREE.TextureLoader() // Instancia única para todo el componente
 
     const aspecto = contenedor.clientWidth / contenedor.clientHeight
     const tamanoCamara = 4.5
@@ -381,10 +359,6 @@ export default function JuegoRunner({ perfil, onVolver }) {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap
     contenedor.appendChild(renderer.domElement)
 
-    // Ajustar cámara y canvas al tamaño real del contenedor. Sin esto, en
-    // móvil (donde el viewport cambia al aparecer/ocultarse la barra del
-    // navegador, o al rotar la pantalla) el juego se quedaba con las
-    // medidas de la primera carga y se veía cortado o mal encajado.
     const ajustarTamano = () => {
       const w = contenedor.clientWidth
       const h = contenedor.clientHeight
@@ -418,16 +392,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
     luzSol.shadow.mapSize.height = 1024
     escena.add(luzSol)
 
-    // El cielo, el sol, las nubes y las colinas ahora son ilustraciones reales
-    // en capas CSS detrás del canvas (ver el JSX), así que aquí solo queda el suelo.
-
-    // ----------------------------------------------------------------
-    // SUELO DE CÉSPED (dibujado a medida: una foto real se ve fatal
-    // estirada en una franja delgada de canto, así que lo pintamos
-    // nosotros pensado exactamente para esa franja)
-    // ----------------------------------------------------------------
-
-    // Degradado vertical procedural para la tierra
+    // SUELO PROCEDURAL
     const canvasGradiente = document.createElement('canvas')
     canvasGradiente.width = 8
     canvasGradiente.height = 128
@@ -441,8 +406,6 @@ export default function JuegoRunner({ perfil, onVolver }) {
     const texturaTierra = new THREE.CanvasTexture(canvasGradiente)
     const materialTierra = new THREE.MeshStandardMaterial({ map: texturaTierra, roughness: 1 })
 
-    // Franja de césped: base sólida + hierba festoneada arriba + lunares,
-    // todo con posiciones fijas (no aleatorias) para que el mosaico encaje sin costuras
     const anchoTexCesped = 256
     const altoTexCesped = 110
     const canvasCesped = document.createElement('canvas')
@@ -453,7 +416,6 @@ export default function JuegoRunner({ perfil, onVolver }) {
     cctx.fillStyle = '#8ee6a8'
     cctx.fillRect(0, 0, anchoTexCesped, altoTexCesped)
 
-    // Lunares más oscuros (posiciones fijas, patrón repetible)
     cctx.fillStyle = '#7ad696'
     for (let i = 0; i < 8; i++) {
       const cx = (i + 0.5) * (anchoTexCesped / 8)
@@ -464,7 +426,6 @@ export default function JuegoRunner({ perfil, onVolver }) {
       cctx.fill()
     }
 
-    // Hierba festoneada en el borde superior
     const numBriznas = 26
     cctx.fillStyle = '#5fc47f'
     for (let i = 0; i < numBriznas; i++) {
@@ -478,7 +439,6 @@ export default function JuegoRunner({ perfil, onVolver }) {
       cctx.fill()
     }
 
-    // Puntitos de flores diminutas (patrón fijo, tonos golosina)
     const coloresFlor = ['#ffd166', '#ff9fc7', '#ffffff']
     for (let i = 0; i < 12; i++) {
       cctx.fillStyle = coloresFlor[i % coloresFlor.length]
@@ -496,8 +456,6 @@ export default function JuegoRunner({ perfil, onVolver }) {
     if ('colorSpace' in texturaCesped) texturaCesped.colorSpace = THREE.SRGBColorSpace
     const materialSuelo = new THREE.MeshStandardMaterial({ map: texturaCesped, roughness: 1 })
 
-    // La parte de arriba del césped debe coincidir EXACTAMENTE con fisicas.sueloY,
-    // si no el personaje parece flotar sobre el suelo.
     const alturaCesped = 0.7
     const alturaTierra = 3
     const cesped = new THREE.Mesh(new THREE.BoxGeometry(34, alturaCesped, 3), materialSuelo)
@@ -509,8 +467,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
     tierra.position.set(0, fisicas.current.sueloY - alturaCesped - alturaTierra / 2, -1.6)
     escena.add(tierra)
 
-    // Sombra elíptica (degradado suave) bajo Lulipop: ancla visualmente al
-    // personaje al suelo, se encoge y se desvanece un poco al saltar
+    // SOMBRA DE LULIPOP
     const canvasSombra = document.createElement('canvas')
     canvasSombra.width = 128
     canvasSombra.height = 128
@@ -530,17 +487,11 @@ export default function JuegoRunner({ perfil, onVolver }) {
     sombraLulipop.position.set(-3.5, fisicas.current.sueloY + 0.03, 0.35)
     escena.add(sombraLulipop)
 
-    // ----------------------------------------------------------------
-    // PROTAGONISTA: LULIPOP EN 3 PIEZAS (cuerpo + pierna izq + pierna
-    // der) para poder animar el paso al correr, en vez de un sprite fijo
-    // ----------------------------------------------------------------
+    // PERSONAJE LULIPOP
     const grupoLulipop = new THREE.Group()
     const grupoVisual = new THREE.Group()
     grupoLulipop.add(grupoVisual)
-    const textureLoader = new THREE.TextureLoader()
 
-    // Todas las medidas salen de la imagen original (500px = 2.2 unidades),
-    // así que cuerpo y piernas encajan exactamente sin huecos ni saltos
     const ESCALA_PX = 2.2 / 500
     const ALTURA_PIERNA = 66 * ESCALA_PX
 
@@ -556,8 +507,8 @@ export default function JuegoRunner({ perfil, onVolver }) {
     })
 
     Promise.all([
-      cargarParte('mascota-cuerpo.png', 500, 389, 0),   // ancla abajo (se apoya en la cadera)
-      cargarParte('mascota-pierna-izq.png', 73, 66, 1),  // ancla arriba (pivota en la cadera)
+      cargarParte('mascota-cuerpo.png', 500, 389, 0),
+      cargarParte('mascota-pierna-izq.png', 73, 66, 1),
       cargarParte('mascota-pierna-der.png', 107, 66, 1)
     ]).then(([spriteCuerpo, spritePiernaIzq, spritePiernaDer]) => {
       spriteCuerpo.position.y = ALTURA_PIERNA
@@ -573,16 +524,12 @@ export default function JuegoRunner({ perfil, onVolver }) {
     grupoLulipop.position.set(-3.5, fisicas.current.sueloY, 0)
     escena.add(grupoLulipop)
 
-    // ----------------------------------------------------------------
-    // CARRILES DE OBJETOS (obstáculos, donuts, gemas, corazones)
-    // ----------------------------------------------------------------
+    // CARRILES
     const NUM_CARRILES = 6
     let proximoSpawnX = 6
 
     for (let i = 0; i < NUM_CARRILES; i++) {
       const grupo = new THREE.Group()
-      // Los dos primeros carriles son siempre premios amistosos para un inicio suave,
-      // y el tercero siempre es un obstáculo para que se vean desde el principio
       const tipo = i < 2 ? 'premio' : i === 2 ? 'obstaculo' : elegirTipo(VIDAS_MAX)
       poblarObjeto(grupo, tipo, fisicas.current.sueloY)
       grupo.position.x = proximoSpawnX
@@ -591,11 +538,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
       obstaculosRef.current.push(grupo)
     }
 
-    // ----------------------------------------------------------------
-    // DECORACIÓN DE FONDO: árboles y piruletas, solo ambiente (sin
-    // colisión), más atrás que la zona jugable y a menor velocidad
-    // para dar sensación de profundidad (parallax)
-    // ----------------------------------------------------------------
+    // DECORATIVOS PARALLAX
     const NUM_DECOR = 5
     for (let i = 0; i < NUM_DECOR; i++) {
       const deco = crearDecoracionCandy()
@@ -604,10 +547,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
       decorativosRef.current.push(deco)
     }
 
-    // ----------------------------------------------------------------
-    // PLATAFORMAS: hay que saltar encima para tomar altura; cuando se
-    // desplazan fuera de los pies, Lulipop vuelve a caer al suelo normal
-    // ----------------------------------------------------------------
+    // PLATAFORMAS
     const NUM_PLATAFORMAS = 3
     let proximoSpawnPlataforma = 14
     for (let i = 0; i < NUM_PLATAFORMAS; i++) {
@@ -618,8 +558,6 @@ export default function JuegoRunner({ perfil, onVolver }) {
       plataformasRef.current.push(plat)
     }
 
-    // Altura del suelo "efectivo" bajo Lulipop: la del suelo normal, o la
-    // de la plataforma más alta que tenga debajo en ese momento
     const calcularSueloEnX = (x) => {
       let mejor = fisicas.current.sueloY
       plataformasRef.current.forEach(p => {
@@ -635,9 +573,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
     const boxLulipop = new THREE.Box3()
     const boxObjeto = new THREE.Box3()
 
-    // ----------------------------------------------------------------
     // PARTÍCULAS
-    // ----------------------------------------------------------------
     const dispararParticulas = (posicion, color, cantidad) => {
       for (let i = 0; i < cantidad; i++) {
         const tam = 0.06 + Math.random() * 0.09
@@ -657,9 +593,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
       }
     }
 
-    // ----------------------------------------------------------------
     // LÓGICA DE JUEGO
-    // ----------------------------------------------------------------
     const finalizarJuego = () => {
       jugandoRef.current = false
       cambiarEstado('gameover')
@@ -709,9 +643,6 @@ export default function JuegoRunner({ perfil, onVolver }) {
     const manejarRecogida = (tipo, obj) => {
       obj.userData.activo = false
       const posicionOrigen = obj.position.clone()
-
-      // Pequeño "pop" de escala antes de esconder el objeto: se siente mucho
-      // más satisfactorio que desaparecer de golpe
       obj.userData.animRecogida = { t: 0, total: 10 }
 
       if (tipo === 'premio') {
@@ -827,7 +758,6 @@ export default function JuegoRunner({ perfil, onVolver }) {
 
     accionesRef.current = { tocar: manejarToqueInterno, reiniciar: reiniciarJuego }
 
-    // Teclado (accesibilidad / pruebas de escritorio)
     const manejarTecla = (e) => {
       if (e.code === 'Space' || e.code === 'ArrowUp') {
         e.preventDefault()
@@ -836,18 +766,12 @@ export default function JuegoRunner({ perfil, onVolver }) {
     }
     window.addEventListener('keydown', manejarTecla)
 
-    // ----------------------------------------------------------------
     // BUCLE PRINCIPAL
-    // ----------------------------------------------------------------
     const loop = () => {
       animFrameRef.current = requestAnimationFrame(loop)
 
-      // El césped "corre" bajo los pies como una cinta transportadora, incluso
-      // con un pequeño avance de fondo en las pantallas de inicio/fin
       texturaCesped.offset.x -= (jugandoRef.current ? fisicas.current.velocidadJuego : 0.01) * 0.35
 
-      // Los árboles/piruletas de fondo se mueven más despacio que el carril de
-      // juego (parallax): dan sensación de profundidad sin ser obstáculos
       const velocidadDecor = jugandoRef.current ? fisicas.current.velocidadJuego * 0.45 : 0.008
       decorativosRef.current.forEach(deco => {
         deco.position.x -= velocidadDecor
@@ -857,11 +781,9 @@ export default function JuegoRunner({ perfil, onVolver }) {
       if (jugandoRef.current) {
         fisicas.current.tiempo += 0.1
 
-        // Dificultad progresiva: la velocidad objetivo sube suavemente con la puntuación
         fisicas.current.velocidadBase = Math.min(0.10 + puntosRef.current * 0.0025, 0.20)
         fisicas.current.velocidadJuego += (fisicas.current.velocidadBase - fisicas.current.velocidadJuego) * 0.04
 
-        // Distancia recorrida (solo para mostrar progreso; no afecta a la física)
         distanciaRef.current += fisicas.current.velocidadJuego * 0.6
         const metros = Math.floor(distanciaRef.current)
         if (metros !== distanciaMostradaRef.current) {
@@ -870,7 +792,6 @@ export default function JuegoRunner({ perfil, onVolver }) {
         }
         if (comboRef.current > comboMaxRef.current) comboMaxRef.current = comboRef.current
 
-        // Hito cada 15 puntos: pequeña celebración de confeti
         const hitoActual = Math.floor(puntosRef.current / 15)
         if (hitoActual > ultimoHitoRef.current && puntosRef.current > 0) {
           ultimoHitoRef.current = hitoActual
@@ -884,25 +805,20 @@ export default function JuegoRunner({ perfil, onVolver }) {
           }
         }
 
-        // Animación de correr / saltar (balanceo + zancada de piernas)
         if (lulipopSpriteRef.current) {
           if (fisicas.current.enSuelo) {
             lulipopSpriteRef.current.material.rotation = Math.sin(fisicas.current.tiempo * 1.5) * 0.1
-            // Piernas alternando como al correr; el ritmo se acelera un poco
-            // con la velocidad del juego
             const fase = fisicas.current.tiempo * (16 + fisicas.current.velocidadJuego * 30)
             const zancada = Math.sin(fase) * 0.6
             if (piernaIzqRef.current) piernaIzqRef.current.rotation.z = zancada
             if (piernaDerRef.current) piernaDerRef.current.rotation.z = -zancada
           } else {
             lulipopSpriteRef.current.material.rotation = 0.15
-            // En el aire: piernas recogidas hacia atrás, como en un saltito
             if (piernaIzqRef.current) piernaIzqRef.current.rotation.z += (0.45 - piernaIzqRef.current.rotation.z) * 0.2
             if (piernaDerRef.current) piernaDerRef.current.rotation.z += (0.3 - piernaDerRef.current.rotation.z) * 0.2
           }
         }
 
-        // Squash & stretch al saltar/aterrizar (afecta a cuerpo + piernas juntos)
         let escalaX = 1, escalaY = 1
         if (spriteAnimRef.current.t > 0) {
           const progreso = spriteAnimRef.current.t / spriteAnimRef.current.total
@@ -917,19 +833,12 @@ export default function JuegoRunner({ perfil, onVolver }) {
         }
         grupoVisual.scale.set(escalaX, escalaY, 1)
 
-        // Suelo "efectivo" bajo los pies: el suelo normal, o el borde superior
-        // de una plataforma si hay una justo debajo
         const sueloActual = calcularSueloEnX(grupoLulipop.position.x)
 
         if (fisicas.current.enSuelo && grupoLulipop.position.y > sueloActual + 0.05) {
-          // El apoyo bajo los pies desapareció (la plataforma siguió su camino
-          // sin nosotros): empezamos a caer. Si en cambio aparece una plataforma
-          // MÁS ALTA bajo un Lulipop que ya está en el suelo, no le "teletransportamos"
-          // hacia arriba: tiene que saltar para alcanzarla, como es natural.
           fisicas.current.enSuelo = false
         }
 
-        // Físicas de salto
         if (!fisicas.current.enSuelo) {
           fisicas.current.vy -= fisicas.current.gravedad
           grupoLulipop.position.y += fisicas.current.vy
@@ -946,7 +855,6 @@ export default function JuegoRunner({ perfil, onVolver }) {
 
         if (colisionCooldownRef.current > 0) colisionCooldownRef.current -= 1
 
-        // La sombra sigue a Lulipop y se encoge/desvanece cuanto más alto salta
         const alturaSalto = Math.max(0, grupoLulipop.position.y - sueloActual)
         const factorSombra = Math.max(0.35, 1 - alturaSalto / 3)
         sombraLulipop.position.x = grupoLulipop.position.x
@@ -955,11 +863,6 @@ export default function JuegoRunner({ perfil, onVolver }) {
         sombraLulipop.material.opacity = factorSombra
 
         boxLulipop.setFromObject(grupoLulipop)
-        // OJO: no usar expandByScalar aquí. Lulipop es un sprite plano (grosor
-        // real en Z = 0), así que encoger también el eje Z invierte el rango
-        // (min.z > max.z) y Box3.intersectsBox() da SIEMPRE false, sin importar
-        // cuánto se solapen en X/Y. Por eso nunca se recogía nada. Encogemos
-        // solo X e Y y dejamos Z tal cual.
         boxLulipop.min.x += 0.6; boxLulipop.max.x -= 0.6
         boxLulipop.min.y += 0.6; boxLulipop.max.y -= 0.6
 
@@ -968,8 +871,6 @@ export default function JuegoRunner({ perfil, onVolver }) {
 
           const tipo = obj.userData.tipo
           if (tipo === 'premio' || tipo === 'gema') {
-            // Giro en el eje Z: como una moneda de frente a cámara.
-            // (Antes giraba en Y y, al verse "de canto", parecía una raya vertical)
             obj.rotation.z += 0.045
           } else if (tipo === 'corazon') {
             obj.position.y = obj.userData.baseY + Math.sin(fisicas.current.tiempo * 3 + obj.userData.offset) * 0.15
@@ -978,8 +879,6 @@ export default function JuegoRunner({ perfil, onVolver }) {
 
           if (obj.userData.activo) {
             boxObjeto.setFromObject(obj)
-            // Igual que con Lulipop: los obstáculos-golosina son sprites planos,
-            // así que encogemos solo X/Y y dejamos Z intacto (ver nota arriba).
             const margen = tipo === 'obstaculo' ? 0.12 : 0.1
             boxObjeto.min.x += margen; boxObjeto.max.x -= margen
             boxObjeto.min.y += margen; boxObjeto.max.y -= margen
@@ -1022,13 +921,12 @@ export default function JuegoRunner({ perfil, onVolver }) {
           }
         })
       } else if (estadoRef.current === 'inicio') {
-        // Pantalla de inicio: pequeño balanceo de bienvenida
         grupoLulipop.position.y = fisicas.current.sueloY + Math.sin(fisicas.current.tiempo * 0.6) * 0.08
         fisicas.current.tiempo += 0.05
         if (lulipopSpriteRef.current) lulipopSpriteRef.current.material.rotation = Math.sin(fisicas.current.tiempo * 1.2) * 0.06
       }
 
-      // Partículas (siguen su curso incluso si el juego está en pausa/fin)
+      // Partículas
       particulasRef.current = particulasRef.current.filter(p => {
         p.userData.vida -= 0.035
         if (p.userData.vida <= 0) {
@@ -1047,7 +945,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
         return true
       })
 
-      // Sacudida de cámara al chocar
+      // Sacudida de cámara
       if (shakeRef.current.tiempo > 0) {
         const intensidad = shakeRef.current.intensidad * (shakeRef.current.tiempo / 14)
         camara.position.x = camaraBaseX + (Math.random() - 0.5) * intensidad
@@ -1063,6 +961,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
 
     loop()
 
+    // Limpieza profunda de memoria
     return () => {
       montadoRef.current = false
       timeoutsRef.current.forEach(id => clearTimeout(id))
@@ -1072,6 +971,15 @@ export default function JuegoRunner({ perfil, onVolver }) {
       window.removeEventListener('orientationchange', ajustarTamano)
       if (observadorTamano) observadorTamano.disconnect()
       cancelAnimationFrame(animFrameRef.current)
+
+      escena.traverse((obj) => {
+        if (obj.geometry) obj.geometry.dispose()
+        if (obj.material) {
+          if (Array.isArray(obj.material)) obj.material.forEach((m) => m.dispose())
+          else obj.material.dispose()
+        }
+      })
+
       particulasRef.current.forEach(p => { p.geometry.dispose(); p.material.dispose() })
       particulasRef.current = []
       texturaCesped.dispose()
@@ -1099,7 +1007,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
         fontFamily: '"Fredoka", sans-serif'
       }}
     >
-      {/* CIELO: ilustración real con sol y nubes, en bucle horizontal lento */}
+      {/* CIELO */}
       <div className="capa-cielo" style={{
         position: 'absolute', top: 0, left: 0, width: '200%', height: '100%',
         backgroundImage: `url(${baseUrl}assets/fondo-cielo.jpg)`,
@@ -1107,7 +1015,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
         zIndex: 0
       }} />
 
-      {/* COLINAS: ilustración real con flores, capa intermedia con parallax más rápido */}
+      {/* COLINAS */}
       <div className="capa-colinas" style={{
         position: 'absolute', bottom: 0, left: 0, width: '200%', height: '48%',
         backgroundImage: `url(${baseUrl}assets/fondo-colinas.png)`,
@@ -1195,7 +1103,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
               ¡Carrera con Lulipop!
             </div>
             <div style={{ fontSize: '1rem', color: '#576574', marginBottom: '18px', lineHeight: 1.4 }}>
-              Toca la pantalla para saltar. Esquiva arbustos y piedras, recoge donuts y gemas ✨ y cuida tus corazones 💗
+              Toca la pantalla para saltar. Esquiva obstáculos, recoge donuts y gemas ✨ y cuida tus corazones 💗
             </div>
             {record > 0 && (
               <div style={{ fontSize: '0.95rem', color: '#a6660b', fontWeight: '700', marginBottom: '14px' }}>
