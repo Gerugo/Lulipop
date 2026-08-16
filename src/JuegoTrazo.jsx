@@ -55,8 +55,11 @@ export default function JuegoTrazo({ perfil, onVolver }) {
 
   const inicializarCanvas = useCallback(() => {
     const canvas = canvasRef.current
+    if (!canvas) return
+    if (!hitCanvasRef.current) {
+      hitCanvasRef.current = document.createElement('canvas')
+    }
     const hitCanvas = hitCanvasRef.current
-    if (!canvas || !hitCanvas) return
     
     const ctx = canvas.getContext('2d')
     const hitCtx = hitCanvas.getContext('2d', { willReadFrequently: true })
@@ -67,12 +70,13 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     hitCtx.clearRect(0, 0, hitCanvas.width, hitCanvas.height)
     
-    const fontSize = Math.min(canvas.height * 0.5, 450) 
+    // Tamaño de fuente responsivo según alto y ancho
+    const fontSize = Math.min(canvas.height * 0.48, canvas.width * 0.65, 360) 
     brushSizeRef.current = Math.max(fontSize * 0.12, 18)
 
-    const fontStyle = "900 " + fontSize + "px 'Fredoka', sans-serif"
+    const fontStyle = "900 " + fontSize + "px 'Fredoka', cursive, sans-serif"
     const centerX = canvas.width / 2
-    const centerY = canvas.height / 2 - 20 
+    const centerY = canvas.height / 2 - 10 
 
     hitCtx.font = fontStyle
     hitCtx.textAlign = 'center'
@@ -99,16 +103,25 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     ctx.textBaseline = 'middle'
     ctx.globalCompositeOperation = 'source-over'
     
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)'
+    // 1. Relleno blanco traslúcido con brillo suave
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)'
+    ctx.shadowColor = 'rgba(255, 255, 255, 0.85)'
+    ctx.shadowBlur = 12
     ctx.fillText(letraActiva, centerX, centerY)
-    
-    ctx.lineWidth = Math.max(fontSize * 0.02, 6)
+    ctx.shadowBlur = 0
+
+    // 2. Borde exterior blanco sólido nítido
+    ctx.lineWidth = Math.max(fontSize * 0.025, 8)
     ctx.strokeStyle = '#FFFFFF'
     ctx.lineJoin = 'round'
-    ctx.shadowColor = 'rgba(255, 255, 255, 0.9)'
-    ctx.shadowBlur = 15
     ctx.strokeText(letraActiva, centerX, centerY)
-    ctx.shadowBlur = 0 
+
+    // 3. Línea discontinua guía central para pintar fácilmente
+    ctx.setLineDash([8, 8])
+    ctx.lineWidth = Math.max(fontSize * 0.015, 3)
+    ctx.strokeStyle = 'rgba(100, 116, 139, 0.55)'
+    ctx.strokeText(letraActiva, centerX, centerY)
+    ctx.setLineDash([])
   }, [letraActiva])
 
   useEffect(() => {
@@ -121,10 +134,18 @@ export default function JuegoTrazo({ perfil, onVolver }) {
   }, [])
 
   useEffect(() => {
-    document.fonts.ready.then(() => {
-      inicializarCanvas()
-    })
-  }, [inicializarCanvas, dimensiones.w, dimensiones.h])
+    if (!nivel) return
+    const timer = setTimeout(() => {
+      if (document.fonts) {
+        document.fonts.ready.then(() => {
+          inicializarCanvas()
+        })
+      } else {
+        inicializarCanvas()
+      }
+    }, 50)
+    return () => clearTimeout(timer)
+  }, [nivelId, letraActiva, dimensiones.w, dimensiones.h, inicializarCanvas, nivel])
 
   const empezarNivel = (id) => {
     const n = NIVELES.find((x) => x.id === id)
@@ -418,12 +439,12 @@ export default function JuegoTrazo({ perfil, onVolver }) {
 
   return (
     <div style={{
-      minHeight: '100vh', width: '100vw',
+      height: '100dvh', minHeight: '100dvh', width: '100vw',
       backgroundImage: `url(${fondoImg})`,
       backgroundSize: 'cover', backgroundPosition: 'center',
       fontFamily: '"Fredoka", sans-serif',
-      position: 'absolute', top: 0, left: 0, zIndex: 10,
-      overflow: 'hidden'
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10,
+      overflow: 'hidden', touchAction: 'none'
     }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;900&display=swap');
