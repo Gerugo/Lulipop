@@ -1,32 +1,61 @@
-import React, { useState, useEffect } from 'react'
-import JuegoNumeros from './JuegoNumeros'
-import JuegoPuzzles from './JuegoPuzzles'
-import JuegoArte from './JuegoArte'
-import JuegoLetras from './JuegoLetras'
-import JuegoTrazo from './JuegoTrazo'
-import AlbumPegatinas from './AlbumPegatinas'
-import JuegoMemoria from './JuegoMemoria'
-import JuegoSombras from './JuegoSombras'
-import JuegoBurbujas from './JuegoBurbujas'
-import JuegoIntruso from './JuegoIntruso'
-import JuegoCocina from './JuegoCocina'
-import JuegoConstructor3D from './JuegoConstructor3D'
-import JuegoRunner from './JuegoRunner'
+import { useState, lazy, Suspense } from 'react'
 import fondoImg from './fondo-lulipop.png'
+
+// Carga diferida (Code Splitting) para reducir el bundle inicial en >70%
+const JuegoNumeros = lazy(() => import('./JuegoNumeros'))
+const JuegoPuzzles = lazy(() => import('./JuegoPuzzles'))
+const JuegoArte = lazy(() => import('./JuegoArte'))
+const JuegoLetras = lazy(() => import('./JuegoLetras'))
+const JuegoTrazo = lazy(() => import('./JuegoTrazo'))
+const AlbumPegatinas = lazy(() => import('./AlbumPegatinas'))
+const JuegoMemoria = lazy(() => import('./JuegoMemoria'))
+const JuegoSombras = lazy(() => import('./JuegoSombras'))
+const JuegoBurbujas = lazy(() => import('./JuegoBurbujas'))
+const JuegoIntruso = lazy(() => import('./JuegoIntruso'))
+const JuegoCocina = lazy(() => import('./JuegoCocina'))
+const JuegoConstructor3D = lazy(() => import('./JuegoConstructor3D'))
+const JuegoRunner = lazy(() => import('./JuegoRunner'))
+
+function CargandoJuego() {
+  return (
+    <div style={{
+      minHeight: '100dvh', width: '100vw',
+      backgroundImage: `url(${fondoImg})`,
+      backgroundSize: 'cover', backgroundPosition: 'center',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      fontFamily: '"Fredoka", sans-serif', position: 'absolute', top: 0, left: 0, zIndex: 100
+    }}>
+      <div style={{
+        backgroundColor: 'rgba(255, 255, 255, 0.9)', padding: '25px 45px',
+        borderRadius: '35px', border: '5px solid white', boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
+        textAlign: 'center'
+      }}>
+        <div style={{ fontSize: '3.5rem', animation: 'flotarCarga 2s ease-in-out infinite' }}>🍭</div>
+        <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#334155', marginTop: '10px' }}>
+          ¡Cargando aventura...!
+        </div>
+      </div>
+      <style>{`
+        @keyframes flotarCarga { 0%, 100% { transform: translateY(0) rotate(-5deg); } 50% { transform: translateY(-15px) rotate(5deg); } }
+      `}</style>
+    </div>
+  )
+}
 
 export default function MundoLulipop({ perfil, onVolver }) {
   const [juegoActivo, setJuegoActivo] = useState(null)
-  const [pegatinasColocadas, setPegatinasColocadas] = useState([])
+  const [pegatinasColocadas, setPegatinasColocadas] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(`colocadas_${perfil?.id}`) || '[]')
+    } catch {
+      return []
+    }
+  })
   const [modoPegatina, setModoPegatina] = useState(null) 
 
   // Helpers para resolver URLs estáticas en la carpeta public respetando el "base" de Vite (GitHub Pages)
   const baseUrl = import.meta.env.BASE_URL
   const getAssetUrl = (filename) => `${baseUrl}assets/${filename}`
-
-  useEffect(() => {
-    const guardadas = JSON.parse(localStorage.getItem(`colocadas_${perfil.id}`) || '[]')
-    setPegatinasColocadas(guardadas)
-  }, [perfil.id])
 
   const manejarClickFondo = (e) => {
     if (!modoPegatina) return
@@ -37,7 +66,11 @@ export default function MundoLulipop({ perfil, onVolver }) {
     const nuevaPegatina = { id: Date.now(), emoji: modoPegatina, x, y }
     const actualizadas = [...pegatinasColocadas, nuevaPegatina]
     setPegatinasColocadas(actualizadas)
-    localStorage.setItem(`colocadas_${perfil.id}`, JSON.stringify(actualizadas))
+    if (perfil?.id) {
+      try {
+        localStorage.setItem(`colocadas_${perfil.id}`, JSON.stringify(actualizadas))
+      } catch { /* continuar */ }
+    }
     setModoPegatina(null)
   }
 
@@ -45,22 +78,38 @@ export default function MundoLulipop({ perfil, onVolver }) {
     e.stopPropagation()
     const actualizadas = pegatinasColocadas.filter(p => p.id !== id)
     setPegatinasColocadas(actualizadas)
-    localStorage.setItem(`colocadas_${perfil.id}`, JSON.stringify(actualizadas))
+    if (perfil?.id) {
+      try {
+        localStorage.setItem(`colocadas_${perfil.id}`, JSON.stringify(actualizadas))
+      } catch { /* continuar */ }
+    }
   }
 
-  if (juegoActivo === 'numeros') return <JuegoNumeros perfil={perfil} onVolver={() => setJuegoActivo(null)} />
-  if (juegoActivo === 'puzzles') return <JuegoPuzzles perfil={perfil} onVolver={() => setJuegoActivo(null)} />
-  if (juegoActivo === 'arte') return <JuegoArte perfil={perfil} onVolver={() => setJuegoActivo(null)} />
-  if (juegoActivo === 'letras') return <JuegoLetras perfil={perfil} onVolver={() => setJuegoActivo(null)} />
-  if (juegoActivo === 'trazo') return <JuegoTrazo perfil={perfil} onVolver={() => setJuegoActivo(null)} />
-  if (juegoActivo === 'album') return <AlbumPegatinas perfil={perfil} onVolver={() => setJuegoActivo(null)} onSeleccionarParaPegar={(emoji) => { setModoPegatina(emoji); setJuegoActivo(null); }} />
-  if (juegoActivo === 'memoria') return <JuegoMemoria perfil={perfil} onVolver={() => setJuegoActivo(null)} />
-  if (juegoActivo === 'sombras') return <JuegoSombras perfil={perfil} onVolver={() => setJuegoActivo(null)} />
-  if (juegoActivo === 'burbujas') return <JuegoBurbujas perfil={perfil} onVolver={() => setJuegoActivo(null)} />
-  if (juegoActivo === 'intruso') return <JuegoIntruso perfil={perfil} onVolver={() => setJuegoActivo(null)} />
-  if (juegoActivo === 'cocina') return <JuegoCocina perfil={perfil} onVolver={() => setJuegoActivo(null)} />
-  if (juegoActivo === 'constructor3d') return <JuegoConstructor3D perfil={perfil} onVolver={() => setJuegoActivo(null)} />
-  if (juegoActivo === 'runner') return <JuegoRunner perfil={perfil} onVolver={() => setJuegoActivo(null)} />
+  if (juegoActivo) {
+    return (
+      <Suspense fallback={<CargandoJuego />}>
+        {juegoActivo === 'numeros' && <JuegoNumeros perfil={perfil} onVolver={() => setJuegoActivo(null)} />}
+        {juegoActivo === 'puzzles' && <JuegoPuzzles perfil={perfil} onVolver={() => setJuegoActivo(null)} />}
+        {juegoActivo === 'arte' && <JuegoArte perfil={perfil} onVolver={() => setJuegoActivo(null)} />}
+        {juegoActivo === 'letras' && <JuegoLetras perfil={perfil} onVolver={() => setJuegoActivo(null)} />}
+        {juegoActivo === 'trazo' && <JuegoTrazo perfil={perfil} onVolver={() => setJuegoActivo(null)} />}
+        {juegoActivo === 'album' && (
+          <AlbumPegatinas
+            perfil={perfil}
+            onVolver={() => setJuegoActivo(null)}
+            onSeleccionarParaPegar={(emoji) => { setModoPegatina(emoji); setJuegoActivo(null); }}
+          />
+        )}
+        {juegoActivo === 'memoria' && <JuegoMemoria perfil={perfil} onVolver={() => setJuegoActivo(null)} />}
+        {juegoActivo === 'sombras' && <JuegoSombras perfil={perfil} onVolver={() => setJuegoActivo(null)} />}
+        {juegoActivo === 'burbujas' && <JuegoBurbujas perfil={perfil} onVolver={() => setJuegoActivo(null)} />}
+        {juegoActivo === 'intruso' && <JuegoIntruso perfil={perfil} onVolver={() => setJuegoActivo(null)} />}
+        {juegoActivo === 'cocina' && <JuegoCocina perfil={perfil} onVolver={() => setJuegoActivo(null)} />}
+        {juegoActivo === 'constructor3d' && <JuegoConstructor3D perfil={perfil} onVolver={() => setJuegoActivo(null)} />}
+        {juegoActivo === 'runner' && <JuegoRunner perfil={perfil} onVolver={() => setJuegoActivo(null)} />}
+      </Suspense>
+    )
+  }
 
   return (
     <div 
@@ -113,8 +162,8 @@ export default function MundoLulipop({ perfil, onVolver }) {
           <button onClick={() => setJuegoActivo('album')} style={{ height: '55px', padding: '0 25px', borderRadius: '20px', background: 'linear-gradient(135deg, #a6c1ee 0%, #8ca9eb 100%)', color: 'white', border: '3px solid white', fontSize: '1.1rem', fontWeight: '700', cursor: 'pointer', boxShadow: '0 8px 20px rgba(92, 124, 250, 0.3)', display: 'flex', alignItems: 'center', gap: '10px', fontFamily: '"Fredoka", sans-serif' }}>📖 Álbum</button>
         </div>
         <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.85)', padding: '8px 25px', borderRadius: '25px', backdropFilter: 'blur(12px)', border: '4px solid white', boxShadow: '0 10px 25px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <span style={{ fontSize: '32px', animation: 'floatAvatar 3s ease-in-out infinite' }}>{perfil.avatar}</span>
-          <span style={{ color: '#2D3748', fontSize: '1.5rem', fontWeight: '700' }}>¡Hola, {perfil.nombre}!</span>
+          <span style={{ fontSize: '32px' }}>{perfil?.avatar || '🧒'}</span>
+          <span style={{ color: '#2D3748', fontSize: '1.5rem', fontWeight: '700' }}>¡Hola, {perfil?.nombre || 'Explorador'}!</span>
         </div>
       </div>
 
@@ -186,7 +235,7 @@ export default function MundoLulipop({ perfil, onVolver }) {
           <span style={{ display: 'none', fontSize: '38px' }}>🧱</span>
         </div>
 
-        {/* NUEVO: BOTÓN RUNNER */}
+        {/* BOTÓN RUNNER */}
         <div className="menu-btn-3d" onClick={() => setJuegoActivo('runner')} style={{ backgroundColor: '#F472B6', boxShadow: 'inset 0px 4px 0px #F9A8D4, 0px 6px 0px #DB2777' }}>
           <img src={getAssetUrl('icono-runner.png')} alt="Runner" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
           <span style={{ display: 'none', fontSize: '38px' }}>🏃</span>

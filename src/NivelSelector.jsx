@@ -1,4 +1,3 @@
-import React from 'react'
 import fondoImg from './fondo-lulipop.png'
 
 // Pantalla común de "elige tu nivel" que usan todos los juegos de Lulipop.

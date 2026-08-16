@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 import fondoImg from './fondo-lulipop.png'
 
@@ -6,17 +6,15 @@ export default function DashboardPadres({ perfil, onVolver }) {
   const [progreso, setProgreso] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // 🔥 SOLUCIÓN GITHUB ACTIONS: La función está DENTRO del useEffect
   useEffect(() => {
     const cargarProgreso = async () => {
-      // Protección extra: Si por algún motivo el perfil no llega, cortamos aquí
       if (!perfil?.id) return 
 
       setLoading(true)
       const { data, error } = await supabase
         .from('progreso_actividades')
         .select('*')
-        .eq('perfil_id', perfil.id) // Aquí ya es seguro usar perfil.id
+        .eq('perfil_id', perfil.id)
 
       if (error) {
         console.error("Error cargando progreso:", error)
@@ -26,9 +24,8 @@ export default function DashboardPadres({ perfil, onVolver }) {
       setLoading(false)
     }
 
-    // Llamamos a la función
     cargarProgreso()
-  }, [perfil?.id]) // La única dependencia es el ID del perfil
+  }, [perfil?.id])
 
   // Cálculos de Gamificación (Niveles)
   const totalEstrellas = progreso.reduce((acc, curr) => acc + (curr.estrellas || 3), 0)
@@ -71,7 +68,10 @@ export default function DashboardPadres({ perfil, onVolver }) {
     'juego_burbujas': { nombre: 'Burbujas Mágicas', icono: '🫧', bg: '#cffafe' },
     'juego_intruso': { nombre: 'El Intruso', icono: '🔎', bg: '#d1fae5' },
     'juego_cocina': { nombre: 'La Cocina de Lulipop', icono: '👨‍🍳', bg: '#ffedd5' },
-    'constructor_3d': { nombre: 'Constructor Mágico 3D', icono: '🧱', bg: '#ede9fe' }
+    'constructor_3d': { nombre: 'Constructor Mágico 3D', icono: '🧱', bg: '#ede9fe' },
+    'constructor3d': { nombre: 'Constructor Mágico 3D', icono: '🧱', bg: '#ede9fe' },
+    'juego_runner': { nombre: 'Aventura Runner', icono: '🏃', bg: '#fce7f3' },
+    'runner': { nombre: 'Aventura Runner', icono: '🏃', bg: '#fce7f3' }
   }
 
   return (

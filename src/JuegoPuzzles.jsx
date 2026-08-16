@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { supabase } from './supabaseClient'
 import fondoImg from './fondo-lulipop.png'
 import NivelSelector from './NivelSelector'
@@ -10,21 +10,18 @@ const NIVELES = [
   { id: 'dificil', nombre: 'Difícil', descripcion: '4 figuras, sin pistas', emoji: '🌳', color: '#FF9966', sombra: '#D9534F', numPiezas: 4, pistaColor: false },
 ]
 
+const formasBase = [
+  { id: 'dino', nombre: 'Dino', src: `${import.meta.env.BASE_URL}assets/dino.png`, color: '#43e97b', sombra: '#27ae60' },
+  { id: 'gato', nombre: 'Gato', src: `${import.meta.env.BASE_URL}assets/gato.png`, color: '#FFD166', sombra: '#CCAC00' },
+  { id: 'globo', nombre: 'Globo', src: `${import.meta.env.BASE_URL}assets/globo.png`, color: '#4facfe', sombra: '#005580' },
+  { id: 'manzana', nombre: 'Manzana', src: `${import.meta.env.BASE_URL}assets/manzana.png`, color: '#FF5E62', sombra: '#C0392B' }
+]
+
 export default function JuegoPuzzles({ perfil, onVolver }) {
-  const baseUrl = import.meta.env.BASE_URL
-
-  const formasBase = [
-    { id: 'dino', nombre: 'Dino', src: `${baseUrl}assets/dino.png`, color: '#43e97b', sombra: '#27ae60' },
-    { id: 'gato', nombre: 'Gato', src: `${baseUrl}assets/gato.png`, color: '#FFD166', sombra: '#CCAC00' },
-    { id: 'globo', nombre: 'Globo', src: `${baseUrl}assets/globo.png`, color: '#4facfe', sombra: '#005580' },
-    { id: 'manzana', nombre: 'Manzana', src: `${baseUrl}assets/manzana.png`, color: '#FF5E62', sombra: '#C0392B' }
-  ]
-
   const [nivelId, setNivelId] = useState(null)
   const [formasOriginales, setFormasOriginales] = useState([])
   const [completados, setCompletados] = useState([])
   const [victoria, setVictoria] = useState(false)
-  const [guardando, setGuardando] = useState(false)
   const [siluetas, setSiluetas] = useState([])
 
   const [piezaArrastrada, setPiezaArrastrada] = useState(null)
@@ -34,22 +31,36 @@ export default function JuegoPuzzles({ perfil, onVolver }) {
   const { mejores, guardarMejorNivel } = useMejoresNiveles('puzzles', perfil?.id)
   const nivel = NIVELES.find((n) => n.id === nivelId)
 
-  const empezarNivel = (id) => {
-    setNivelId(id)
-  }
-
-  useEffect(() => {
-    if (nivel) iniciarJuego()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nivelId])
-
-  const iniciarJuego = () => {
-    const piezasNivel = [...formasBase].sort(() => Math.random() - 0.5).slice(0, nivel.numPiezas)
+  const iniciarJuego = (nivelActivo = nivel) => {
+    if (!nivelActivo) return
+    const piezasNivel = [...formasBase].sort(() => Math.random() - 0.5).slice(0, nivelActivo.numPiezas)
     setFormasOriginales(piezasNivel)
     setSiluetas([...piezasNivel].sort(() => Math.random() - 0.5))
     setCompletados([])
     setVictoria(false)
     setPiezaArrastrada(null)
+  }
+
+  const empezarNivel = (id) => {
+    const n = NIVELES.find((x) => x.id === id)
+    setNivelId(id)
+    iniciarJuego(n)
+  }
+
+  const guardarProgreso = async () => {
+    if (!perfil?.id) return
+    const { error } = await supabase
+      .from('progreso_actividades')
+      .insert([
+        {
+          perfil_id: perfil?.id,
+          padre_id: perfil?.padre_id,
+          actividad_id: 'puzzles_formas',
+          completado: true,
+          estrellas: 3
+        }
+      ])
+    if (error) console.error("Error guardando progreso:", error)
   }
 
   const handlePointerDown = (e, forma) => {
@@ -100,22 +111,6 @@ export default function JuegoPuzzles({ perfil, onVolver }) {
     setPiezaArrastrada(null)
   }
 
-  const guardarProgreso = async () => {
-    setGuardando(true)
-    const { error } = await supabase
-      .from('progreso_actividades')
-      .insert([
-        {
-          perfil_id: perfil?.id,
-          padre_id: perfil?.padre_id,
-          actividad_id: 'puzzles_formas',
-          completado: true,
-          estrellas: 3
-        }
-      ])
-    if (error) console.error("Error guardando progreso:", error)
-    setGuardando(false)
-  }
 
   if (!nivel) {
     return (
@@ -211,7 +206,7 @@ export default function JuegoPuzzles({ perfil, onVolver }) {
       )}
 
       <div style={{ position: 'absolute', top: '25px', left: '20px', right: '20px', display: 'flex', justifyContent: 'space-between', zIndex: 50 }}>
-        <button onClick={onVolver} style={{
+        <button onClick={nivelId ? () => setNivelId(null) : onVolver} style={{
           width: '55px', height: '55px', borderRadius: '18px', backgroundColor: '#FFFFFF', color: '#FF5E62', 
           border: 'none', fontSize: '24px', cursor: 'pointer', boxShadow: '0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)',
           display: 'flex', alignItems: 'center', justifyContent: 'center'

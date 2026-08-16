@@ -1,10 +1,10 @@
-import React, { useRef, useState, useEffect } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import * as THREE from 'three'
 
 // ============================================================
 // SINTETIZADOR DE AUDIO
 // ============================================================
-function usarSonidosRunner() {
+function useSonidosRunner() {
   const ctxRef = useRef(null)
   const obtenerContexto = () => {
     if (!ctxRef.current) {
@@ -274,13 +274,21 @@ export default function JuegoRunner({ perfil, onVolver }) {
   const [vidas, setVidas] = useState(VIDAS_MAX)
   const [combo, setCombo] = useState(0)
   const [mensaje, setMensaje] = useState('')
-  const [record, setRecord] = useState(0)
+  const [record, setRecord] = useState(() => {
+    try {
+      const guardado = parseInt(localStorage.getItem(claveRecord(perfil?.id)) || '0', 10)
+      return Number.isNaN(guardado) ? 0 : guardado
+    } catch {
+      return 0
+    }
+  })
+  const [mejorRacha, setMejorRacha] = useState(0)
   const [esNuevoRecord, setEsNuevoRecord] = useState(false)
 
   const {
     sonidoSalto, sonidoEstrella, sonidoGema, sonidoVida,
     sonidoCombo, sonidoChoque, sonidoGameOver, sonidoInicio
-  } = usarSonidosRunner()
+  } = useSonidosRunner()
 
   const estadoRef = useRef('inicio')
   const jugandoRef = useRef(false)
@@ -330,12 +338,6 @@ export default function JuegoRunner({ perfil, onVolver }) {
     if (montadoRef.current) setEstado(nuevo)
   }
 
-  useEffect(() => {
-    try {
-      const guardado = parseInt(localStorage.getItem(claveRecord(perfil?.id)) || '0', 10)
-      if (!Number.isNaN(guardado)) setRecord(guardado)
-    } catch { /* continuar sin localStorage */ }
-  }, [perfil?.id])
 
   useEffect(() => {
     const contenedor = mountRef.current
@@ -598,6 +600,9 @@ export default function JuegoRunner({ perfil, onVolver }) {
       jugandoRef.current = false
       cambiarEstado('gameover')
       sonidoGameOver()
+      if (montadoRef.current) {
+        setMejorRacha(comboMaxRef.current)
+      }
       const puntosFinales = puntosRef.current
       try {
         const clave = claveRecord(perfil?.id)
@@ -1146,7 +1151,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
               Puntuación: <strong style={{ color: '#FFD166' }}>{puntos} 🍩</strong>
             </div>
             <div style={{ fontSize: '0.95rem', color: '#576574', marginBottom: '4px' }}>
-              🏃 {distancia} m recorridos · 🔥 Mejor racha: {comboMaxRef.current}
+              🏃 {distancia} m recorridos · 🔥 Mejor racha: {mejorRacha}
             </div>
             <div style={{ fontSize: '0.95rem', color: '#a6660b', fontWeight: '700', marginBottom: '20px' }}>
               🏆 Mejor puntuación: {record}

@@ -47,14 +47,7 @@ function App() {
 
   // 3. Contador de tiempo de pantalla activo
   useEffect(() => {
-    if (!perfilActivo) {
-      setMinutosJugadosHoy(0)
-      setMinutosExtra(0)
-      return
-    }
-
-    setMinutosJugadosHoy(obtenerMinutosJugadosHoy(perfilActivo.id))
-    setMinutosExtra(obtenerMinutosExtraHoy(perfilActivo.id))
+    if (!perfilActivo?.id) return
 
     intervaloRef.current = setInterval(() => {
       if (document.visibilityState === 'visible') {
@@ -64,6 +57,17 @@ function App() {
 
     return () => clearInterval(intervaloRef.current)
   }, [perfilActivo?.id])
+
+  const seleccionarPerfil = (perfil) => {
+    setPerfilActivo(perfil)
+    if (perfil) {
+      setMinutosJugadosHoy(obtenerMinutosJugadosHoy(perfil.id))
+      setMinutosExtra(obtenerMinutosExtraHoy(perfil.id))
+    } else {
+      setMinutosJugadosHoy(0)
+      setMinutosExtra(0)
+    }
+  }
 
   // Función auxiliar para renderizar la pantalla correspondiente
   const renderContenido = () => {
@@ -80,7 +84,7 @@ function App() {
           <PantallaTiempoAgotado
             perfil={perfilActivo}
             minutosJugadosHoy={minutosJugadosHoy}
-            onVolverAPerfiles={() => setPerfilActivo(null)}
+            onVolverAPerfiles={() => seleccionarPerfil(null)}
             onDesbloquear={() => setMinutosExtra(obtenerMinutosExtraHoy(perfilActivo.id))}
           />
         )
@@ -89,7 +93,7 @@ function App() {
       return (
         <MundoLulipop 
           perfil={perfilActivo} 
-          onVolver={() => setPerfilActivo(null)} 
+          onVolver={() => seleccionarPerfil(null)} 
         />
       )
     }
@@ -110,7 +114,7 @@ function App() {
         
         <Perfiles 
           session={session} 
-          onSeleccionarPerfil={(perfil) => setPerfilActivo(perfil)} 
+          onSeleccionarPerfil={seleccionarPerfil} 
         />
       </div>
     )
@@ -137,7 +141,7 @@ function App() {
           display: none;
         }
 
-        @media screen and (orientation: portrait) {
+        @media screen and (orientation: portrait) and (max-width: 900px) and (hover: none) {
           .bloqueo-vertical-aviso {
             display: flex !important;
             position: fixed;

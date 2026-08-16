@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { supabase } from './supabaseClient'
 import fondoImg from './fondo-lulipop.png'
 import NivelSelector from './NivelSelector'
@@ -12,41 +12,31 @@ const NIVELES = [
   { id: 'dificil', nombre: 'Difícil', descripcion: 'Palabras y números', emoji: '🌳', color: '#FF9966', sombra: '#D9534F', palabras: ['MAMA', 'PAPA', 'LULU', '123'] },
 ]
 
+const palabrasPreset = ['A', 'B', 'C', 'MAMA', 'PAPA', 'SOL', 'LULU', '123']
+const colores = [
+  { id: '#FF5E62', shadow: '#C0392B' }, // Rojo Sandía
+  { id: '#4facfe', shadow: '#005580' }, // Azul Hielo
+  { id: '#43e97b', shadow: '#27ae60' }, // Verde Lima
+  { id: '#FFD166', shadow: '#CCAC00' }, // Amarillo Sol
+  { id: '#a18cd1', shadow: '#6b4c9a' }  // Morado Mágico
+]
+
 export default function JuegoTrazo({ perfil, onVolver }) {
   const [nivelId, setNivelId] = useState(null)
   const [indicePalabraNivel, setIndicePalabraNivel] = useState(0)
   const [textoActual, setTextoActual] = useState('A')
-  const [indiceLetra, setIndiceLetra] = useState(0) // NUEVO: Va letra por letra dentro de la palabra
+  const [indiceLetra, setIndiceLetra] = useState(0)
   const [colorTrazo, setColorTrazo] = useState('#FF5E62')
   const [mostrarMenu, setMostrarMenu] = useState(false)
   const [inputPersonalizado, setInputPersonalizado] = useState('')
   const [nivelSuperado, setNivelSuperado] = useState(false)
   const [nivelCompletoTotal, setNivelCompletoTotal] = useState(false)
   const [guardando, setGuardando] = useState(false)
-  const [modoLibre, setModoLibre] = useState(false) // true cuando el niño elige una palabra suelta desde el menú ABC
+  const [modoLibre, setModoLibre] = useState(false)
 
   const { mejores, guardarMejorNivel } = useMejoresNiveles('trazo', perfil?.id)
   const nivel = NIVELES.find((n) => n.id === nivelId)
 
-  const empezarNivel = (id) => {
-    const n = NIVELES.find((x) => x.id === id)
-    setNivelId(id)
-    setIndicePalabraNivel(0)
-    setTextoActual(n.palabras[0])
-    setIndiceLetra(0)
-    setNivelSuperado(false)
-    setNivelCompletoTotal(false)
-    setModoLibre(false)
-  }
-
-  const guardarProgreso = async () => {
-    setGuardando(true)
-    await supabase.from('progreso_actividades').insert([
-      { perfil_id: perfil.id, padre_id: perfil.padre_id, actividad_id: 'trazo_letras', completado: true, estrellas: 3 }
-    ])
-    setGuardando(false)
-  }
-  
   const canvasRef = useRef(null)
   const hitCanvasRef = useRef(null)
   const mascotaRef = useRef(null) 
@@ -60,34 +50,10 @@ export default function JuegoTrazo({ perfil, onVolver }) {
   const [isDrawing, setIsDrawing] = useState(false)
   const [dimensiones, setDimensiones] = useState({ w: window.innerWidth, h: window.innerHeight })
 
-  const palabrasPreset = ['A', 'B', 'C', 'MAMA', 'PAPA', 'SOL', 'LULU', '123']
-  const colores = [
-    { id: '#FF5E62', shadow: '#C0392B' }, // Rojo Sandía
-    { id: '#4facfe', shadow: '#005580' }, // Azul Hielo
-    { id: '#43e97b', shadow: '#27ae60' }, // Verde Lima
-    { id: '#FFD166', shadow: '#CCAC00' }, // Amarillo Sol
-    { id: '#a18cd1', shadow: '#6b4c9a' }  // Morado Mágico
-  ]
-
   // Letra actual que toca dibujar
   const letraActiva = textoActual[indiceLetra] || textoActual[0]
 
-  useEffect(() => {
-    const handleResize = () => setDimensiones({ w: window.innerWidth, h: window.innerHeight })
-    window.addEventListener('resize', handleResize)
-    if (!hitCanvasRef.current) {
-      hitCanvasRef.current = document.createElement('canvas')
-    }
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
-
-  useEffect(() => {
-    document.fonts.ready.then(() => {
-      inicializarCanvas()
-    })
-  }, [textoActual, indiceLetra, dimensiones])
-
-  const inicializarCanvas = () => {
+  const inicializarCanvas = useCallback(() => {
     const canvas = canvasRef.current
     const hitCanvas = hitCanvasRef.current
     if (!canvas || !hitCanvas) return
@@ -101,7 +67,6 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     hitCtx.clearRect(0, 0, hitCanvas.width, hitCanvas.height)
     
-    // Al ser letra individual, luce grande y centrada en pantalla
     const fontSize = Math.min(canvas.height * 0.5, 450) 
     brushSizeRef.current = Math.max(fontSize * 0.12, 18)
 
@@ -144,6 +109,41 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     ctx.shadowBlur = 15
     ctx.strokeText(letraActiva, centerX, centerY)
     ctx.shadowBlur = 0 
+  }, [letraActiva])
+
+  useEffect(() => {
+    const handleResize = () => setDimensiones({ w: window.innerWidth, h: window.innerHeight })
+    window.addEventListener('resize', handleResize)
+    if (!hitCanvasRef.current) {
+      hitCanvasRef.current = document.createElement('canvas')
+    }
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  useEffect(() => {
+    document.fonts.ready.then(() => {
+      inicializarCanvas()
+    })
+  }, [inicializarCanvas, dimensiones.w, dimensiones.h])
+
+  const empezarNivel = (id) => {
+    const n = NIVELES.find((x) => x.id === id)
+    setNivelId(id)
+    setIndicePalabraNivel(0)
+    setTextoActual(n ? n.palabras[0] : 'A')
+    setIndiceLetra(0)
+    setNivelSuperado(false)
+    setNivelCompletoTotal(false)
+    setModoLibre(false)
+  }
+
+  const guardarProgreso = async () => {
+    if (!perfil?.id) return
+    setGuardando(true)
+    await supabase.from('progreso_actividades').insert([
+      { perfil_id: perfil.id, padre_id: perfil.padre_id, actividad_id: 'trazo_letras', completado: true, estrellas: 3 }
+    ])
+    setGuardando(false)
   }
 
   const updateScore = (points) => {
@@ -171,8 +171,8 @@ export default function JuegoTrazo({ perfil, onVolver }) {
 
   const getCoordinates = (e, canvas) => {
     const rect = canvas.getBoundingClientRect()
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY
+    const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0)
+    const clientY = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0)
     return {
       x: (clientX - rect.left) * (canvas.width / rect.width),
       y: (clientY - rect.top) * (canvas.height / rect.height)
@@ -182,11 +182,15 @@ export default function JuegoTrazo({ perfil, onVolver }) {
   const startDrawing = (e) => {
     if (nivelSuperado || nivelCompletoTotal) return 
     e.preventDefault()
-    const { x, y } = getCoordinates(e, canvasRef.current)
+    const canvas = canvasRef.current
+    const hitCanvas = hitCanvasRef.current
+    if (!canvas || !hitCanvas) return
 
-    const hitCtx = hitCanvasRef.current.getContext('2d')
-    const px = Math.min(Math.max(Math.floor(x), 0), canvasRef.current.width - 1)
-    const py = Math.min(Math.max(Math.floor(y), 0), canvasRef.current.height - 1)
+    const { x, y } = getCoordinates(e, canvas)
+
+    const hitCtx = hitCanvas.getContext('2d')
+    const px = Math.min(Math.max(Math.floor(x), 0), canvas.width - 1)
+    const py = Math.min(Math.max(Math.floor(y), 0), canvas.height - 1)
     const alpha = hitCtx.getImageData(px, py, 1, 1).data[3]
 
     if (alpha < 100) return 
@@ -205,8 +209,11 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     if (!isDrawing || nivelSuperado) return
     e.preventDefault()
     const canvas = canvasRef.current
+    const hitCanvas = hitCanvasRef.current
+    if (!canvas || !hitCanvas) return
+
     const ctx = canvas.getContext('2d')
-    const hitCtx = hitCanvasRef.current.getContext('2d')
+    const hitCtx = hitCanvas.getContext('2d')
     const { x, y } = getCoordinates(e, canvas)
     
     if (mascotaRef.current) {
@@ -296,20 +303,49 @@ export default function JuegoTrazo({ perfil, onVolver }) {
     }
   }
 
-  const stopDrawing = () => {
-    setIsDrawing(false)
-    
-    if (mascotaRef.current) {
-      mascotaRef.current.style.opacity = '0'
-      mascotaRef.current.style.transform = `translate(${lastPosRef.current.x}px, ${lastPosRef.current.y}px) scale(0.5)`
+  const lanzarVictoriaFinal = () => {
+    setNivelSuperado(true)
+    updateScore(50) 
+
+    setTimeout(() => {
+      if (modoLibre || !nivel) {
+        const currentIndex = palabrasPreset.indexOf(textoActual)
+        let nextIndex = 0
+        if (currentIndex !== -1 && currentIndex < palabrasPreset.length - 1) {
+          nextIndex = currentIndex + 1
+        }
+        setTextoActual(palabrasPreset[nextIndex])
+        setIndiceLetra(0)
+        setNivelSuperado(false)
+        return
+      }
+
+      if (indicePalabraNivel < nivel.palabras.length - 1) {
+        const siguienteIndice = indicePalabraNivel + 1
+        setIndicePalabraNivel(siguienteIndice)
+        setTextoActual(nivel.palabras[siguienteIndice])
+        setIndiceLetra(0)
+        setNivelSuperado(false)
+      } else {
+        guardarMejorNivel(nivelId, 3)
+        guardarProgreso()
+        setNivelSuperado(false)
+        setNivelCompletoTotal(true)
+      }
+    }, 2200) 
+  }
+
+  const avanzarSiguientePaso = () => {
+    if (indiceLetra < textoActual.length - 1) {
+      updateScore(20)
+      setIndiceLetra(prev => prev + 1)
+    } else {
+      lanzarVictoriaFinal()
     }
-    
-    if (nivelSuperado || nivelCompletoTotal) return
-    verificarProgresoLetra() 
   }
 
   const verificarProgresoLetra = () => {
-    if (totalGreenRef.current === 0) return
+    if (totalGreenRef.current === 0 || !hitCanvasRef.current) return
 
     const hitCtx = hitCanvasRef.current.getContext('2d')
     const width = hitCanvasRef.current.width
@@ -328,63 +364,31 @@ export default function JuegoTrazo({ perfil, onVolver }) {
 
     const completado = 1 - (currentGreen / totalGreenRef.current)
     
-    // Al superar el 70% de esta letra individual
     if (completado >= 0.70) { 
       avanzarSiguientePaso()
     }
   }
 
-  const avanzarSiguientePaso = () => {
-    // Si quedan más letras en la palabra actual
-    if (indiceLetra < textoActual.length - 1) {
-      updateScore(20) // Mini premio por letra completada
-      setIndiceLetra(prev => prev + 1) // Pasa a la siguiente letra
-    } else {
-      // Si era la última letra, ¡victoria total de la palabra!
-      lanzarVictoriaFinal()
+  const stopDrawing = () => {
+    setIsDrawing(false)
+    
+    if (mascotaRef.current) {
+      mascotaRef.current.style.opacity = '0'
+      mascotaRef.current.style.transform = `translate(${lastPosRef.current.x}px, ${lastPosRef.current.y}px) scale(0.5)`
     }
+    
+    if (nivelSuperado || nivelCompletoTotal) return
+    verificarProgresoLetra() 
   }
 
-  const lanzarVictoriaFinal = () => {
-    setNivelSuperado(true)
-    updateScore(50) 
-
-    setTimeout(() => {
-      // Modo libre (menú ABC / palabra personalizada): sigue como antes, en bucle sobre los presets
-      if (modoLibre || !nivel) {
-        const currentIndex = palabrasPreset.indexOf(textoActual)
-        let nextIndex = 0
-        if (currentIndex !== -1 && currentIndex < palabrasPreset.length - 1) {
-          nextIndex = currentIndex + 1
-        }
-        setTextoActual(palabrasPreset[nextIndex])
-        setIndiceLetra(0)
-        setNivelSuperado(false)
-        return
-      }
-
-      // Modo nivel: avanza a la siguiente palabra del nivel elegido
-      if (indicePalabraNivel < nivel.palabras.length - 1) {
-        const siguienteIndice = indicePalabraNivel + 1
-        setIndicePalabraNivel(siguienteIndice)
-        setTextoActual(nivel.palabras[siguienteIndice])
-        setIndiceLetra(0)
-        setNivelSuperado(false)
-      } else {
-        // ¡Nivel completo! Todas las palabras del nivel superadas
-        guardarMejorNivel(nivelId, 3)
-        guardarProgreso()
-        setNivelSuperado(false)
-        setNivelCompletoTotal(true)
-      }
-    }, 2200) 
-  }
-
-  const reiniciarNivelActual = () => {
-    setIndicePalabraNivel(0)
-    setTextoActual(nivel.palabras[0])
-    setIndiceLetra(0)
-    setNivelCompletoTotal(false)
+  const handleBack = () => {
+    if (nivelId) {
+      setNivelId(null)
+      setNivelCompletoTotal(false)
+      setNivelSuperado(false)
+    } else {
+      onVolver()
+    }
   }
 
   if (!nivel) {
@@ -437,7 +441,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         @keyframes rotaEstrella { 100% { transform: rotate(360deg); } }
       `}</style>
 
-      {/* INDICADOR DE PROGRESO DEL NIVEL (una palabra tras otra) */}
+      {/* INDICADOR DE PROGRESO DEL NIVEL */}
       {!modoLibre && !nivelCompletoTotal && (
         <div style={{
           position: 'absolute', top: '90px', left: '50%', transform: 'translateX(-50%)',
@@ -458,7 +462,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         </div>
       )}
 
-      {/* INDICADOR VISUAL DE LETRAS (SI ES UNA PALABRA O NUMERO LARGO) */}
+      {/* INDICADOR VISUAL DE LETRAS */}
       {textoActual.length > 1 && (
         <div style={{
           position: 'absolute', top: '140px', left: '50%', transform: 'translateX(-50%)',
@@ -525,7 +529,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         </div>
       )}
 
-      {/* PANTALLA DE NIVEL COMPLETO (todas las palabras del nivel superadas) */}
+      {/* PANTALLA DE NIVEL COMPLETO */}
       {nivelCompletoTotal && (
         <div style={{
           position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
@@ -601,7 +605,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         position: 'absolute', top: '25px', left: '20px', right: '20px', 
         display: 'flex', justifyContent: 'space-between', zIndex: 10, pointerEvents: 'none' 
       }}>
-        <button onClick={onVolver} style={{
+        <button onClick={handleBack} style={{
           width: '55px', height: '55px', borderRadius: '18px',
           backgroundColor: '#FFFFFF', color: '#FF5E62', border: 'none', 
           fontSize: '24px', cursor: 'pointer', pointerEvents: 'auto',

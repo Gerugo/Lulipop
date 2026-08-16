@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { supabase } from './supabaseClient'
 import fondoImg from './fondo-lulipop.png'
 import NivelSelector from './NivelSelector'
@@ -9,6 +9,25 @@ const NIVELES = [
   { id: 'medio', nombre: 'Medio', descripcion: '3 sombras a elegir', emoji: '🌿', color: '#4facfe', sombra: '#005580', numOpciones: 3, rondas: 5 },
   { id: 'dificil', nombre: 'Difícil', descripcion: '4 sombras a elegir', emoji: '🌳', color: '#FF9966', sombra: '#D9534F', numOpciones: 4, rondas: 6 },
 ]
+
+const itemsDisponibles = [
+  { id: 'manzana', src: `${import.meta.env.BASE_URL}assets/manzana.png`, fallback: '🍎', color: '#FF5E62' },
+  { id: 'estrella', src: `${import.meta.env.BASE_URL}assets/estrella.png`, fallback: '⭐️', color: '#FFD166' },
+  { id: 'globo', src: `${import.meta.env.BASE_URL}assets/globo.png`, fallback: '🎈', color: '#4facfe' },
+  { id: 'pez', src: `${import.meta.env.BASE_URL}assets/pez.png`, fallback: '🐟', color: '#a18cd1' },
+  { id: 'gato', src: `${import.meta.env.BASE_URL}assets/gato.png`, fallback: '🐱', color: '#FF9966' },
+  { id: 'platano', src: `${import.meta.env.BASE_URL}assets/platano.png`, fallback: '🍌', color: '#FCD34D' },
+  { id: 'dino', src: `${import.meta.env.BASE_URL}assets/dino.png`, fallback: '🦖', color: '#4ade80' }
+]
+
+function crearRetoSombras(nivel) {
+  if (!nivel) return null
+  const mezclados = [...itemsDisponibles].sort(() => 0.5 - Math.random())
+  const opciones = mezclados.slice(0, nivel.numOpciones)
+  const correcto = opciones[Math.floor(Math.random() * opciones.length)]
+
+  return { correcto, opciones, titulo: '¿De quién es esta sombra?' }
+}
 
 export default function JuegoSombras({ perfil, onVolver }) {
   const [nivelId, setNivelId] = useState(null)
@@ -23,35 +42,25 @@ export default function JuegoSombras({ perfil, onVolver }) {
   const { mejores, guardarMejorNivel } = useMejoresNiveles('sombras', perfil?.id)
   const nivel = NIVELES.find((n) => n.id === nivelId)
 
-  const baseUrl = import.meta.env.BASE_URL
-  
-  const itemsDisponibles = [
-    { id: 'manzana', src: `${baseUrl}assets/manzana.png`, fallback: '🍎', color: '#FF5E62' },
-    { id: 'estrella', src: `${baseUrl}assets/estrella.png`, fallback: '⭐️', color: '#FFD166' },
-    { id: 'globo', src: `${baseUrl}assets/globo.png`, fallback: '🎈', color: '#4facfe' },
-    { id: 'pez', src: `${baseUrl}assets/pez.png`, fallback: '🐟', color: '#a18cd1' },
-    { id: 'gato', src: `${baseUrl}assets/gato.png`, fallback: '🐱', color: '#FF9966' },
-    { id: 'platano', src: `${baseUrl}assets/platano.png`, fallback: '🍌', color: '#FCD34D' },
-    { id: 'dino', src: `${baseUrl}assets/dino.png`, fallback: '🦖', color: '#4ade80' }
-  ]
+  const generarNuevoReto = (nivelActivo = nivel) => {
+    setRetoActual(crearRetoSombras(nivelActivo))
+  }
+
+  const guardarProgreso = async () => {
+    if (!perfil?.id) return
+    setGuardando(true)
+    await supabase.from('progreso_actividades').insert([
+      { perfil_id: perfil.id, padre_id: perfil.padre_id, actividad_id: 'juego_sombras', completado: true, estrellas: 3 }
+    ])
+    setGuardando(false)
+  }
 
   const empezarNivel = (id) => {
+    const n = NIVELES.find((x) => x.id === id)
     setNivelId(id)
     setRonda(1)
     setVictoria(false)
-  }
-
-  useEffect(() => {
-    if (nivel) generarNuevoReto()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nivelId])
-
-  const generarNuevoReto = () => {
-    const mezclados = [...itemsDisponibles].sort(() => 0.5 - Math.random())
-    const opciones = mezclados.slice(0, nivel.numOpciones)
-    const correcto = opciones[Math.floor(Math.random() * opciones.length)]
-
-    setRetoActual({ correcto, opciones, titulo: '¿De quién es esta sombra?' })
+    generarNuevoReto(n)
   }
 
   const verificarRespuesta = (opcion) => {
@@ -86,14 +95,6 @@ export default function JuegoSombras({ perfil, onVolver }) {
         setMensaje('')
       }, 1000)
     }
-  }
-
-  const guardarProgreso = async () => {
-    setGuardando(true)
-    await supabase.from('progreso_actividades').insert([
-      { perfil_id: perfil.id, padre_id: perfil.padre_id, actividad_id: 'juego_sombras', completado: true, estrellas: 3 }
-    ])
-    setGuardando(false)
   }
 
   if (!nivel) {
@@ -160,7 +161,7 @@ export default function JuegoSombras({ perfil, onVolver }) {
       `}</style>
 
       <div style={{ position: 'absolute', top: '25px', left: '25px', right: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 20 }}>
-        <button onClick={onVolver} style={{
+        <button onClick={nivelId ? () => setNivelId(null) : onVolver} style={{
           width: '60px', height: '60px', borderRadius: '20px', backgroundColor: '#FFFFFF', color: '#FF5E62', 
           border: 'none', fontSize: '26px', cursor: 'pointer', boxShadow: '0 8px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)', 
           display: 'flex', alignItems: 'center', justifyContent: 'center'

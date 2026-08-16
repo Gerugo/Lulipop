@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { supabase } from './supabaseClient'
 import fondoImg from './fondo-lulipop.png'
 import NivelSelector from './NivelSelector'
@@ -9,6 +9,44 @@ const NIVELES = [
   { id: 'medio', nombre: 'Medio', descripcion: 'Cuenta del 1 al 10', emoji: '🌿', color: '#4facfe', sombra: '#005580', rangoMax: 10, numOpciones: 3, rondas: 6 },
   { id: 'dificil', nombre: 'Difícil', descripcion: 'Cuenta del 1 al 15', emoji: '🌳', color: '#FF9966', sombra: '#D9534F', rangoMax: 15, numOpciones: 4, rondas: 7 },
 ]
+
+const itemsDisponibles = [
+  { id: 'manzana', src: `${import.meta.env.BASE_URL}assets/manzana.png`, fallback: '🍎' },
+  { id: 'estrella', src: `${import.meta.env.BASE_URL}assets/estrella.png`, fallback: '⭐️' },
+  { id: 'globo', src: `${import.meta.env.BASE_URL}assets/globo.png`, fallback: '🎈' },
+  { id: 'pez', src: `${import.meta.env.BASE_URL}assets/pez.png`, fallback: '🐟' },
+  { id: 'gato', src: `${import.meta.env.BASE_URL}assets/gato.png`, fallback: '🐱' },
+  { id: 'platano', src: `${import.meta.env.BASE_URL}assets/platano.png`, fallback: '🍌' },
+  { id: 'dino', src: `${import.meta.env.BASE_URL}assets/dino.png`, fallback: '🦖' }
+]
+
+const coloresBotones = [
+  { bg: '#FF5E62', shadow: '#C0392B', text: '#FFFFFF' },
+  { bg: '#4facfe', shadow: '#005580', text: '#FFFFFF' },
+  { bg: '#FFD166', shadow: '#CCAC00', text: '#7A5C00' },
+  { bg: '#a18cd1', shadow: '#6b4c9a', text: '#FFFFFF' },
+]
+
+function crearRetoNumeros(nivel) {
+  if (!nivel) return null
+  const cantidad = Math.floor(Math.random() * nivel.rangoMax) + 1
+  const itemAleatorio = itemsDisponibles[Math.floor(Math.random() * itemsDisponibles.length)]
+
+  const opcionesSet = new Set([cantidad])
+  while (opcionesSet.size < nivel.numOpciones) {
+    const aleatorio = Math.floor(Math.random() * nivel.rangoMax) + 1
+    opcionesSet.add(aleatorio)
+  }
+  const opciones = Array.from(opcionesSet).sort(() => Math.random() - 0.5)
+
+  return {
+    cantidad,
+    item: itemAleatorio,
+    opciones,
+    correcto: cantidad,
+    titulo: '¿Cuántos hay?'
+  }
+}
 
 export default function JuegoNumeros({ perfil, onVolver }) {
   const [nivelId, setNivelId] = useState(null)
@@ -23,53 +61,25 @@ export default function JuegoNumeros({ perfil, onVolver }) {
   const { mejores, guardarMejorNivel } = useMejoresNiveles('numeros', perfil?.id)
   const nivel = NIVELES.find((n) => n.id === nivelId)
 
-  const baseUrl = import.meta.env.BASE_URL
-  const itemsDisponibles = [
-    { id: 'manzana', src: `${baseUrl}assets/manzana.png`, fallback: '🍎' },
-    { id: 'estrella', src: `${baseUrl}assets/estrella.png`, fallback: '⭐️' },
-    { id: 'globo', src: `${baseUrl}assets/globo.png`, fallback: '🎈' },
-    { id: 'pez', src: `${baseUrl}assets/pez.png`, fallback: '🐟' },
-    { id: 'gato', src: `${baseUrl}assets/gato.png`, fallback: '🐱' },
-    { id: 'platano', src: `${baseUrl}assets/platano.png`, fallback: '🍌' },
-    { id: 'dino', src: `${baseUrl}assets/dino.png`, fallback: '🦖' }
-  ]
+  const generarNuevoReto = (nivelActivo = nivel) => {
+    setRetoActual(crearRetoNumeros(nivelActivo))
+  }
 
-  const coloresBotones = [
-    { bg: '#FF5E62', shadow: '#C0392B', text: '#FFFFFF' },
-    { bg: '#4facfe', shadow: '#005580', text: '#FFFFFF' },
-    { bg: '#FFD166', shadow: '#CCAC00', text: '#7A5C00' },
-    { bg: '#a18cd1', shadow: '#6b4c9a', text: '#FFFFFF' },
-  ]
-
-  useEffect(() => {
-    if (nivel) generarNuevoReto()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nivelId])
+  const guardarProgreso = async () => {
+    if (!perfil?.id) return
+    setGuardando(true)
+    await supabase.from('progreso_actividades').insert([
+      { perfil_id: perfil.id, padre_id: perfil.padre_id, actividad_id: 'juego_numeros', completado: true, estrellas: 3 }
+    ])
+    setGuardando(false)
+  }
 
   const empezarNivel = (id) => {
+    const n = NIVELES.find((x) => x.id === id)
     setNivelId(id)
     setRonda(1)
     setVictoria(false)
-  }
-
-  const generarNuevoReto = () => {
-    const cantidad = Math.floor(Math.random() * nivel.rangoMax) + 1
-    const itemAleatorio = itemsDisponibles[Math.floor(Math.random() * itemsDisponibles.length)]
-
-    const opcionesSet = new Set([cantidad])
-    while (opcionesSet.size < nivel.numOpciones) {
-      const aleatorio = Math.floor(Math.random() * nivel.rangoMax) + 1
-      opcionesSet.add(aleatorio)
-    }
-    const opciones = Array.from(opcionesSet).sort(() => Math.random() - 0.5)
-
-    setRetoActual({
-      cantidad,
-      item: itemAleatorio,
-      opciones,
-      correcto: cantidad,
-      titulo: '¿Cuántos hay?'
-    })
+    generarNuevoReto(n)
   }
 
   const verificarRespuesta = (opcion) => {
@@ -108,14 +118,6 @@ export default function JuegoNumeros({ perfil, onVolver }) {
         setMensaje('')
       }, 1000)
     }
-  }
-
-  const guardarProgreso = async () => {
-    setGuardando(true)
-    await supabase.from('progreso_actividades').insert([
-      { perfil_id: perfil.id, padre_id: perfil.padre_id, actividad_id: 'juego_numeros', completado: true, estrellas: 3 }
-    ])
-    setGuardando(false)
   }
 
   if (!nivel) {
@@ -208,7 +210,7 @@ export default function JuegoNumeros({ perfil, onVolver }) {
       {/* HEADER: Botón Volver, Nivel y Progreso */}
       <div style={{ position: 'absolute', top: '25px', left: '25px', right: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 20 }}>
         <button 
-          onClick={onVolver}
+          onClick={nivelId ? () => setNivelId(null) : onVolver}
           style={{ 
             width: '60px', height: '60px', borderRadius: '20px',
             backgroundColor: '#FFFFFF', color: '#FF5E62', border: 'none', 

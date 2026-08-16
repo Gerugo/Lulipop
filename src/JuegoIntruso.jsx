@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { supabase } from './supabaseClient'
 import fondoImg from './fondo-lulipop.png'
 import NivelSelector from './NivelSelector'
@@ -21,6 +21,25 @@ const NIVELES = [
   { id: 'dificil', nombre: 'Difícil', descripcion: '9 elementos, 1 intruso', emoji: '🌳', color: '#FF9966', sombra: '#D9534F', itemsTotal: 9, columnas: 3, rondas: 6 },
 ]
 
+function crearRetoIntruso(nivel) {
+  if (!nivel) return null
+  const retoElegido = retosDisponibles[Math.floor(Math.random() * retosDisponibles.length)]
+
+  const opciones = []
+  for (let i = 0; i < nivel.itemsTotal - 1; i++) {
+    opciones.push({ id: `c${i}`, emoji: retoElegido.comun, esIntruso: false })
+  }
+  opciones.push({ id: 'i1', emoji: retoElegido.intruso, esIntruso: true })
+
+  const mezcladas = opciones.sort(() => Math.random() - 0.5)
+
+  return {
+    ...retoElegido,
+    opciones: mezcladas,
+    titulo: '¡Encuentra al intruso!'
+  }
+}
+
 export default function JuegoIntruso({ perfil, onVolver }) {
   const [nivelId, setNivelId] = useState(null)
   const [ronda, setRonda] = useState(1)
@@ -34,33 +53,25 @@ export default function JuegoIntruso({ perfil, onVolver }) {
   const { mejores, guardarMejorNivel } = useMejoresNiveles('intruso', perfil?.id)
   const nivel = NIVELES.find((n) => n.id === nivelId)
 
-  useEffect(() => {
-    if (nivel) generarNuevoReto()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nivelId])
+  const generarNuevoReto = (nivelActivo = nivel) => {
+    setRetoActual(crearRetoIntruso(nivelActivo))
+  }
+
+  const guardarProgreso = async () => {
+    if (!perfil?.id) return
+    setGuardando(true)
+    await supabase.from('progreso_actividades').insert([
+      { perfil_id: perfil.id, padre_id: perfil.padre_id, actividad_id: 'juego_intruso', completado: true, estrellas: 3 }
+    ])
+    setGuardando(false)
+  }
 
   const empezarNivel = (id) => {
+    const n = NIVELES.find((x) => x.id === id)
     setNivelId(id)
     setRonda(1)
     setVictoria(false)
-  }
-
-  const generarNuevoReto = () => {
-    const retoElegido = retosDisponibles[Math.floor(Math.random() * retosDisponibles.length)]
-
-    const opciones = []
-    for (let i = 0; i < nivel.itemsTotal - 1; i++) {
-      opciones.push({ id: `c${i}`, emoji: retoElegido.comun, esIntruso: false })
-    }
-    opciones.push({ id: 'i1', emoji: retoElegido.intruso, esIntruso: true })
-
-    const mezcladas = opciones.sort(() => Math.random() - 0.5)
-
-    setRetoActual({
-      ...retoElegido,
-      opciones: mezcladas,
-      titulo: '¡Encuentra al intruso!'
-    })
+    generarNuevoReto(n)
   }
 
   const verificarRespuesta = (opcion) => {
@@ -95,14 +106,6 @@ export default function JuegoIntruso({ perfil, onVolver }) {
         setMensaje('')
       }, 1000)
     }
-  }
-
-  const guardarProgreso = async () => {
-    setGuardando(true)
-    await supabase.from('progreso_actividades').insert([
-      { perfil_id: perfil.id, padre_id: perfil.padre_id, actividad_id: 'juego_intruso', completado: true, estrellas: 3 }
-    ])
-    setGuardando(false)
   }
 
   if (!nivel) {
@@ -176,7 +179,7 @@ export default function JuegoIntruso({ perfil, onVolver }) {
       {/* HEADER: Botón Volver, Nivel y Progreso */}
       <div style={{ position: 'absolute', top: '25px', left: '25px', right: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 20 }}>
         <button 
-          onClick={onVolver}
+          onClick={nivelId ? () => setNivelId(null) : onVolver}
           style={{ 
             width: '60px', height: '60px', borderRadius: '20px',
             backgroundColor: '#FFFFFF', color: '#FF5E62', border: 'none', 

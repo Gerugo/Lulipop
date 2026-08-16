@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { supabase } from './supabaseClient'
 import NivelSelector from './NivelSelector'
 import useMejoresNiveles from './useMejoresNiveles'
@@ -90,18 +90,8 @@ export default function JuegoArte({ perfil, onVolver }) {
   const colores = ['#FF5E62', '#FF9966', '#FFD166', '#06D6A0', '#118AB2', '#9b5de5', '#ff007f']
   const sellos = ['⭐', '❤️', '🐱', '🦄', '🚗', '🌲']
 
-  const empezarNivel = (id) => {
-    setNivelId(id)
-    setVictoria(false)
-    setHerramienta('pincel')
-  }
-
-  useEffect(() => {
-    if (nivel) inicializarLienzo()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nivelId])
-
-  const inicializarLienzo = () => {
+  const inicializarLienzo = useCallback(() => {
+    if (!nivel) return
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
@@ -122,14 +112,32 @@ export default function JuegoArte({ perfil, onVolver }) {
       dibujarArbol(ctx, 500, 340, 60, 45)
       dibujarArbol(ctx, 90, 340, 45, 32)
     }
+  }, [nivel])
+
+  useEffect(() => {
+    if (nivel) inicializarLienzo()
+  }, [nivel, inicializarLienzo])
+
+  const empezarNivel = (id) => {
+    setNivelId(id)
+    setVictoria(false)
+    setHerramienta('pincel')
+  }
+
+  const obtenerCoords = (e, canvas) => {
+    const rect = canvas.getBoundingClientRect()
+    const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : 0)
+    const clientY = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : 0)
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    }
   }
 
   const iniciarTrazo = (e) => {
     const canvas = canvasRef.current
-    const rect = canvas.getBoundingClientRect()
-    const x = (e.clientX || e.touches[0].clientX) - rect.left
-    const y = (e.clientY || e.touches[0].clientY) - rect.top
-
+    if (!canvas) return
+    const { x, y } = obtenerCoords(e, canvas)
     const ctx = canvas.getContext('2d')
 
     if (herramienta === 'sello') {
@@ -147,9 +155,8 @@ export default function JuegoArte({ perfil, onVolver }) {
   const trazar = (e) => {
     if (!dibujando || herramienta === 'sello') return
     const canvas = canvasRef.current
-    const rect = canvas.getBoundingClientRect()
-    const x = (e.clientX || e.touches[0].clientX) - rect.left
-    const y = (e.clientY || e.touches[0].clientY) - rect.top
+    if (!canvas) return
+    const { x, y } = obtenerCoords(e, canvas)
 
     const ctx = canvas.getContext('2d')
     ctx.lineWidth = herramienta === 'borrador' ? 35 : 16
@@ -165,6 +172,7 @@ export default function JuegoArte({ perfil, onVolver }) {
   }
 
   const guardarObra = async () => {
+    if (!perfil?.id) return
     setGuardando(true)
     const { error } = await supabase
       .from('progreso_actividades')
@@ -181,6 +189,14 @@ export default function JuegoArte({ perfil, onVolver }) {
     setGuardando(false)
     guardarMejorNivel(nivelId, 3)
     setVictoria(true)
+  }
+
+  const handleBack = () => {
+    if (nivelId) {
+      setNivelId(null)
+    } else {
+      onVolver()
+    }
   }
 
   if (!nivel) {
@@ -242,7 +258,7 @@ export default function JuegoArte({ perfil, onVolver }) {
       `}</style>
 
       <button 
-        onClick={onVolver}
+        onClick={handleBack}
         style={{ 
           position: 'absolute', top: '20px', left: '20px', 
           width: '50px', height: '50px', borderRadius: '16px',

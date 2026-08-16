@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { supabase } from './supabaseClient'
 import fondoImg from './fondo-lulipop.png'
 import NivelSelector from './NivelSelector'
@@ -98,6 +98,7 @@ export default function JuegoLetras({ perfil, onVolver }) {
   }
 
   const guardarProgreso = async () => {
+    if (!perfil?.id) return
     setGuardando(true)
     await supabase.from('progreso_actividades').insert([
       { perfil_id: perfil.id, padre_id: perfil.padre_id, actividad_id: 'letras_vocabulario', completado: true, estrellas: 3 }
@@ -187,7 +188,7 @@ export default function JuegoLetras({ perfil, onVolver }) {
       {/* HEADER: Botón Volver, Nivel y Progreso */}
       <div style={{ position: 'absolute', top: '25px', left: '25px', right: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 20 }}>
         <button 
-          onClick={onVolver}
+          onClick={nivelId ? () => setNivelId(null) : onVolver}
           style={{ 
             width: '60px', height: '60px', borderRadius: '20px',
             backgroundColor: '#FFFFFF', color: '#FF5E62', border: 'none', 

@@ -1,14 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { supabase } from './supabaseClient'
 import fondoImg from './fondo-lulipop.png'
-
-// ------------------------------------------------------------------
-// LA COCINA DE LULIPOP
-// Juego estilo Keiki World: el niño prepara recetas sencillas tocando
-// los ingredientes correctos en el orden que quiera. Pensado para
-// 2-6 años: nunca penaliza los errores, da feedback inmediato con
-// sonido + animación, y celebra cada logro a lo grande.
-// ------------------------------------------------------------------
 
 const RECETAS = [
   {
@@ -49,9 +41,8 @@ function barajar(array) {
   return copia
 }
 
-// Sonidos sintetizados con Web Audio API: cero archivos de audio que subir,
-// cero problemas de rutas rotas — y suenan alegres igualmente.
-function usarSonidos() {
+// Sonidos sintetizados con Web Audio API
+function useSonidos() {
   const ctxRef = useRef(null)
 
   const obtenerContexto = () => {
@@ -91,7 +82,11 @@ function usarSonidos() {
 
 export default function JuegoCocina({ perfil, onVolver }) {
   const [recetaIndex, setRecetaIndex] = useState(0)
-  const [ingredientesTray, setIngredientesTray] = useState([])
+  const [ingredientesTray, setIngredientesTray] = useState(() =>
+    barajar(
+      [...RECETAS[0].ingredientes, ...RECETAS[0].decoys].map((emoji, i) => ({ uid: `0-${i}-${emoji}`, emoji }))
+    )
+  )
   const [recolectados, setRecolectados] = useState([])
   const [estadoMascota, setEstadoMascota] = useState('feliz') // feliz | duda | celebra
   const [mensaje, setMensaje] = useState('')
@@ -101,25 +96,50 @@ export default function JuegoCocina({ perfil, onVolver }) {
   const [ingredienteAnimando, setIngredienteAnimando] = useState(null)
 
   const baseUrl = import.meta.env.BASE_URL
-  const { sonidoAcierto, sonidoError, sonidoVictoriaReceta, sonidoVictoriaFinal } = usarSonidos()
+  const { sonidoAcierto, sonidoError, sonidoVictoriaReceta, sonidoVictoriaFinal } = useSonidos()
 
   const receta = RECETAS[recetaIndex]
-
-  useEffect(() => {
-    iniciarReceta(recetaIndex)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recetaIndex])
 
   const iniciarReceta = (idx) => {
     const r = RECETAS[idx]
     const mezcla = barajar(
       [...r.ingredientes, ...r.decoys].map((emoji, i) => ({ uid: `${idx}-${i}-${emoji}`, emoji }))
     )
+    setRecetaIndex(idx)
     setIngredientesTray(mezcla)
     setRecolectados([])
     setRecetaCompleta(false)
     setMensaje('')
     setEstadoMascota('feliz')
+  }
+
+  const guardarProgreso = async () => {
+    if (!perfil?.id) return
+    setGuardando(true)
+    try {
+      await supabase.from('progreso_actividades').insert([
+        { perfil_id: perfil.id, padre_id: perfil.padre_id, actividad_id: 'juego_cocina', completado: true, estrellas: 3 }
+      ])
+    } catch {
+      // Silencioso: no bloqueamos la diversión del niño por un fallo de red
+    }
+    setGuardando(false)
+  }
+
+  const completarReceta = () => {
+    sonidoVictoriaReceta()
+    setEstadoMascota('celebra')
+    setRecetaCompleta(true)
+
+    setTimeout(() => {
+      if (recetaIndex < RECETAS.length - 1) {
+        iniciarReceta(recetaIndex + 1)
+      } else {
+        sonidoVictoriaFinal()
+        setVictoriaFinal(true)
+        guardarProgreso()
+      }
+    }, 2200)
   }
 
   const tocarIngrediente = (item) => {
@@ -129,7 +149,6 @@ export default function JuegoCocina({ perfil, onVolver }) {
     const yaRecolectado = recolectados.includes(item.emoji)
 
     if (yaEsNecesario && !yaRecolectado) {
-      // ¡Acierto!
       sonidoAcierto()
       setIngredienteAnimando(item.uid)
       setEstadoMascota('celebra')
@@ -148,7 +167,6 @@ export default function JuegoCocina({ perfil, onVolver }) {
         }
       }, 420)
     } else if (!yaEsNecesario) {
-      // Ingrediente que no toca: feedback amable, sin penalización
       sonidoError()
       setEstadoMascota('duda')
       setMensaje('¡Ese no toca! Prueba otro 😊')
@@ -159,37 +177,9 @@ export default function JuegoCocina({ perfil, onVolver }) {
     }
   }
 
-  const completarReceta = () => {
-    sonidoVictoriaReceta()
-    setEstadoMascota('celebra')
-    setRecetaCompleta(true)
-
-    setTimeout(() => {
-      if (recetaIndex < RECETAS.length - 1) {
-        setRecetaIndex(recetaIndex + 1)
-      } else {
-        sonidoVictoriaFinal()
-        setVictoriaFinal(true)
-        guardarProgreso()
-      }
-    }, 2200)
-  }
-
-  const guardarProgreso = async () => {
-    setGuardando(true)
-    try {
-      await supabase.from('progreso_actividades').insert([
-        { perfil_id: perfil.id, padre_id: perfil.padre_id, actividad_id: 'juego_cocina', completado: true, estrellas: 3 }
-      ])
-    } catch (e) {
-      // Silencioso: no bloqueamos la diversión del niño por un fallo de red
-    }
-    setGuardando(false)
-  }
-
   const reiniciarTodo = () => {
     setVictoriaFinal(false)
-    setRecetaIndex(0)
+    iniciarReceta(0)
   }
 
   const emojiMascota = estadoMascota === 'celebra' ? '🎉' : estadoMascota === 'duda' ? '🤔' : '👨‍🍳'
@@ -378,7 +368,7 @@ export default function JuegoCocina({ perfil, onVolver }) {
             ))}
           </div>
 
-          {/* CELEBRACIÓN DE RECETA COMPLETADA (overlay ligero) */}
+          {/* CELEBRACIÓN DE RECETA COMPLETADA */}
           {recetaCompleta && (
             <div className="anim-pop" style={{
               position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
@@ -402,7 +392,6 @@ export default function JuegoCocina({ perfil, onVolver }) {
           backgroundColor: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(15px)',
           zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
         }}>
-          {/* Confeti decorativo */}
           {Array.from({ length: 18 }).map((_, i) => (
             <span key={i} className="anim-confeti" style={{
               position: 'absolute', top: 0, left: `${(i * 100) / 18}%`,

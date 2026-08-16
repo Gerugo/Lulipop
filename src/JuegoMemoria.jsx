@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { supabase } from './supabaseClient'
 import fondoImg from './fondo-lulipop.png'
 import NivelSelector from './NivelSelector'
@@ -10,19 +10,17 @@ const NIVELES = [
   { id: 'dificil', nombre: 'Difícil', descripcion: '7 parejas', emoji: '🌳', color: '#FF9966', sombra: '#D9534F', numParejas: 7, columnas: 4 },
 ]
 
+const IMAGENES_CARTAS = [
+  { src: `${import.meta.env.BASE_URL}assets/dino.png`, fallback: '🦖' },
+  { src: `${import.meta.env.BASE_URL}assets/estrella.png`, fallback: '⭐' },
+  { src: `${import.meta.env.BASE_URL}assets/gato.png`, fallback: '🐱' },
+  { src: `${import.meta.env.BASE_URL}assets/globo.png`, fallback: '🎈' },
+  { src: `${import.meta.env.BASE_URL}assets/manzana.png`, fallback: '🍎' },
+  { src: `${import.meta.env.BASE_URL}assets/pez.png`, fallback: '🐟' },
+  { src: `${import.meta.env.BASE_URL}assets/platano.png`, fallback: '🍌' },
+]
+
 export default function JuegoMemoria({ perfil, onVolver }) {
-  const baseUrl = import.meta.env.BASE_URL
-
-  const IMAGENES_CARTAS = [
-    `${baseUrl}assets/dino.png`,
-    `${baseUrl}assets/estrella.png`,
-    `${baseUrl}assets/gato.png`,
-    `${baseUrl}assets/globo.png`,
-    `${baseUrl}assets/manzana.png`,
-    `${baseUrl}assets/pez.png`,
-    `${baseUrl}assets/platano.png`,
-  ]
-
   const [nivelId, setNivelId] = useState(null)
   const [baraja, setBaraja] = useState([])
   const [cartasVolteadas, setCartasVolteadas] = useState([])
@@ -38,17 +36,9 @@ export default function JuegoMemoria({ perfil, onVolver }) {
   const { mejores, guardarMejorNivel } = useMejoresNiveles('memoria', perfil?.id)
   const nivel = NIVELES.find((n) => n.id === nivelId)
 
-  const empezarNivel = (id) => {
-    setNivelId(id)
-  }
-
-  useEffect(() => {
-    if (nivel) iniciarJuego()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nivelId])
-
-  const iniciarJuego = () => {
-    const imagenesNivel = [...IMAGENES_CARTAS].sort(() => Math.random() - 0.5).slice(0, nivel.numParejas)
+  const iniciarJuego = (nivelActivo = nivel) => {
+    if (!nivelActivo) return
+    const imagenesNivel = [...IMAGENES_CARTAS].sort(() => Math.random() - 0.5).slice(0, nivelActivo.numParejas)
     const mazo = [...imagenesNivel, ...imagenesNivel]
     
     for (let i = mazo.length - 1; i > 0; i--) {
@@ -56,9 +46,11 @@ export default function JuegoMemoria({ perfil, onVolver }) {
       ;[mazo[i], mazo[j]] = [mazo[j], mazo[i]]
     }
     
-    const barajaLista = mazo.map((img, index) => ({
+    const barajaLista = mazo.map((item, index) => ({
       id: index,
-      img: img
+      img: item.src,
+      fallback: item.fallback,
+      imgFailed: false
     }))
 
     setBaraja(barajaLista)
@@ -71,28 +63,23 @@ export default function JuegoMemoria({ perfil, onVolver }) {
     setBloqueado(false)
   }
 
+  const empezarNivel = (id) => {
+    const n = NIVELES.find((x) => x.id === id)
+    setNivelId(id)
+    iniciarJuego(n)
+  }
+
   const updateScore = (nuevosPuntos) => {
     setPuntos(prev => Math.max(0, prev + nuevosPuntos))
-    
-    const scoreEl = document.getElementById('marcador-puntos-parejas')
-    if (scoreEl) {
-      if (nuevosPuntos < 0) {
-        scoreEl.style.color = '#FF4B4B'
-        scoreEl.style.textShadow = '0 4px 0 #C0392B'
-        scoreEl.style.transform = 'scale(0.8)'
-      } else if (nuevosPuntos > 0) {
-        scoreEl.style.color = '#43e97b'
-        scoreEl.style.textShadow = '0 4px 0 #27ae60'
-        scoreEl.style.transform = 'scale(1.3)'
-      }
-      setTimeout(() => {
-        if (scoreEl) {
-          scoreEl.style.color = '#FFD166'
-          scoreEl.style.textShadow = '0 4px 0 #CCAC00'
-          scoreEl.style.transform = 'scale(1)'
-        }
-      }, 300)
-    }
+  }
+
+  const guardarProgreso = async () => {
+    if (!perfil?.id) return
+    setGuardando(true)
+    await supabase.from('progreso_actividades').insert([
+      { perfil_id: perfil.id, padre_id: perfil.padre_id, actividad_id: 'juego_memoria', completado: true, estrellas: 3 }
+    ])
+    setGuardando(false)
   }
 
   const voltearCarta = (index) => {
@@ -141,12 +128,13 @@ export default function JuegoMemoria({ perfil, onVolver }) {
     }
   }
 
-  const guardarProgreso = async () => {
-    setGuardando(true)
-    await supabase.from('progreso_actividades').insert([
-      { perfil_id: perfil.id, padre_id: perfil.padre_id, actividad_id: 'juego_memoria', completado: true, estrellas: 3 }
-    ])
-    setGuardando(false)
+  const handleBack = () => {
+    if (nivelId) {
+      setNivelId(null)
+      setBaraja([])
+    } else {
+      onVolver()
+    }
   }
 
   if (!nivel) {
@@ -262,7 +250,7 @@ export default function JuegoMemoria({ perfil, onVolver }) {
         position: 'absolute', top: '25px', left: '20px', right: '20px', 
         display: 'flex', justifyContent: 'space-between', zIndex: 50 
       }}>
-        <button onClick={onVolver} style={{
+        <button onClick={handleBack} style={{
           width: '55px', height: '55px', borderRadius: '18px',
           backgroundColor: '#FFFFFF', color: '#FF5E62', border: 'none', 
           fontSize: '24px', cursor: 'pointer',
@@ -286,7 +274,7 @@ export default function JuegoMemoria({ perfil, onVolver }) {
         boxShadow: '0 12px 30px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center',
         gap: '10px', zIndex: 20, fontSize: '28px', fontWeight: '900'
       }}>
-        {nivel.emoji} ⭐ <span id="marcador-puntos-parejas" style={{ color: '#FFD166', transition: 'all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1)', textShadow: '0 4px 0 #CCAC00', minWidth: '70px', textAlign: 'center', display: 'inline-block' }}>{puntos}</span>
+        {nivel.emoji} ⭐ <span style={{ color: '#FFD166', textShadow: '0 4px 0 #CCAC00', minWidth: '70px', textAlign: 'center', display: 'inline-block' }}>{puntos}</span>
       </div>
 
       <div style={{
@@ -338,16 +326,19 @@ export default function JuegoMemoria({ perfil, onVolver }) {
                   </div>
                   
                   <div className={claseDorso}>
-                    <img 
-                      src={carta.img} 
-                      alt="Carta" 
-                      style={{ width: '65%', height: '65%', objectFit: 'contain' }}
-                      draggable="false"
-                      onError={(e) => {
-                         e.target.style.display = 'none';
-                         e.target.parentElement.innerHTML += '<span style="font-size:40px">❓</span>';
-                      }}
-                    />
+                    {carta.imgFailed ? (
+                      <span style={{ fontSize: '40px' }}>{carta.fallback}</span>
+                    ) : (
+                      <img 
+                        src={carta.img} 
+                        alt="Carta" 
+                        style={{ width: '65%', height: '65%', objectFit: 'contain' }}
+                        draggable="false"
+                        onError={() => {
+                          setBaraja(prev => prev.map((c, i) => i === index ? { ...c, imgFailed: true } : c))
+                        }}
+                      />
+                    )}
                   </div>
                 </div>
               </div>

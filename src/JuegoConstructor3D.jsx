@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react'
+import { useRef, useState, useEffect, useCallback } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { supabase } from './supabaseClient'
@@ -194,6 +194,15 @@ export default function JuegoConstructor3D({ perfil, onVolver }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nivelId])
 
+  const guardarProgreso = useCallback(async () => {
+    if (!perfil?.id) return
+    setGuardando(true)
+    await supabase.from('progreso_actividades').insert([
+      { perfil_id: perfil.id, padre_id: perfil.padre_id, actividad_id: 'constructor_3d', completado: true, estrellas: 3 }
+    ])
+    setGuardando(false)
+  }, [perfil])
+
   // --------------------------------------------------------------
   // Colocar una pieza nueva encima de la columna tocada
   // --------------------------------------------------------------
@@ -224,7 +233,8 @@ export default function JuegoConstructor3D({ perfil, onVolver }) {
     grupoConstruccionRef.current.add(mesh)
 
     const nuevaPieza = { tipo: tipoSeleccionado, mesh }
-    columnasRef.current[clave] = [...columna, nuevaPieza]
+    const nuevasColumnas = { ...columnasRef.current, [clave]: [...columna, nuevaPieza] }
+    columnasRef.current = nuevasColumnas
     historialRef.current.push(clave)
 
     // Pequeña animación de "pop" al aparecer, sin librerías extra
@@ -239,7 +249,29 @@ export default function JuegoConstructor3D({ perfil, onVolver }) {
 
     setTotalPiezas((prev) => prev + 1)
     setPuedeDeshacer(true)
-  }, [tipoSeleccionado, colorSeleccionado, totalPiezas])
+
+    // Comprobar objetivo inmediatamente tras colocar pieza
+    if (nivel && !nivelSuperado) {
+      const cols = Object.values(nuevasColumnas).filter((c) => c.length > 0)
+      const obj = nivel.objetivo
+      let logrado = false
+
+      if (obj.tipo === 'altura') {
+        logrado = cols.some((c) => c.length >= obj.valor)
+      } else if (obj.tipo === 'combo') {
+        logrado = cols.some((c) => c.some((p, i) => p.tipo === obj.base && c[i + 1]?.tipo === obj.encima))
+      } else if (obj.tipo === 'cantidad') {
+        const total = cols.reduce((acc, c) => acc + c.length, 0)
+        logrado = total >= obj.piezas && cols.length >= obj.columnas
+      }
+
+      if (logrado) {
+        setNivelSuperado(true)
+        guardarMejorNivel(nivelId, 3)
+        guardarProgreso()
+      }
+    }
+  }, [tipoSeleccionado, colorSeleccionado, totalPiezas, nivel, nivelSuperado, nivelId, guardarMejorNivel, guardarProgreso])
 
   const deshacerUltima = () => {
     const ultimaClave = historialRef.current.pop()
@@ -270,44 +302,6 @@ export default function JuegoConstructor3D({ perfil, onVolver }) {
     setTotalPiezas(0)
     setPuedeDeshacer(false)
     setNivelSuperado(false)
-  }
-
-  // --------------------------------------------------------------
-  // Comprobar si el reto del nivel se ha cumplido
-  // --------------------------------------------------------------
-  const comprobarObjetivo = useCallback(() => {
-    if (!nivel || nivelSuperado) return
-    const columnas = Object.values(columnasRef.current).filter((c) => c.length > 0)
-    const obj = nivel.objetivo
-    let logrado = false
-
-    if (obj.tipo === 'altura') {
-      logrado = columnas.some((c) => c.length >= obj.valor)
-    } else if (obj.tipo === 'combo') {
-      logrado = columnas.some((c) => c.some((p, i) => p.tipo === obj.base && c[i + 1]?.tipo === obj.encima))
-    } else if (obj.tipo === 'cantidad') {
-      const total = columnas.reduce((acc, c) => acc + c.length, 0)
-      logrado = total >= obj.piezas && columnas.length >= obj.columnas
-    }
-
-    if (logrado) {
-      setNivelSuperado(true)
-      guardarMejorNivel(nivelId, 3)
-      guardarProgreso()
-    }
-  }, [nivel, nivelId, nivelSuperado, guardarMejorNivel])
-
-  useEffect(() => {
-    comprobarObjetivo()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [totalPiezas])
-
-  const guardarProgreso = async () => {
-    setGuardando(true)
-    await supabase.from('progreso_actividades').insert([
-      { perfil_id: perfil.id, padre_id: perfil.padre_id, actividad_id: 'constructor_3d', completado: true, estrellas: 3 }
-    ])
-    setGuardando(false)
   }
 
   // --------------------------------------------------------------
@@ -396,7 +390,7 @@ export default function JuegoConstructor3D({ perfil, onVolver }) {
 
       {/* CABECERA */}
       <div style={{ position: 'absolute', top: '18px', left: '18px', right: '18px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', zIndex: 30 }}>
-        <button onClick={onVolver} style={{
+        <button onClick={nivelId ? () => setNivelId(null) : onVolver} style={{
           width: '52px', height: '52px', borderRadius: '18px', backgroundColor: '#FFFFFF', color: '#FF5E62',
           border: 'none', fontSize: '22px', cursor: 'pointer', boxShadow: '0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0

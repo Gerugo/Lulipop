@@ -14,7 +14,7 @@ function leerNumero(clave) {
   try {
     const valor = localStorage.getItem(clave)
     return valor ? parseInt(valor, 10) || 0 : 0
-  } catch (e) {
+  } catch {
     return 0
   }
 }
@@ -22,14 +22,16 @@ function leerNumero(clave) {
 function escribirNumero(clave, valor) {
   try {
     localStorage.setItem(clave, String(valor))
-  } catch (e) { /* localStorage no disponible: no rompemos el juego por esto */ }
+  } catch { /* localStorage no disponible: no rompemos el juego por esto */ }
 }
 
 export function obtenerMinutosJugadosHoy(perfilId) {
+  if (!perfilId) return 0
   return leerNumero(`tiempo_${obtenerFechaHoy()}_${perfilId}`)
 }
 
 export function sumarMinutoJugado(perfilId) {
+  if (!perfilId) return 0
   const clave = `tiempo_${obtenerFechaHoy()}_${perfilId}`
   const nuevoTotal = leerNumero(clave) + 1
   escribirNumero(clave, nuevoTotal)
@@ -37,10 +39,12 @@ export function sumarMinutoJugado(perfilId) {
 }
 
 export function obtenerMinutosExtraHoy(perfilId) {
+  if (!perfilId) return 0
   return leerNumero(`tiempoExtra_${obtenerFechaHoy()}_${perfilId}`)
 }
 
 export function concederMinutosExtra(perfilId, minutos) {
+  if (!perfilId) return 0
   const clave = `tiempoExtra_${obtenerFechaHoy()}_${perfilId}`
   const nuevoTotal = leerNumero(clave) + minutos
   escribirNumero(clave, nuevoTotal)
@@ -54,5 +58,5 @@ export function limpiarTiempoAntiguo() {
     Object.keys(localStorage)
       .filter((clave) => (clave.startsWith('tiempo_') || clave.startsWith('tiempoExtra_')) && !clave.includes(hoy))
       .forEach((clave) => localStorage.removeItem(clave))
-  } catch (e) { /* no crítico */ }
+  } catch { /* no crítico */ }
 }

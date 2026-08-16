@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import fondoImg from './fondo-lulipop.png'
 import { concederMinutosExtra } from './tiempoPantalla'
 
@@ -20,7 +20,9 @@ export default function PantallaTiempoAgotado({ perfil, minutosJugadosHoy, onVol
   const comprobar = (e) => {
     e.preventDefault()
     if (parseInt(respuesta, 10) === problema.resultado) {
-      concederMinutosExtra(perfil.id, 15)
+      if (perfil?.id) {
+        concederMinutosExtra(perfil.id, 15)
+      }
       onDesbloquear()
     } else {
       setError(true)

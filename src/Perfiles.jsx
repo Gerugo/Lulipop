@@ -29,10 +29,6 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
     { bg: '#a18cd1', shadow: '#7052a6' },
   ]
 
-  useEffect(() => {
-    obtenerPerfiles()
-  }, [])
-
   const calcularRacha = (fechas) => {
     const diasUnicos = new Set(fechas.map((f) => new Date(f).toDateString()))
     if (diasUnicos.size === 0) return 0
@@ -53,6 +49,7 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
   }
 
   const obtenerRachas = async () => {
+    if (!session?.user?.id) return
     const { data, error } = await supabase
       .from('progreso_actividades')
       .select('perfil_id, created_at')
@@ -75,6 +72,7 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
   }
 
   const obtenerPerfiles = async () => {
+    if (!session?.user?.id) return
     const { data, error } = await supabase
       .from('perfiles_ninos')
       .select('*')
@@ -83,10 +81,29 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
     if (error) {
       console.error("Error cargando perfiles:", error)
     } else {
-      setPerfiles(data)
+      setPerfiles(data || [])
       obtenerRachas()
     }
   }
+
+  useEffect(() => {
+    let cancelado = false
+    const cargar = async () => {
+      if (!session?.user?.id) return
+      const { data, error } = await supabase
+        .from('perfiles_ninos')
+        .select('*')
+        .eq('padre_id', session.user.id)
+
+      if (!cancelado && !error) {
+        setPerfiles(data || [])
+        obtenerRachas()
+      }
+    }
+    cargar()
+    return () => { cancelado = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id])
 
   const abrirFormularioNuevo = () => {
     setPerfilEditando(null)

@@ -1,9 +1,15 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 
 export default function AlbumPegatinas({ perfil, onVolver, onSeleccionarParaPegar }) {
   const [estrellasTotales, setEstrellasTotales] = useState(0)
-  const [desbloqueadas, setDesbloqueadas] = useState([1])
+  const [desbloqueadas, setDesbloqueadas] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(`pegatinas_${perfil?.id}`) || '[1]')
+    } catch {
+      return [1]
+    }
+  })
   const [premioModal, setPremioModal] = useState(null)
 
   const catalogoPegatinas = [
@@ -18,29 +24,37 @@ export default function AlbumPegatinas({ perfil, onVolver, onSeleccionarParaPega
   ]
 
   useEffect(() => {
-    cargarEstrellasYPegatinas()
-  }, [])
+    let cancelado = false
+    const cargar = async () => {
+      if (!perfil?.id) return
 
-  const cargarEstrellasYPegatinas = async () => {
-    const { data, error } = await supabase
-      .from('progreso_actividades')
-      .select('estrellas')
-      .eq('perfil_id', perfil.id)
+      const { data, error } = await supabase
+        .from('progreso_actividades')
+        .select('estrellas')
+        .eq('perfil_id', perfil.id)
 
-    if (!error && data) {
-      const total = data.reduce((acc, curr) => acc + (curr.estrellas || 3), 0)
-      setEstrellasTotales(total)
+      if (!cancelado && !error && data) {
+        const total = data.reduce((acc, curr) => acc + (curr.estrellas || 3), 0)
+        setEstrellasTotales(total)
+      }
+
+      if (!cancelado) {
+        try {
+          const guardadas = JSON.parse(localStorage.getItem(`pegatinas_${perfil.id}`) || '[1]')
+          setDesbloqueadas(guardadas)
+        } catch {
+          setDesbloqueadas([1])
+        }
+      }
     }
-
-    const guardadas = JSON.parse(localStorage.getItem(`pegatinas_${perfil.id}`) || '[1]')
-    setDesbloqueadas(guardadas)
-  }
+    cargar()
+    return () => { cancelado = true }
+  }, [perfil?.id])
 
   const manejarClickPegatina = (pegatina) => {
     const desbloqueada = desbloqueadas.includes(pegatina.id)
 
     if (desbloqueada) {
-      // Si ya está desbloqueada, permitir colocarla en el mundo de inicio
       if (onSeleccionarParaPegar) {
         onSeleccionarParaPegar(pegatina.emoji)
       }
@@ -48,7 +62,11 @@ export default function AlbumPegatinas({ perfil, onVolver, onSeleccionarParaPega
       if (estrellasTotales >= pegatina.costo) {
         const nuevas = [...desbloqueadas, pegatina.id]
         setDesbloqueadas(nuevas)
-        localStorage.setItem(`pegatinas_${perfil.id}`, JSON.stringify(nuevas))
+        if (perfil?.id) {
+          try {
+            localStorage.setItem(`pegatinas_${perfil.id}`, JSON.stringify(nuevas))
+          } catch { /* continuar */ }
+        }
         setPremioModal(pegatina)
         setTimeout(() => setPremioModal(null), 3000)
       } else {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from './supabaseClient'
 import fondoImg from './fondo-lulipop.png'
 import NivelSelector from './NivelSelector'
@@ -10,6 +10,8 @@ const NIVELES = [
   { id: 'dificil', nombre: 'Difícil', descripcion: 'Burbujas rápidas y pequeñas', emoji: '🌳', color: '#FF9966', sombra: '#D9534F', meta: 22, intervaloMs: 550, tamMin: 65, tamMax: 95, duracionMin: 3, duracionMax: 5 },
 ]
 
+const animales = ['🐶', '🐱', '🐰', '🦊', '🐻', '🐼', '🐯', '🦁', '🐸', '🦄', '🐙', '🐢']
+
 export default function JuegoBurbujas({ perfil, onVolver }) {
   const [nivelId, setNivelId] = useState(null)
   const [burbujas, setBurbujas] = useState([])
@@ -17,13 +19,10 @@ export default function JuegoBurbujas({ perfil, onVolver }) {
   const [victoria, setVictoria] = useState(false)
   const [guardando, setGuardando] = useState(false)
 
-  const requestRef = useRef()
-  const generadorRef = useRef()
+  const generadorRef = useRef(null)
 
   const { mejores, guardarMejorNivel } = useMejoresNiveles('burbujas', perfil?.id)
   const nivel = NIVELES.find((n) => n.id === nivelId)
-
-  const animales = ['🐶', '🐱', '🐰', '🦊', '🐻', '🐼', '🐯', '🦁', '🐸', '🦄', '🐙', '🐢']
 
   const empezarNivel = (id) => {
     setNivelId(id)
@@ -32,6 +31,17 @@ export default function JuegoBurbujas({ perfil, onVolver }) {
     setVictoria(false)
   }
 
+  const crearBurbuja = useCallback(() => {
+    if (!nivel) return
+    const id = Date.now() + Math.random()
+    const size = Math.floor(Math.random() * (nivel.tamMax - nivel.tamMin)) + nivel.tamMin
+    const left = Math.floor(Math.random() * 70) + 10
+    const duracion = Math.floor(Math.random() * (nivel.duracionMax - nivel.duracionMin + 1)) + nivel.duracionMin
+    const animal = animales[Math.floor(Math.random() * animales.length)]
+
+    setBurbujas(prev => [...prev, { id, size, left, duracion, animal, explotada: false }])
+  }, [nivel])
+
   useEffect(() => {
     if (!nivel || victoria) return
 
@@ -39,27 +49,22 @@ export default function JuegoBurbujas({ perfil, onVolver }) {
       crearBurbuja()
     }, nivel.intervaloMs)
 
-    const limpiarFueraDePantalla = () => {
-      setBurbujas(prev => prev.filter(b => !b.explotada && b.y > -20))
-      requestRef.current = requestAnimationFrame(limpiarFueraDePantalla)
-    }
-    requestRef.current = requestAnimationFrame(limpiarFueraDePantalla)
-
     return () => {
-      clearInterval(generadorRef.current)
-      cancelAnimationFrame(requestRef.current)
+      if (generadorRef.current) clearInterval(generadorRef.current)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nivelId, victoria])
+  }, [nivel, victoria, crearBurbuja])
 
-  const crearBurbuja = () => {
-    const id = Date.now() + Math.random()
-    const size = Math.floor(Math.random() * (nivel.tamMax - nivel.tamMin)) + nivel.tamMin
-    const left = Math.floor(Math.random() * 70) + 10
-    const duracion = Math.floor(Math.random() * (nivel.duracionMax - nivel.duracionMin + 1)) + nivel.duracionMin
-    const animal = animales[Math.floor(Math.random() * animales.length)]
+  const removerBurbuja = (id) => {
+    setBurbujas(prev => prev.filter(b => b.id !== id))
+  }
 
-    setBurbujas(prev => [...prev, { id, size, left, duracion, animal, explotada: false, y: 110 }])
+  const guardarProgreso = async () => {
+    if (!perfil?.id) return
+    setGuardando(true)
+    await supabase.from('progreso_actividades').insert([
+      { perfil_id: perfil.id, padre_id: perfil.padre_id, actividad_id: 'juego_burbujas', completado: true, estrellas: 3 }
+    ])
+    setGuardando(false)
   }
 
   const explotarBurbuja = (e, id) => {
@@ -67,25 +72,32 @@ export default function JuegoBurbujas({ perfil, onVolver }) {
 
     setBurbujas(prev => prev.map(b => b.id === id ? { ...b, explotada: true } : b))
 
+    // Remover del DOM tras la animación de estallido
+    setTimeout(() => {
+      removerBurbuja(id)
+    }, 300)
+
     setPuntuacion(prev => {
       const nueva = prev + 1
-      if (nueva >= nivel.meta) {
+      if (nueva >= (nivel?.meta || 10)) {
         setTimeout(() => {
           setVictoria(true)
           guardarMejorNivel(nivelId, 3)
           guardarProgreso()
-        }, 500)
+        }, 400)
       }
       return nueva
     })
   }
 
-  const guardarProgreso = async () => {
-    setGuardando(true)
-    await supabase.from('progreso_actividades').insert([
-      { perfil_id: perfil.id, padre_id: perfil.padre_id, actividad_id: 'juego_burbujas', completado: true, estrellas: 3 }
-    ])
-    setGuardando(false)
+  const handleBack = () => {
+    if (nivelId) {
+      setNivelId(null)
+      setBurbujas([])
+      setVictoria(false)
+    } else {
+      onVolver()
+    }
   }
 
   if (!nivel) {
@@ -126,7 +138,7 @@ export default function JuegoBurbujas({ perfil, onVolver }) {
         @keyframes estallarPop {
           0% { transform: scale(1); opacity: 1; filter: brightness(1); }
           40% { transform: scale(1.4); opacity: 0.8; filter: brightness(1.5); }
-          100% { transform: scale(2.5); opacity: 0; filter: brightness(2); display: none; }
+          100% { transform: scale(2.5); opacity: 0; filter: brightness(2); }
         }
 
         .burbuja-jabon {
@@ -161,7 +173,7 @@ export default function JuegoBurbujas({ perfil, onVolver }) {
 
       <div style={{ position: 'absolute', top: '25px', left: '20px', right: '20px', display: 'flex', alignItems: 'center', gap: '15px', zIndex: 50 }}>
         <button 
-          onClick={onVolver}
+          onClick={handleBack}
           style={{ 
             width: '55px', height: '55px', borderRadius: '18px', flexShrink: 0,
             backgroundColor: '#FFFFFF', color: '#FF5E62', border: 'none', 
@@ -203,6 +215,11 @@ export default function JuegoBurbujas({ perfil, onVolver }) {
           key={burbuja.id}
           className="burbuja-jabon"
           onPointerDown={(e) => !burbuja.explotada && explotarBurbuja(e, burbuja.id)}
+          onAnimationEnd={(e) => {
+            if (e.animationName.includes('flotarArriba')) {
+              removerBurbuja(burbuja.id)
+            }
+          }}
           style={{
             left: `${burbuja.left}%`,
             width: `${burbuja.size}px`,
