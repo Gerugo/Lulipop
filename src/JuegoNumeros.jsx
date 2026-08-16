@@ -193,46 +193,116 @@ export default function JuegoNumeros({ perfil, onVolver }) {
         .glass-panel {
           background: rgba(255, 255, 255, 0.85);
           backdrop-filter: blur(15px);
-          border: 6px solid white;
-          border-radius: 40px;
-          box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        .btn-header-numeros {
+          width: 55px; height: 55px; border-radius: 18px;
+          background-color: #FFFFFF; color: #FF5E62; border: none; 
+          font-size: 24px; cursor: pointer;
+          box-shadow: 0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15); 
+          display: flex; align-items: center; justify-content: center;
         }
 
-        .grafico-juego {
-          width: 65px;
-          height: 65px;
-          object-fit: contain;
-          filter: drop-shadow(0 10px 15px rgba(0,0,0,0.2));
-          animation: flotarElemento 3s ease-in-out infinite;
+        .panel-reto-numeros {
+          padding: 22px 26px;
+          margin-bottom: 22px;
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 12px;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        .lienzo-items-numeros {
+          width: 100%;
+          min-height: 160px;
+          background-color: rgba(255, 255, 255, 0.55);
+          border-radius: 22px;
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          padding: 16px;
+          box-sizing: border-box;
+          border: 3px dashed #CBD5E1;
+        }
+
+        @media (max-height: 550px) {
+          .contenedor-juego-numeros {
+            padding: 8px 14px !important;
+            justify-content: flex-start !important;
+          }
+          .btn-header-numeros {
+            width: 42px !important;
+            height: 42px !important;
+            font-size: 18px !important;
+            border-radius: 12px !important;
+          }
+          .header-barra-numeros {
+            top: 10px !important;
+            left: 12px !important;
+            right: 12px !important;
+          }
+          .badge-progreso-numeros {
+            padding: 4px 12px !important;
+            border-radius: 16px !important;
+          }
+          .area-juego-numeros {
+            margin-top: 48px !important;
+            max-width: 500px !important;
+          }
+          .panel-reto-numeros {
+            padding: 8px 14px !important;
+            margin-bottom: 10px !important;
+            border-radius: 22px !important;
+            gap: 6px !important;
+          }
+          .titulo-reto-numeros {
+            font-size: 1.25rem !important;
+          }
+          .lienzo-items-numeros {
+            min-height: 70px !important;
+            padding: 6px 10px !important;
+            gap: 8px !important;
+            border-radius: 16px !important;
+          }
+          .grafico-juego {
+            width: 44px !important;
+            height: 44px !important;
+          }
+          .btn-arcilla {
+            width: 62px !important;
+            height: 62px !important;
+            font-size: 1.8rem !important;
+            border-radius: 18px !important;
+          }
+          .fila-botones-numeros {
+            gap: 12px !important;
+          }
         }
       `}</style>
 
       {/* HEADER: Botón Volver, Nivel y Progreso */}
-      <div style={{ position: 'absolute', top: '25px', left: '25px', right: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 20 }}>
+      <div className="header-barra-numeros" style={{ position: 'absolute', top: '18px', left: '20px', right: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 20 }}>
         <button 
           onClick={nivelId ? () => setNivelId(null) : onVolver}
-          style={{ 
-            width: '60px', height: '60px', borderRadius: '20px',
-            backgroundColor: '#FFFFFF', color: '#FF5E62', border: 'none', 
-            fontSize: '26px', cursor: 'pointer',
-            boxShadow: '0 8px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)', 
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}
+          className="btn-header-numeros"
         >
           ❮
         </button>
 
         {/* Indicador de progreso con el avatar del niño */}
         {!victoria && (
-          <div className="glass-panel" style={{ padding: '8px 20px', display: 'flex', alignItems: 'center', gap: '12px', border: '4px solid white', borderRadius: '25px' }}>
-            <span style={{ fontSize: '20px', backgroundColor: nivel.color, borderRadius: '10px', padding: '4px 8px' }}>{nivel.emoji}</span>
-            <div style={{ display: 'flex', gap: '6px' }}>
+          <div className="glass-panel badge-progreso-numeros" style={{ padding: '6px 16px', display: 'flex', alignItems: 'center', gap: '10px', border: '3px solid white', borderRadius: '22px' }}>
+            <span style={{ fontSize: '18px', backgroundColor: nivel.color, borderRadius: '8px', padding: '3px 6px' }}>{nivel.emoji}</span>
+            <div style={{ display: 'flex', gap: '5px' }}>
               {Array.from({ length: nivel.rondas }).map((_, idx) => (
                 <div key={idx} style={{
-                  width: '16px', height: '16px', borderRadius: '50%',
+                  width: '14px', height: '14px', borderRadius: '50%',
                   backgroundColor: idx < ronda - 1 ? '#43e97b' : idx === ronda - 1 ? '#FFD166' : '#E2E8F0',
-                  border: '3px solid white', boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
-                  transform: idx === ronda - 1 ? 'scale(1.3)' : 'scale(1)',
+                  border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  transform: idx === ronda - 1 ? 'scale(1.25)' : 'scale(1)',
                   transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
                 }} />
               ))}
@@ -242,40 +312,16 @@ export default function JuegoNumeros({ perfil, onVolver }) {
       </div>
 
       {!victoria ? (
-        <div className="anim-pop" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '550px', marginTop: '30px' }}>
+        <div className="anim-pop area-juego-numeros" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '520px', marginTop: '20px' }}>
           
           {/* Tarjeta del Reto */}
-          <div className="glass-panel" style={{
-            padding: '25px 30px',
-            marginBottom: '30px',
-            textAlign: 'center',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '15px',
-            width: '100%',
-            boxSizing: 'border-box'
-          }}>
-            <h2 style={{ color: '#334155', fontSize: '2.2rem', margin: 0, fontWeight: '900', textShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+          <div className="glass-panel panel-reto-numeros">
+            <h2 className="titulo-reto-numeros" style={{ color: '#334155', fontSize: '1.8rem', margin: 0, fontWeight: '900', textShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
               {retoActual.titulo}
             </h2>
 
             {/* Lienzo central con imágenes dinámicas */}
-            <div style={{
-              width: '100%',
-              minHeight: '180px',
-              backgroundColor: 'rgba(255, 255, 255, 0.5)',
-              borderRadius: '25px',
-              display: 'flex',
-              flexWrap: 'wrap',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '12px',
-              padding: '20px',
-              boxSizing: 'border-box',
-              border: '3px dashed #CBD5E1',
-              marginTop: '10px'
-            }}>
+            <div className="lienzo-items-numeros">
               {Array.from({ length: retoActual.cantidad }).map((_, i) => (
                 <div key={i} style={{ position: 'relative' }}>
                   <img 
@@ -305,7 +351,7 @@ export default function JuegoNumeros({ perfil, onVolver }) {
           </div>
 
           {/* Opciones de números (Botones Arcilla 3D) */}
-          <div className={estadoRespuesta === 'incorrecto' ? 'anim-shake' : ''} style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <div className={`fila-botones-numeros ${estadoRespuesta === 'incorrecto' ? 'anim-shake' : ''}`} style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' }}>
             {retoActual.opciones.map((opcion, idx) => {
               const estiloColor = coloresBotones[idx % coloresBotones.length]
               const esSeleccionado = seleccionado === opcion

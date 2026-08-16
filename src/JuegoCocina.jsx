@@ -246,21 +246,71 @@ export default function JuegoCocina({ perfil, onVolver }) {
           box-shadow: 0 20px 40px rgba(0,0,0,0.15);
         }
 
-        .btn-ingrediente {
-          width: 90px; height: 90px;
-          border-radius: 26px;
-          font-size: 3rem;
-          cursor: pointer;
-          transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-          border: 4px solid rgba(255,255,255,0.8);
-          background-color: #FFFFFF;
-          display: flex; justify-content: center; align-items: center;
-          box-shadow: 0 8px 0 #E0E0E0, 0 12px 18px rgba(0,0,0,0.15);
+        .btn-header-cocina {
+          width: 55px; height: 55px; border-radius: 18px;
+          background-color: #FFFFFF; color: #FF5E62; border: none;
+          font-size: 24px; cursor: pointer;
+          box-shadow: 0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15);
+          display: flex; align-items: center; justify-content: center;
         }
-        .btn-ingrediente:active { transform: translateY(6px) scale(0.94); box-shadow: 0 2px 0 #E0E0E0; }
 
-        @media (min-width: 768px) {
-          .btn-ingrediente { width: 105px; height: 105px; font-size: 3.6rem; }
+        .panel-receta-cocina {
+          padding: 16px 20px;
+          width: 100%;
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 10px;
+          position: relative;
+        }
+
+        @media (max-height: 550px) {
+          .contenedor-juego-cocina {
+            padding: 8px 14px !important;
+          }
+          .btn-header-cocina {
+            width: 42px !important;
+            height: 42px !important;
+            font-size: 18px !important;
+            border-radius: 12px !important;
+          }
+          .badge-progreso-cocina {
+            padding: 4px 12px !important;
+            border-radius: 16px !important;
+          }
+          .area-juego-cocina {
+            margin-top: 4px !important;
+            max-width: 580px !important;
+          }
+          .titulo-receta-cocina {
+            font-size: 1.2rem !important;
+            margin: 2px 0 6px 0 !important;
+          }
+          .panel-receta-cocina {
+            padding: 6px 14px !important;
+            gap: 6px !important;
+            border-radius: 20px !important;
+          }
+          .slot-ingrediente-cocina {
+            width: 44px !important;
+            height: 44px !important;
+            font-size: 1.5rem !important;
+            border-radius: 14px !important;
+          }
+          .img-mascota-cocina {
+            width: 50px !important;
+          }
+          .btn-ingrediente {
+            width: 52px !important;
+            height: 52px !important;
+            font-size: 1.8rem !important;
+            border-radius: 16px !important;
+          }
+          .bandeja-ingredientes-cocina {
+            margin-top: 6px !important;
+            gap: 10px !important;
+          }
         }
       `}</style>
 
@@ -268,27 +318,21 @@ export default function JuegoCocina({ perfil, onVolver }) {
       <div style={{ position: 'relative', width: '100%', maxWidth: '650px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 20 }}>
         <button
           onClick={onVolver}
-          style={{
-            width: '60px', height: '60px', borderRadius: '20px',
-            backgroundColor: '#FFFFFF', color: '#FF5E62', border: 'none',
-            fontSize: '26px', cursor: 'pointer',
-            boxShadow: '0 8px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}
+          className="btn-header-cocina"
         >
           ❮
         </button>
 
         {!victoriaFinal && (
-          <div className="glass-panel" style={{ padding: '8px 20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '22px' }}>{perfil?.avatar || '👦'}</span>
-            <div style={{ display: 'flex', gap: '8px' }}>
+          <div className="glass-panel badge-progreso-cocina" style={{ padding: '6px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '18px' }}>{perfil?.avatar || '👦'}</span>
+            <div style={{ display: 'flex', gap: '6px' }}>
               {RECETAS.map((r, idx) => (
                 <div key={r.id} style={{
-                  width: '18px', height: '18px', borderRadius: '50%',
+                  width: '14px', height: '14px', borderRadius: '50%',
                   backgroundColor: idx < recetaIndex ? '#43e97b' : idx === recetaIndex ? '#FFD166' : '#E2E8F0',
-                  border: '3px solid white', boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
-                  transform: idx === recetaIndex ? 'scale(1.3)' : 'scale(1)',
+                  border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  transform: idx === recetaIndex ? 'scale(1.25)' : 'scale(1)',
                   transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
                 }} />
               ))}

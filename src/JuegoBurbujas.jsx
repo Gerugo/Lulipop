@@ -169,11 +169,33 @@ export default function JuegoBurbujas({ perfil, onVolver }) {
 
         .anim-victoria { animation: victoria 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         @keyframes victoria { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+
+        @media (max-height: 550px) {
+          .btn-header-burbujas {
+            width: 42px !important;
+            height: 42px !important;
+            font-size: 18px !important;
+            border-radius: 12px !important;
+          }
+          .header-barra-burbujas {
+            top: 10px !important;
+            left: 12px !important;
+            right: 12px !important;
+            gap: 10px !important;
+          }
+          .barra-progreso-burbujas {
+            height: 28px !important;
+          }
+          .texto-progreso-burbujas {
+            font-size: 0.95rem !important;
+          }
+        }
       `}</style>
 
-      <div style={{ position: 'absolute', top: '25px', left: '20px', right: '20px', display: 'flex', alignItems: 'center', gap: '15px', zIndex: 50 }}>
+      <div className="header-barra-burbujas" style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', display: 'flex', alignItems: 'center', gap: '15px', zIndex: 50 }}>
         <button 
           onClick={handleBack}
+          className="btn-header-burbujas"
           style={{ 
             width: '55px', height: '55px', borderRadius: '18px', flexShrink: 0,
             backgroundColor: '#FFFFFF', color: '#FF5E62', border: 'none', 
@@ -186,9 +208,9 @@ export default function JuegoBurbujas({ perfil, onVolver }) {
         </button>
 
         {!victoria && (
-          <div style={{ 
+          <div className="barra-progreso-burbujas" style={{ 
             flex: 1, height: '35px', backgroundColor: 'rgba(255,255,255,0.5)', 
-            borderRadius: '20px', border: '4px solid white', overflow: 'hidden',
+            borderRadius: '20px', border: '3px solid white', overflow: 'hidden',
             boxShadow: 'inset 0 4px 6px rgba(0,0,0,0.1), 0 10px 15px rgba(0,0,0,0.1)',
             position: 'relative'
           }}>
@@ -198,10 +220,10 @@ export default function JuegoBurbujas({ perfil, onVolver }) {
               transition: 'width 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
               borderRadius: '15px'
             }} />
-            <div style={{
+            <div className="texto-progreso-burbujas" style={{
               position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#1E293B', fontWeight: '900', fontSize: '1.2rem', fontFamily: '"Fredoka", sans-serif',
+              color: '#1E293B', fontWeight: '900', fontSize: '1.15rem', fontFamily: '"Fredoka", sans-serif',
               textShadow: '0 2px 2px rgba(255,255,255,0.8)'
             }}>
               {nivel.emoji} {puntuacion} / {nivel.meta}

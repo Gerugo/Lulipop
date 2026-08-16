@@ -212,6 +212,46 @@ export default function JuegoMemoria({ perfil, onVolver }) {
           25% { transform: rotateY(180deg) translateX(-8px) rotate(-3deg); }
           75% { transform: rotateY(180deg) translateX(8px) rotate(3deg); }
         }
+        @media (max-height: 550px) {
+          .btn-header-memoria {
+            width: 42px !important;
+            height: 42px !important;
+            font-size: 18px !important;
+            border-radius: 12px !important;
+          }
+          .btn-limpiar-memoria {
+            height: 42px !important;
+            padding: 0 12px !important;
+            font-size: 16px !important;
+            border-radius: 12px !important;
+          }
+          .marcador-memoria {
+            top: 10px !important;
+            padding: 4px 16px !important;
+            font-size: 1.1rem !important;
+            border-radius: 18px !important;
+          }
+          .panel-tablero-memoria {
+            margin-top: 55px !important;
+            padding: 10px 16px !important;
+            border-radius: 24px !important;
+          }
+          .titulo-tablero-memoria {
+            font-size: 1.1rem !important;
+            margin-bottom: 8px !important;
+            padding: 4px 14px !important;
+          }
+          .grid-cartas-memoria {
+            gap: 8px !important;
+            max-width: 420px !important;
+          }
+          .icono-carta-frente {
+            font-size: 24px !important;
+          }
+          .fallback-carta-dorso {
+            font-size: 26px !important;
+          }
+        }
       `}</style>
 
       {nivelSuperado && (
@@ -221,85 +261,90 @@ export default function JuegoMemoria({ perfil, onVolver }) {
           zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', boxSizing: 'border-box'
         }}>
           <div className="anim-victoria" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-            <div className="anim-estrella" style={{ fontSize: '100px', filter: 'drop-shadow(0 10px 10px rgba(0,0,0,0.2))' }}>🌟</div>
+            <div className="anim-estrella" style={{ fontSize: '80px', filter: 'drop-shadow(0 10px 10px rgba(0,0,0,0.2))' }}>🌟</div>
             <h1 style={{
-              color: '#FFD166', fontSize: 'clamp(2.5rem, 9vw, 4.5rem)', margin: '10px 0',
-              textShadow: '0 6px 0 #CCAC00, 0 10px 20px rgba(0,0,0,0.2)',
+              color: '#FFD166', fontSize: 'clamp(2.2rem, 7vw, 4rem)', margin: '8px 0',
+              textShadow: '0 5px 0 #CCAC00, 0 8px 16px rgba(0,0,0,0.2)',
               textTransform: 'uppercase', letterSpacing: '2px'
             }}>¡Súper!</h1>
-            <p style={{ color: '#4facfe', fontSize: '1.5rem', fontWeight: '900', margin: '0 0 20px 0', backgroundColor: 'white', padding: '10px 30px', borderRadius: '30px', boxShadow: '0 5px 0 #cbd5e1' }}>
+            <p style={{ color: '#4facfe', fontSize: '1.25rem', fontWeight: '900', margin: '0 0 16px 0', backgroundColor: 'white', padding: '8px 24px', borderRadius: '25px', boxShadow: '0 4px 0 #cbd5e1' }}>
               ¡Nivel {nivel.nombre} completado!
             </p>
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
               <button onClick={() => setNivelId(null)} style={{
                 backgroundColor: '#FFD166', color: '#7A5C00', border: 'none',
-                padding: '15px 30px', borderRadius: '30px', fontSize: '1.3rem', fontWeight: '900',
-                cursor: 'pointer', boxShadow: '0 8px 0 #CCAC00'
+                padding: '12px 24px', borderRadius: '25px', fontSize: '1.15rem', fontWeight: '900',
+                cursor: 'pointer', boxShadow: '0 6px 0 #CCAC00'
               }}>🔁 Otro nivel</button>
               <button onClick={onVolver} style={{
                 backgroundColor: '#43e97b', color: 'white', border: 'none',
-                padding: '15px 30px', borderRadius: '30px', fontSize: '1.3rem', fontWeight: '900',
-                cursor: 'pointer', boxShadow: '0 8px 0 #27ae60'
+                padding: '12px 24px', borderRadius: '25px', fontSize: '1.15rem', fontWeight: '900',
+                cursor: 'pointer', boxShadow: '0 6px 0 #27ae60'
               }}>{guardando ? 'Guardando...' : '¡Continuar! 🚀'}</button>
             </div>
           </div>
         </div>
       )}
 
+      {/* HEADER DE NAVEGACIÓN */}
       <div style={{ 
-        position: 'absolute', top: '25px', left: '20px', right: '20px', 
+        position: 'absolute', top: '15px', left: '15px', right: '15px', 
         display: 'flex', justifyContent: 'space-between', zIndex: 50 
       }}>
-        <button onClick={handleBack} style={{
-          width: '55px', height: '55px', borderRadius: '18px',
+        <button onClick={handleBack} className="btn-header-memoria" style={{
+          width: '52px', height: '52px', borderRadius: '16px',
           backgroundColor: '#FFFFFF', color: '#FF5E62', border: 'none', 
-          fontSize: '24px', cursor: 'pointer',
-          boxShadow: '0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)',
+          fontSize: '22px', cursor: 'pointer',
+          boxShadow: '0 5px 0 #E0E0E0, 0 8px 12px rgba(0,0,0,0.12)',
           display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>❮</button>
 
-        <button onClick={iniciarJuego} style={{
-          height: '55px', padding: '0 20px', borderRadius: '18px',
+        <button onClick={iniciarJuego} className="btn-limpiar-memoria" style={{
+          height: '52px', padding: '0 18px', borderRadius: '16px',
           backgroundColor: '#FFFFFF', color: '#333', border: 'none', 
-          fontSize: '22px', fontWeight: '900', cursor: 'pointer',
-          boxShadow: '0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)',
+          fontSize: '20px', fontWeight: '900', cursor: 'pointer',
+          boxShadow: '0 5px 0 #E0E0E0, 0 8px 12px rgba(0,0,0,0.12)',
           display: 'flex', alignItems: 'center'
         }}>🧹</button>
       </div>
 
-      <div style={{
-        position: 'absolute', top: '25px', left: '50%', transform: 'translateX(-50%)',
-        backgroundColor: 'rgba(255, 255, 255, 0.95)', padding: '12px 26px',
-        borderRadius: '30px', border: '4px solid white',
-        boxShadow: '0 12px 30px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center',
-        gap: '10px', zIndex: 20, fontSize: '28px', fontWeight: '900'
+      <div className="marcador-memoria" style={{
+        position: 'absolute', top: '15px', left: '50%', transform: 'translateX(-50%)',
+        backgroundColor: 'rgba(255, 255, 255, 0.95)', padding: '8px 22px',
+        borderRadius: '25px', border: '3px solid white',
+        boxShadow: '0 10px 25px rgba(0,0,0,0.12)', display: 'flex', alignItems: 'center',
+        gap: '8px', zIndex: 20, fontSize: '1.4rem', fontWeight: '900'
       }}>
-        {nivel.emoji} ⭐ <span style={{ color: '#FFD166', textShadow: '0 4px 0 #CCAC00', minWidth: '70px', textAlign: 'center', display: 'inline-block' }}>{puntos}</span>
+        {nivel.emoji} ⭐ <span style={{ color: '#FFD166', textShadow: '0 3px 0 #CCAC00', minWidth: '55px', textAlign: 'center', display: 'inline-block' }}>{puntos}</span>
       </div>
 
-      <div style={{
-        marginTop: '130px',
-        backgroundColor: 'rgba(255, 255, 255, 0.6)',
+      <div className="panel-tablero-memoria" style={{
+        marginTop: '80px',
+        backgroundColor: 'rgba(255, 255, 255, 0.65)',
         backdropFilter: 'blur(20px)',
-        padding: '25px',
-        borderRadius: '40px',
-        border: '6px solid rgba(255,255,255,0.8)',
-        boxShadow: '0 25px 50px rgba(0,0,0,0.1)',
-        display: 'flex', flexDirection: 'column', alignItems: 'center'
+        WebkitBackdropFilter: 'blur(20px)',
+        padding: '16px 20px',
+        borderRadius: '32px',
+        border: '5px solid rgba(255,255,255,0.85)',
+        boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        maxHeight: 'calc(100dvh - 95px)',
+        overflowY: 'auto',
+        boxSizing: 'border-box'
       }}>
         
-        <h2 style={{ 
-          color: '#334155', fontSize: '1.6rem', margin: '0 0 20px 0',
-          backgroundColor: 'white', padding: '10px 26px', borderRadius: '25px',
-          boxShadow: '0 5px 0 #e2e8f0'
+        <h2 className="titulo-tablero-memoria" style={{ 
+          color: '#334155', fontSize: '1.35rem', margin: '0 0 14px 0',
+          backgroundColor: 'white', padding: '6px 20px', borderRadius: '20px',
+          boxShadow: '0 4px 0 #e2e8f0'
         }}>¡Encuentra las parejas!</h2>
 
-        <div style={{
+        <div className="grid-cartas-memoria" style={{
           display: 'grid',
           gridTemplateColumns: `repeat(${nivel.columnas}, 1fr)`,
-          gap: '15px',
-          width: '95vw',
-          maxWidth: '500px'
+          gap: '10px',
+          width: '90vw',
+          maxWidth: '460px'
         }}>
           {baraja.map((carta, index) => {
             const estaVolteada = cartasVolteadas.includes(index)
@@ -322,12 +367,12 @@ export default function JuegoMemoria({ perfil, onVolver }) {
               >
                 <div className="carta-inner">
                   <div className="carta-cara carta-frente">
-                    <span style={{ fontSize: '35px' }}>🍭</span>
+                    <span className="icono-carta-frente" style={{ fontSize: '30px' }}>🍭</span>
                   </div>
                   
                   <div className={claseDorso}>
                     {carta.imgFailed ? (
-                      <span style={{ fontSize: '40px' }}>{carta.fallback}</span>
+                      <span className="fallback-carta-dorso" style={{ fontSize: '32px' }}>{carta.fallback}</span>
                     ) : (
                       <img 
                         src={carta.img} 

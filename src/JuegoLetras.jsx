@@ -175,6 +175,74 @@ export default function JuegoLetras({ perfil, onVolver }) {
           box-shadow: 0 0 0 transparent !important;
         }
 
+        .btn-header-letras {
+          width: 55px; height: 55px; border-radius: 18px;
+          background-color: #FFFFFF; color: #FF5E62; border: none; 
+          fontSize: 24px; cursor: pointer;
+          box-shadow: 0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15); 
+          display: flex; align-items: center; justify-content: center;
+        }
+
+        .panel-reto-letras {
+          padding: 24px 28px;
+          margin-bottom: 20px;
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 12px;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        @media (max-height: 550px) {
+          .contenedor-juego-letras {
+            padding: 8px 14px !important;
+          }
+          .btn-header-letras {
+            width: 42px !important;
+            height: 42px !important;
+            font-size: 18px !important;
+            border-radius: 12px !important;
+          }
+          .header-barra-letras {
+            top: 10px !important;
+            left: 12px !important;
+            right: 12px !important;
+          }
+          .badge-progreso-letras {
+            padding: 4px 12px !important;
+            border-radius: 16px !important;
+          }
+          .area-juego-letras {
+            margin-top: 48px !important;
+            max-width: 500px !important;
+          }
+          .panel-reto-letras {
+            padding: 8px 16px !important;
+            margin-bottom: 8px !important;
+            border-radius: 20px !important;
+            gap: 6px !important;
+          }
+          .emoji-palabra-letras {
+            font-size: 46px !important;
+            padding: 4px !important;
+          }
+          .texto-palabra-incompleta {
+            font-size: 1.4rem !important;
+            letter-spacing: 4px !important;
+          }
+          .btn-arcilla {
+            width: 58px !important;
+            height: 58px !important;
+            font-size: 1.8rem !important;
+            border-radius: 18px !important;
+          }
+          .fila-opciones-letras {
+            gap: 10px !important;
+          }
+        }
+
         /* Glassmorphism panel */
         .glass-panel {
           background: rgba(255, 255, 255, 0.85);
@@ -186,22 +254,16 @@ export default function JuegoLetras({ perfil, onVolver }) {
       `}</style>
 
       {/* HEADER: Botón Volver, Nivel y Progreso */}
-      <div style={{ position: 'absolute', top: '25px', left: '25px', right: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 20 }}>
+      <div className="header-barra-letras" style={{ position: 'absolute', top: '25px', left: '25px', right: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 20 }}>
         <button 
           onClick={nivelId ? () => setNivelId(null) : onVolver}
-          style={{ 
-            width: '60px', height: '60px', borderRadius: '20px',
-            backgroundColor: '#FFFFFF', color: '#FF5E62', border: 'none', 
-            fontSize: '26px', cursor: 'pointer',
-            boxShadow: '0 8px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)', 
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}
+          className="btn-header-letras"
         >
           ❮
         </button>
 
         {!victoria && (
-          <div className="glass-panel" style={{ padding: '8px 20px', display: 'flex', alignItems: 'center', gap: '12px', border: '4px solid white', borderRadius: '25px' }}>
+          <div className="glass-panel badge-progreso-letras" style={{ padding: '8px 20px', display: 'flex', alignItems: 'center', gap: '12px', border: '4px solid white', borderRadius: '25px' }}>
             <span style={{ fontSize: '20px', backgroundColor: nivel.color, borderRadius: '10px', padding: '4px 8px' }}>{nivel.emoji}</span>
             <div style={{ display: 'flex', gap: '6px' }}>
               {palabras.map((_, idx) => (
@@ -219,10 +281,10 @@ export default function JuegoLetras({ perfil, onVolver }) {
       </div>
 
       {!victoria ? (
-        <div className="anim-pop" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '550px', marginTop: '40px' }}>
+        <div className="anim-pop area-juego-letras" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '550px', marginTop: '40px' }}>
           
           {/* Tarjeta de Pregunta */}
-          <div className="glass-panel" style={{
+          <div className="glass-panel panel-reto-letras" style={{
             padding: '35px 40px',
             marginBottom: '35px',
             textAlign: 'center',
@@ -233,7 +295,7 @@ export default function JuegoLetras({ perfil, onVolver }) {
             width: '100%',
             boxSizing: 'border-box'
           }}>
-            <div className="anim-flotar" style={{ 
+            <div className="anim-flotar emoji-palabra-letras" style={{ 
               fontSize: '100px', 
               filter: 'drop-shadow(0 15px 15px rgba(0,0,0,0.2))',
               background: 'radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%)',
@@ -241,14 +303,14 @@ export default function JuegoLetras({ perfil, onVolver }) {
             }}>
               {actual.emoji}
             </div>
-            <h2 style={{ color: '#334155', fontSize: '2.2rem', margin: 0, fontWeight: '900', lineHeight: '1.2' }}>
+            <h2 className="titulo-reto-letras" style={{ color: '#334155', fontSize: '1.8rem', margin: 0, fontWeight: '900', lineHeight: '1.2' }}>
               ¿Con qué letra empieza <br/>
-              <span style={{ color: actual.color, fontSize: '2.8rem', textShadow: '0 4px 0 rgba(0,0,0,0.1)' }}>{actual.palabra}</span>?
+              <span className="palabra-destacada-letras" style={{ color: actual.color, fontSize: '2.2rem', textShadow: '0 4px 0 rgba(0,0,0,0.1)' }}>{actual.palabra}</span>?
             </h2>
           </div>
 
           {/* Opciones de letras (Botones Arcilla 3D) */}
-          <div className={estadoRespuesta === 'incorrecto' ? 'anim-shake' : ''} style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <div className={`fila-opciones-letras ${estadoRespuesta === 'incorrecto' ? 'anim-shake' : ''}`} style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
             {actual.opciones.map((letra, idx) => {
               const estiloColor = coloresBotones[idx % coloresBotones.length]
               const esSeleccionado = seleccionado === letra

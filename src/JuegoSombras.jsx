@@ -156,27 +156,110 @@ export default function JuegoSombras({ perfil, onVolver }) {
           border: 4px solid rgba(255,255,255,0.7); display: flex; justify-content: center; align-items: center;
           background: rgba(255, 255, 255, 0.9); box-shadow: inset 0px -8px 0px rgba(0,0,0,0.1), 0px 15px 25px rgba(0,0,0,0.15);
         }
-        .btn-imagen-arcilla:active { transform: translateY(8px) scale(0.92) !important; box-shadow: 0 0 0 transparent !important; }
-        .glass-panel { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(15px); border: 6px solid white; border-radius: 40px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
+        .btn-header-sombras {
+          width: 55px; height: 55px; border-radius: 18px; backgroundColor: #FFFFFF; color: #FF5E62; 
+          border: none; font-size: 24px; cursor: pointer; box-shadow: 0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15); 
+          display: flex; align-items: center; justify-content: center;
+        }
+
+        .panel-reto-sombras {
+          padding: 24px 22px;
+          margin-bottom: 20px;
+          text-align: center;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 14px;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        .burbuja-sombra-central {
+          width: 150px;
+          height: 150px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          background-color: rgba(255, 255, 255, 0.55);
+          border-radius: 50%;
+          border: 4px dashed #CBD5E1;
+        }
+
+        .sombra-img-central {
+          width: 110px;
+          height: 110px;
+          object-fit: contain;
+        }
+
+        @media (max-height: 550px) {
+          .contenedor-juego-sombras {
+            padding: 8px 14px !important;
+          }
+          .btn-header-sombras {
+            width: 42px !important;
+            height: 42px !important;
+            font-size: 18px !important;
+            border-radius: 12px !important;
+          }
+          .header-barra-sombras {
+            top: 10px !important;
+            left: 12px !important;
+            right: 12px !important;
+          }
+          .badge-progreso-sombras {
+            padding: 4px 12px !important;
+            border-radius: 16px !important;
+          }
+          .area-juego-sombras {
+            margin-top: 48px !important;
+            max-width: 500px !important;
+          }
+          .panel-reto-sombras {
+            padding: 8px 14px !important;
+            margin-bottom: 8px !important;
+            border-radius: 22px !important;
+            gap: 6px !important;
+          }
+          .titulo-reto-sombras {
+            font-size: 1.2rem !important;
+          }
+          .burbuja-sombra-central {
+            width: 80px !important;
+            height: 80px !important;
+          }
+          .sombra-img-central {
+            width: 58px !important;
+            height: 58px !important;
+          }
+          .btn-imagen-arcilla {
+            width: 58px !important;
+            height: 58px !important;
+            border-radius: 18px !important;
+          }
+          .fila-opciones-sombras {
+            gap: 10px !important;
+          }
+        }
       `}</style>
 
-      <div style={{ position: 'absolute', top: '25px', left: '25px', right: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 20 }}>
-        <button onClick={nivelId ? () => setNivelId(null) : onVolver} style={{
-          width: '60px', height: '60px', borderRadius: '20px', backgroundColor: '#FFFFFF', color: '#FF5E62', 
-          border: 'none', fontSize: '26px', cursor: 'pointer', boxShadow: '0 8px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)', 
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}>❮</button>
+      <div className="header-barra-sombras" style={{ position: 'absolute', top: '18px', left: '20px', right: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 20 }}>
+        <button 
+          onClick={nivelId ? () => setNivelId(null) : onVolver} 
+          className="btn-header-sombras"
+        >
+          ❮
+        </button>
 
         {!victoria && (
-          <div className="glass-panel" style={{ padding: '8px 20px', display: 'flex', alignItems: 'center', gap: '12px', border: '4px solid white', borderRadius: '25px' }}>
-            <span style={{ fontSize: '20px', backgroundColor: nivel.color, borderRadius: '10px', padding: '4px 8px' }}>{nivel.emoji}</span>
-            <div style={{ display: 'flex', gap: '8px' }}>
+          <div className="glass-panel badge-progreso-sombras" style={{ padding: '6px 16px', display: 'flex', alignItems: 'center', gap: '10px', border: '3px solid white', borderRadius: '22px' }}>
+            <span style={{ fontSize: '18px', backgroundColor: nivel.color, borderRadius: '8px', padding: '3px 6px' }}>{nivel.emoji}</span>
+            <div style={{ display: 'flex', gap: '6px' }}>
               {Array.from({ length: nivel.rondas }).map((_, idx) => (
                 <div key={idx} style={{
-                  width: '16px', height: '16px', borderRadius: '50%',
+                  width: '14px', height: '14px', borderRadius: '50%',
                   backgroundColor: idx < ronda - 1 ? '#43e97b' : idx === ronda - 1 ? '#FFD166' : '#E2E8F0',
-                  border: '3px solid white', boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
-                  transform: idx === ronda - 1 ? 'scale(1.3)' : 'scale(1)', transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                  border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  transform: idx === ronda - 1 ? 'scale(1.25)' : 'scale(1)', transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
                 }} />
               ))}
             </div>
@@ -185,26 +268,25 @@ export default function JuegoSombras({ perfil, onVolver }) {
       </div>
 
       {!victoria ? (
-        <div className="anim-pop" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '550px', marginTop: '30px' }}>
+        <div className="anim-pop area-juego-sombras" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '520px', marginTop: '20px' }}>
           
-          <div className="glass-panel" style={{ padding: '35px 25px', marginBottom: '30px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', width: '100%', boxSizing: 'border-box' }}>
-            <h2 style={{ color: '#334155', fontSize: '1.8rem', margin: 0, fontWeight: '900', textShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>{retoActual.titulo}</h2>
-            <div className="anim-flotar" style={{ width: '170px', height: '170px', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.5)', borderRadius: '50%', border: '4px dashed #CBD5E1' }}>
+          <div className="glass-panel panel-reto-sombras">
+            <h2 className="titulo-reto-sombras" style={{ color: '#334155', fontSize: '1.6rem', margin: 0, fontWeight: '900', textShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>{retoActual.titulo}</h2>
+            <div className="anim-flotar burbuja-sombra-central">
               <img 
                 src={retoActual.correcto.src} alt="Sombra misteriosa"
-                className={estadoRespuesta === 'correcto' ? 'anim-revelar' : ''}
+                className={`sombra-img-central ${estadoRespuesta === 'correcto' ? 'anim-revelar' : ''}`}
                 style={{ 
-                  width: '125px', height: '125px', objectFit: 'contain',
                   filter: estadoRespuesta === 'correcto' ? 'none' : 'brightness(0) drop-shadow(0 15px 15px rgba(0,0,0,0.4))',
                   transition: 'filter 0.5s'
                 }}
                 onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }}
               />
-              <span style={{ display: 'none', fontSize: '95px', filter: estadoRespuesta === 'correcto' ? 'none' : 'brightness(0)' }}>{retoActual.correcto.fallback}</span>
+              <span style={{ display: 'none', fontSize: '65px', filter: estadoRespuesta === 'correcto' ? 'none' : 'brightness(0)' }}>{retoActual.correcto.fallback}</span>
             </div>
           </div>
 
-          <div className={estadoRespuesta === 'incorrecto' ? 'anim-shake' : ''} style={{ display: 'flex', gap: '18px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <div className={`fila-opciones-sombras ${estadoRespuesta === 'incorrecto' ? 'anim-shake' : ''}`} style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', justifyContent: 'center' }}>
             {retoActual.opciones.map((opcion) => {
               const esSeleccionado = seleccionado?.id === opcion.id
               const esCorrecto = esSeleccionado && estadoRespuesta === 'correcto'
@@ -220,7 +302,7 @@ export default function JuegoSombras({ perfil, onVolver }) {
                   key={opcion.id} className="btn-imagen-arcilla" onClick={() => verificarRespuesta(opcion)} disabled={seleccionado !== null}
                   style={{
                     borderColor: borderColor, backgroundColor: bgColor, transform: transform,
-                    boxShadow: esCorrecto ? '0 0 20px rgba(67, 233, 123, 0.5), inset 0px -8px 0px rgba(0,0,0,0.05)' : 'inset 0px -8px 0px rgba(0,0,0,0.1), 0px 15px 25px rgba(0,0,0,0.15)'
+                    boxShadow: esCorrecto ? '0 0 20px rgba(67, 233, 123, 0.5), inset 0px -6px 0px rgba(0,0,0,0.05)' : 'inset 0px -6px 0px rgba(0,0,0,0.1), 0px 12px 20px rgba(0,0,0,0.12)'
                   }}
                 >
                   <img src={opcion.src} alt={opcion.id} style={{ width: '60%', height: '60%', objectFit: 'contain' }} />

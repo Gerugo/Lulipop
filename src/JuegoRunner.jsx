@@ -1033,7 +1033,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
       {/* BARRA SUPERIOR */}
       <div style={{ position: 'absolute', top: '20px', left: '20px', right: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', zIndex: 10 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <button onClick={onVolver} style={{
+          <button onClick={onVolver} className="btn-volver-runner" style={{
             width: '55px', height: '55px', borderRadius: '20px', backgroundColor: 'rgba(255, 255, 255, 0.9)', color: '#FF5E62',
             border: '3px solid white', fontSize: '24px', cursor: 'pointer', boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)'
@@ -1051,7 +1051,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-          <div style={{
+          <div className="badge-puntos-runner" style={{
             backgroundColor: 'rgba(255,255,255,0.9)', padding: '10px 25px', borderRadius: '25px',
             border: '4px solid white', boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
             display: 'flex', alignItems: 'center', gap: '10px'
@@ -1098,7 +1098,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
           position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 15, pointerEvents: 'none'
         }}>
-          <div style={{
+          <div className="card-dialog-runner" style={{
             backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: '32px', padding: '36px 32px',
             border: '5px solid white', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', textAlign: 'center',
             maxWidth: '340px'
@@ -1136,7 +1136,7 @@ export default function JuegoRunner({ perfil, onVolver }) {
           position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 15, pointerEvents: 'none'
         }}>
-          <div style={{
+          <div className="card-dialog-runner" style={{
             backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: '32px', padding: '32px', textAlign: 'center',
             border: '5px solid white', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', maxWidth: '340px'
           }}>
@@ -1193,6 +1193,30 @@ export default function JuegoRunner({ perfil, onVolver }) {
         .capa-cielo { animation: desplazarFondo 90s linear infinite; }
         .capa-colinas { animation: desplazarFondo 26s linear infinite; }
         @keyframes desplazarFondo { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+        @media (max-height: 550px) {
+          .btn-volver-runner {
+            width: 42px !important;
+            height: 42px !important;
+            font-size: 18px !important;
+            border-radius: 12px !important;
+          }
+          .badge-puntos-runner {
+            padding: 4px 16px !important;
+            border-radius: 18px !important;
+          }
+          .badge-puntos-runner span:first-child {
+            font-size: 20px !important;
+          }
+          .badge-puntos-runner span:last-child {
+            font-size: 1.4rem !important;
+          }
+          .card-dialog-runner {
+            padding: 16px 22px !important;
+            max-width: 420px !important;
+            border-radius: 24px !important;
+          }
+        }
       `}</style>
     </div>
   )

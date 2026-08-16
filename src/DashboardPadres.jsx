@@ -116,16 +116,43 @@ export default function DashboardPadres({ perfil, onVolver }) {
         .progress-bar-fill {
           transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
+
+        @media (max-height: 550px) {
+          .contenedor-dashboard-padres {
+            padding: 10px 14px !important;
+          }
+          .header-dashboard {
+            margin-bottom: 12px !important;
+          }
+          .btn-volver-dashboard {
+            width: 42px !important;
+            height: 42px !important;
+            font-size: 18px !important;
+            border-radius: 12px !important;
+          }
+          .badge-titulo-dashboard {
+            padding: 6px 16px !important;
+            border-radius: 18px !important;
+          }
+          .badge-titulo-dashboard h2 {
+            font-size: 1.15rem !important;
+          }
+          .panel-dashboard-padres {
+            padding: 14px 18px !important;
+            border-radius: 24px !important;
+            margin-bottom: 12px !important;
+          }
+        }
       `}</style>
 
       {/* HEADER: Botón volver y Título */}
-      <header style={{ 
+      <header className="header-dashboard" style={{ 
         width: '100%', maxWidth: '700px', display: 'flex', 
         justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' 
       }}>
         <button 
           onClick={onVolver}
-          className="btn-press"
+          className="btn-press btn-volver-dashboard"
           style={{ 
             '--shadow-color': '#E0E0E0',
             width: '60px', height: '60px', borderRadius: '20px',
@@ -137,7 +164,7 @@ export default function DashboardPadres({ perfil, onVolver }) {
         >
           ❮
         </button>
-        <div style={{ backgroundColor: 'rgba(255,255,255,0.9)', padding: '10px 25px', borderRadius: '25px', border: '4px solid white', boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }}>
+        <div className="badge-titulo-dashboard" style={{ backgroundColor: 'rgba(255,255,255,0.9)', padding: '10px 25px', borderRadius: '25px', border: '4px solid white', boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }}>
           <h2 style={{ color: '#334155', margin: 0, fontSize: '1.6rem', fontWeight: '900' }}>Panel de Progreso 📊</h2>
         </div>
       </header>

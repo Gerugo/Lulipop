@@ -167,40 +167,85 @@ export default function JuegoIntruso({ perfil, onVolver }) {
           box-shadow: 0 0 0 transparent !important;
         }
 
-        .glass-panel {
-          background: rgba(255, 255, 255, 0.85);
-          backdrop-filter: blur(15px);
-          border: 6px solid white;
-          border-radius: 40px;
-          box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        .btn-header-intruso {
+          width: 55px; height: 55px; border-radius: 18px;
+          background-color: #FFFFFF; color: #FF5E62; border: none; 
+          font-size: 24px; cursor: pointer;
+          box-shadow: 0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15); 
+          display: flex; align-items: center; justify-content: center;
+        }
+
+        .panel-titulo-intruso {
+          padding: 20px 24px;
+          margin-bottom: 18px;
+          text-align: center;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        @media (max-height: 550px) {
+          .contenedor-juego-intruso {
+            padding: 8px 14px !important;
+          }
+          .btn-header-intruso {
+            width: 42px !important;
+            height: 42px !important;
+            font-size: 18px !important;
+            border-radius: 12px !important;
+          }
+          .header-barra-intruso {
+            top: 10px !important;
+            left: 12px !important;
+            right: 12px !important;
+          }
+          .badge-progreso-intruso {
+            padding: 4px 12px !important;
+            border-radius: 16px !important;
+          }
+          .area-juego-intruso {
+            margin-top: 48px !important;
+            max-width: 500px !important;
+          }
+          .panel-titulo-intruso {
+            padding: 6px 14px !important;
+            margin-bottom: 10px !important;
+            border-radius: 18px !important;
+          }
+          .titulo-intruso-txt {
+            font-size: 1.2rem !important;
+          }
+          .grid-opciones-intruso {
+            gap: 8px !important;
+            padding: 4px !important;
+          }
+          .btn-arcilla {
+            width: clamp(50px, 12vh, 72px) !important;
+            height: clamp(50px, 12vh, 72px) !important;
+            font-size: clamp(26px, 6.5vh, 40px) !important;
+            border-radius: 18px !important;
+          }
         }
       `}</style>
 
       {/* HEADER: Botón Volver, Nivel y Progreso */}
-      <div style={{ position: 'absolute', top: '25px', left: '25px', right: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 20 }}>
+      <div className="header-barra-intruso" style={{ position: 'absolute', top: '18px', left: '20px', right: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 20 }}>
         <button 
           onClick={nivelId ? () => setNivelId(null) : onVolver}
-          style={{ 
-            width: '60px', height: '60px', borderRadius: '20px',
-            backgroundColor: '#FFFFFF', color: '#FF5E62', border: 'none', 
-            fontSize: '26px', cursor: 'pointer',
-            boxShadow: '0 8px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)', 
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}
+          className="btn-header-intruso"
         >
           ❮
         </button>
 
         {!victoria && (
-          <div className="glass-panel" style={{ padding: '8px 20px', display: 'flex', alignItems: 'center', gap: '12px', border: '4px solid white', borderRadius: '25px' }}>
-            <span style={{ fontSize: '20px', backgroundColor: nivel.color, borderRadius: '10px', padding: '4px 8px' }}>{nivel.emoji}</span>
+          <div className="glass-panel badge-progreso-intruso" style={{ padding: '6px 16px', display: 'flex', alignItems: 'center', gap: '10px', border: '3px solid white', borderRadius: '22px' }}>
+            <span style={{ fontSize: '18px', backgroundColor: nivel.color, borderRadius: '8px', padding: '3px 6px' }}>{nivel.emoji}</span>
             <div style={{ display: 'flex', gap: '6px' }}>
               {Array.from({ length: nivel.rondas }).map((_, idx) => (
                 <div key={idx} style={{
-                  width: '16px', height: '16px', borderRadius: '50%',
+                  width: '14px', height: '14px', borderRadius: '50%',
                   backgroundColor: idx < ronda - 1 ? '#43e97b' : idx === ronda - 1 ? '#FFD166' : '#E2E8F0',
-                  border: '3px solid white', boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
-                  transform: idx === ronda - 1 ? 'scale(1.3)' : 'scale(1)',
+                  border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  transform: idx === ronda - 1 ? 'scale(1.25)' : 'scale(1)',
                   transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
                 }} />
               ))}
@@ -210,21 +255,21 @@ export default function JuegoIntruso({ perfil, onVolver }) {
       </div>
 
       {!victoria ? (
-        <div className="anim-pop" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '550px', marginTop: '40px' }}>
+        <div className="anim-pop area-juego-intruso" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '520px', marginTop: '20px' }}>
           
-          <div className="glass-panel" style={{ padding: '25px', marginBottom: '25px', textAlign: 'center', width: '100%', boxSizing: 'border-box' }}>
-            <h2 style={{ color: '#334155', fontSize: 'clamp(1.6rem, 6vw, 2.1rem)', margin: 0, fontWeight: '900', textShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+          <div className="glass-panel panel-titulo-intruso">
+            <h2 className="titulo-intruso-txt" style={{ color: '#334155', fontSize: '1.7rem', margin: 0, fontWeight: '900', textShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
               {retoActual.titulo}
             </h2>
           </div>
 
           {/* Cuadrícula de Opciones (tamaño según nivel) */}
-          <div className={estadoRespuesta === 'incorrecto' ? 'anim-shake' : ''} style={{ 
+          <div className={`grid-opciones-intruso ${estadoRespuesta === 'incorrecto' ? 'anim-shake' : ''}`} style={{ 
             display: 'grid', 
             gridTemplateColumns: `repeat(${nivel.columnas}, 1fr)`, 
-            gap: '16px', 
+            gap: '14px', 
             justifyContent: 'center',
-            padding: '10px'
+            padding: '8px'
           }}>
             {retoActual.opciones.map((opcion) => {
               const esSeleccionado = seleccionado === opcion.id

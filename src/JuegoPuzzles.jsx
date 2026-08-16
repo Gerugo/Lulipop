@@ -188,41 +188,103 @@ export default function JuegoPuzzles({ perfil, onVolver }) {
 
         .anim-victoria { animation: victoria 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         @keyframes victoria { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
-        .anim-estrella { animation: rotaEstrella 3s linear infinite; }
-        @keyframes rotaEstrella { 100% { transform: rotate(360deg); } }
+        .btn-header-puzzles {
+          width: 55px; height: 55px; border-radius: 18px; backgroundColor: #FFFFFF; color: #FF5E62; 
+          border: none; font-size: 24px; cursor: pointer; boxShadow: 0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15);
+          display: flex; align-items: center; justify-content: center;
+        }
+
+        .panel-reto-puzzles {
+          background-color: rgba(255, 255, 255, 0.85);
+          padding: 8px 24px;
+          border-radius: 24px; 
+          backdrop-filter: blur(10px);
+          margin-bottom: 16px;
+          border: 4px solid white;
+          box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+          text-align: center;
+        }
+
+        @media (max-height: 550px) {
+          .btn-header-puzzles {
+            width: 42px !important;
+            height: 42px !important;
+            font-size: 18px !important;
+            border-radius: 12px !important;
+          }
+          .header-barra-puzzles {
+            top: 10px !important;
+            left: 12px !important;
+            right: 12px !important;
+          }
+          .area-juego-puzzles {
+            margin-top: 48px !important;
+            max-width: 600px !important;
+          }
+          .panel-reto-puzzles {
+            padding: 4px 16px !important;
+            margin-bottom: 8px !important;
+            border-radius: 16px !important;
+          }
+          .titulo-puzzles-txt {
+            font-size: 1.1rem !important;
+          }
+          .pieza-3d {
+            width: 60px !important;
+            height: 60px !important;
+            border-radius: 16px !important;
+          }
+          .contenedor-piezas-puzzles {
+            gap: 10px !important;
+            margin-bottom: 8px !important;
+          }
+          .grid-siluetas-puzzles {
+            gap: 10px !important;
+            padding: 10px !important;
+            border-radius: 24px !important;
+          }
+          .silueta-box {
+            width: 64px !important;
+            height: 64px !important;
+            border-radius: 18px !important;
+          }
+        }
       `}</style>
 
       {piezaArrastrada && (
         <div style={{
           position: 'fixed', left: posicion.x - offset.x, top: posicion.y - offset.y,
-          width: '100px', height: '100px', backgroundColor: piezaArrastrada.color,
-          borderRadius: '25px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: `0 25px 35px rgba(0,0,0,0.3), 0 12px 0 ${piezaArrastrada.sombra}`,
-          border: '4px solid white', pointerEvents: 'none', zIndex: 1000,
-          transform: 'scale(1.15) translateY(-10px)'
+          width: '75px', height: '75px', backgroundColor: piezaArrastrada.color,
+          borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: `0 20px 30px rgba(0,0,0,0.3), 0 8px 0 ${piezaArrastrada.sombra}`,
+          border: '3px solid white', pointerEvents: 'none', zIndex: 1000,
+          transform: 'scale(1.15) translateY(-6px)'
         }}>
           <img src={piezaArrastrada.src} alt={piezaArrastrada.nombre} style={{ width: '70%', height: '70%', objectFit: 'contain' }} />
         </div>
       )}
 
-      <div style={{ position: 'absolute', top: '25px', left: '20px', right: '20px', display: 'flex', justifyContent: 'space-between', zIndex: 50 }}>
-        <button onClick={nivelId ? () => setNivelId(null) : onVolver} style={{
-          width: '55px', height: '55px', borderRadius: '18px', backgroundColor: '#FFFFFF', color: '#FF5E62', 
-          border: 'none', fontSize: '24px', cursor: 'pointer', boxShadow: '0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}>❮</button>
+      <div className="header-barra-puzzles" style={{ position: 'absolute', top: '18px', left: '20px', right: '20px', display: 'flex', justifyContent: 'space-between', zIndex: 50 }}>
+        <button 
+          onClick={nivelId ? () => setNivelId(null) : onVolver} 
+          className="btn-header-puzzles"
+        >
+          ❮
+        </button>
 
         <div style={{
-          height: '55px', padding: '0 20px', borderRadius: '18px', backgroundColor: 'rgba(255,255,255,0.9)',
-          display: 'flex', alignItems: 'center', gap: '10px', fontSize: '22px', fontWeight: '900',
-          boxShadow: '0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)'
+          height: '48px', padding: '0 16px', borderRadius: '16px', backgroundColor: 'rgba(255,255,255,0.9)',
+          display: 'flex', alignItems: 'center', gap: '8px', fontSize: '20px', fontWeight: '900',
+          boxShadow: '0 5px 0 #E0E0E0, 0 8px 12px rgba(0,0,0,0.12)'
         }}>{nivel.emoji}</div>
 
-        <button onClick={iniciarJuego} style={{
-          height: '55px', padding: '0 20px', borderRadius: '18px', backgroundColor: '#FFFFFF', color: '#333', 
-          border: 'none', fontSize: '22px', fontWeight: '900', cursor: 'pointer', boxShadow: '0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)',
-          display: 'flex', alignItems: 'center'
-        }}>🧹</button>
+        <button 
+          onClick={iniciarJuego} 
+          className="btn-header-puzzles" 
+          style={{ color: '#333', fontSize: '20px' }}
+        >
+          🧹
+        </button>
       </div>
 
       {victoria && (
@@ -232,21 +294,21 @@ export default function JuegoPuzzles({ perfil, onVolver }) {
           zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', boxSizing: 'border-box'
         }}>
           <div className="anim-victoria" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-            <div className="anim-estrella" style={{ fontSize: '100px', filter: 'drop-shadow(0 10px 10px rgba(0,0,0,0.2))' }}>🌟</div>
-            <h1 style={{ color: '#FFD166', fontSize: 'clamp(2.5rem, 9vw, 4.5rem)', margin: '10px 0', textShadow: '0 6px 0 #CCAC00, 0 10px 20px rgba(0,0,0,0.2)', textTransform: 'uppercase', letterSpacing: '2px' }}>¡Súper!</h1>
-            <p style={{ color: '#4facfe', fontSize: '1.5rem', fontWeight: '900', margin: '0 0 20px 0', backgroundColor: 'white', padding: '10px 30px', borderRadius: '30px', boxShadow: '0 5px 0 #cbd5e1' }}>
+            <div className="anim-estrella" style={{ fontSize: '80px', filter: 'drop-shadow(0 10px 10px rgba(0,0,0,0.2))' }}>🌟</div>
+            <h1 style={{ color: '#FFD166', fontSize: 'clamp(2.2rem, 7vw, 4rem)', margin: '8px 0', textShadow: '0 5px 0 #CCAC00, 0 8px 16px rgba(0,0,0,0.2)', textTransform: 'uppercase', letterSpacing: '2px' }}>¡Súper!</h1>
+            <p style={{ color: '#4facfe', fontSize: '1.25rem', fontWeight: '900', margin: '0 0 16px 0', backgroundColor: 'white', padding: '8px 24px', borderRadius: '25px', boxShadow: '0 4px 0 #cbd5e1' }}>
               ¡Nivel {nivel.nombre} completado!
             </p>
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
               <button onClick={() => setNivelId(null)} style={{
                 backgroundColor: '#FFD166', color: '#7A5C00', border: 'none',
-                padding: '15px 30px', borderRadius: '30px', fontSize: '1.3rem', fontWeight: '900',
-                cursor: 'pointer', boxShadow: '0 8px 0 #CCAC00'
+                padding: '12px 24px', borderRadius: '25px', fontSize: '1.15rem', fontWeight: '900',
+                cursor: 'pointer', boxShadow: '0 6px 0 #CCAC00'
               }}>🔁 Otro nivel</button>
               <button onClick={onVolver} style={{
                 backgroundColor: '#43e97b', color: 'white', border: 'none',
-                padding: '15px 30px', borderRadius: '30px', fontSize: '1.3rem', fontWeight: '900',
-                cursor: 'pointer', boxShadow: '0 8px 0 #27ae60'
+                padding: '12px 24px', borderRadius: '25px', fontSize: '1.15rem', fontWeight: '900',
+                cursor: 'pointer', boxShadow: '0 6px 0 #27ae60'
               }}>¡Continuar! 🚀</button>
             </div>
           </div>
@@ -254,23 +316,19 @@ export default function JuegoPuzzles({ perfil, onVolver }) {
       )}
 
       {!victoria && (
-        <div style={{ marginTop: '110px', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '600px' }}>
-          <div style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.8)', padding: '12px 30px', borderRadius: '30px', 
-            backdropFilter: 'blur(10px)', marginBottom: '40px', border: '4px solid white',
-            boxShadow: '0 15px 30px rgba(0,0,0,0.1)', textAlign: 'center'
-          }}>
-            <h2 style={{ color: '#475569', fontSize: '1.5rem', margin: 0, fontWeight: '900' }}>
+        <div className="area-juego-puzzles" style={{ marginTop: '75px', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '600px' }}>
+          <div className="panel-reto-puzzles">
+            <h2 className="titulo-puzzles-txt" style={{ color: '#475569', fontSize: '1.35rem', margin: 0, fontWeight: '900' }}>
               ¡Arrastra cada figura a su sombra! 🧩
             </h2>
           </div>
 
-          <div style={{ display: 'flex', gap: '15px', marginBottom: '50px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <div className="contenedor-piezas-puzzles" style={{ display: 'flex', gap: '12px', marginBottom: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
             {formasOriginales.map((forma) => {
               const estaUsada = completados.includes(forma.id)
               const estaSiendoArrastrada = piezaArrastrada?.id === forma.id
 
-              if (estaUsada) return <div key={forma.id} style={{ width: '100px', height: '100px', opacity: 0.1 }} />
+              if (estaUsada) return <div key={forma.id} className="pieza-3d" style={{ opacity: 0.1 }} />
 
               return (
                 <div 
@@ -279,7 +337,7 @@ export default function JuegoPuzzles({ perfil, onVolver }) {
                   onPointerDown={(e) => handlePointerDown(e, forma)}
                   style={{
                     backgroundColor: forma.color,
-                    boxShadow: `0 8px 0 ${forma.sombra}, 0 10px 15px rgba(0,0,0,0.1)`,
+                    boxShadow: `0 6px 0 ${forma.sombra}, 0 8px 12px rgba(0,0,0,0.1)`,
                     opacity: estaSiendoArrastrada ? 0.3 : 1,
                   }}
                 >
@@ -289,9 +347,9 @@ export default function JuegoPuzzles({ perfil, onVolver }) {
             })}
           </div>
 
-          <div style={{ 
-            display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px', justifyContent: 'center',
-            backgroundColor: 'rgba(255,255,255,0.3)', padding: '25px', borderRadius: '40px', border: '6px solid rgba(255,255,255,0.5)'
+          <div className="grid-siluetas-puzzles" style={{ 
+            display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px', justifyContent: 'center',
+            backgroundColor: 'rgba(255,255,255,0.4)', padding: '16px', borderRadius: '32px', border: '5px solid rgba(255,255,255,0.6)'
           }}>
             {siluetas.map((silueta) => {
               const estaCompletado = completados.includes(silueta.id)
@@ -303,7 +361,7 @@ export default function JuegoPuzzles({ perfil, onVolver }) {
                   className={`silueta-box ${estaCompletado ? 'silueta-completada' : ''}`}
                   style={{
                     borderColor: estaCompletado ? colorPista : 'rgba(255, 255, 255, 0.7)',
-                    boxShadow: estaCompletado ? `0px 8px 0px ${sombraPista}` : 'inset 0 5px 15px rgba(0,0,0,0.1)'
+                    boxShadow: estaCompletado ? `0px 6px 0px ${sombraPista}` : 'inset 0 4px 10px rgba(0,0,0,0.1)'
                   }}
                 >
                   <img src={silueta.src} alt="Silueta" className="img-silueta" draggable="false" />

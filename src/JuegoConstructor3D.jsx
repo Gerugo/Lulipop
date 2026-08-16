@@ -386,17 +386,65 @@ export default function JuegoConstructor3D({ perfil, onVolver }) {
           transition: transform 0.12s;
         }
         .swatch-color-3d.activo { transform: scale(1.2); box-shadow: 0 0 0 3px #334155, 0 4px 10px rgba(0,0,0,0.2); }
+
+        @media (max-height: 550px) {
+          .btn-header-3d {
+            width: 40px !important;
+            height: 40px !important;
+            font-size: 16px !important;
+            border-radius: 12px !important;
+          }
+          .header-barra-3d {
+            top: 8px !important;
+            left: 10px !important;
+            right: 10px !important;
+          }
+          .badge-reto-3d {
+            padding: 4px 12px !important;
+            border-radius: 14px !important;
+          }
+          .badge-reto-3d div:first-child {
+            font-size: 0.65rem !important;
+          }
+          .badge-reto-3d div:last-child {
+            font-size: 0.8rem !important;
+          }
+          .lienzo-3d-wrap {
+            margin-top: 48px !important;
+          }
+          .barra-inferior-3d {
+            padding: 6px 12px 8px 12px !important;
+            border-radius: 20px 20px 0 0 !important;
+          }
+          .fila-piezas-3d {
+            gap: 6px !important;
+            margin-bottom: 6px !important;
+          }
+          .btn-pieza-3d {
+            width: 44px !important;
+            height: 44px !important;
+            font-size: 1.4rem !important;
+            border-radius: 14px !important;
+          }
+          .fila-colores-3d {
+            gap: 6px !important;
+          }
+          .swatch-color-3d {
+            width: 26px !important;
+            height: 26px !important;
+          }
+        }
       `}</style>
 
       {/* CABECERA */}
-      <div style={{ position: 'absolute', top: '18px', left: '18px', right: '18px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', zIndex: 30 }}>
-        <button onClick={nivelId ? () => setNivelId(null) : onVolver} style={{
+      <div className="header-barra-3d" style={{ position: 'absolute', top: '18px', left: '18px', right: '18px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', zIndex: 30 }}>
+        <button onClick={nivelId ? () => setNivelId(null) : onVolver} className="btn-header-3d" style={{
           width: '52px', height: '52px', borderRadius: '18px', backgroundColor: '#FFFFFF', color: '#FF5E62',
           border: 'none', fontSize: '22px', cursor: 'pointer', boxShadow: '0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
         }}>❮</button>
 
-        <div style={{
+        <div className="badge-reto-3d" style={{
           backgroundColor: 'rgba(255,255,255,0.92)', padding: '8px 18px', borderRadius: '20px',
           boxShadow: '0 8px 16px rgba(0,0,0,0.1)', textAlign: 'center', maxWidth: '62%'
         }}>
@@ -404,7 +452,7 @@ export default function JuegoConstructor3D({ perfil, onVolver }) {
           <div style={{ fontSize: '0.95rem', fontWeight: '900', color: '#334155' }}>{nivel.metaTexto}</div>
         </div>
 
-        <button onClick={vaciarMesa} style={{
+        <button onClick={vaciarMesa} className="btn-header-3d" style={{
           width: '52px', height: '52px', borderRadius: '18px', backgroundColor: '#FFFFFF', color: '#333',
           border: 'none', fontSize: '20px', cursor: 'pointer', boxShadow: '0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
@@ -416,11 +464,12 @@ export default function JuegoConstructor3D({ perfil, onVolver }) {
         ref={mountRef}
         onPointerDown={alPuntoBajar}
         onPointerUp={alPuntoSoltar}
+        className="lienzo-3d-wrap"
         style={{ width: '100%', flex: 1, marginTop: '90px', cursor: 'grab' }}
       />
 
       {!listoParaJugar && (
-        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', fontSize: '2rem' }}>
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', fontSize: '1.5rem', fontWeight: '900', color: '#334155' }}>
           🧱 Preparando la mesa...
         </div>
       )}
@@ -436,13 +485,13 @@ export default function JuegoConstructor3D({ perfil, onVolver }) {
       )}
 
       {/* BARRA INFERIOR: elegir forma y color */}
-      <div style={{
+      <div className="barra-inferior-3d" style={{
         position: 'relative', zIndex: 30, width: '100%', maxWidth: '620px',
         backgroundColor: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(12px)',
         borderRadius: '30px 30px 0 0', padding: '16px 18px 20px 18px', margin: '0 auto',
         boxShadow: '0 -10px 30px rgba(0,0,0,0.12)', boxSizing: 'border-box'
       }}>
-        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '14px', flexWrap: 'wrap' }}>
+        <div className="fila-piezas-3d" style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '14px', flexWrap: 'wrap' }}>
           {TIPOS_PIEZA.map((t) => (
             <button
               key={t.id}
@@ -459,7 +508,7 @@ export default function JuegoConstructor3D({ perfil, onVolver }) {
           </button>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+        <div className="fila-colores-3d" style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
           {COLORES_PIEZA.map((c) => (
             <div
               key={c}

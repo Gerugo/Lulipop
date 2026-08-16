@@ -102,10 +102,46 @@ export default function AlbumPegatinas({ perfil, onVolver, onSeleccionarParaPega
           border: 4px solid white; position: relative;
         }
         .tarjeta-pegatina:hover { transform: scale(1.05); }
+
+        @media (max-height: 550px) {
+          .btn-volver-album {
+            top: 10px !important;
+            left: 10px !important;
+            width: 40px !important;
+            height: 40px !important;
+            font-size: 18px !important;
+            border-radius: 12px !important;
+          }
+          .badge-cabecera-album {
+            margin-top: 8px !important;
+            margin-bottom: 12px !important;
+            padding: 6px 16px !important;
+            border-radius: 18px !important;
+          }
+          .badge-cabecera-album h2 {
+            font-size: 1.15rem !important;
+          }
+          .badge-cabecera-album p {
+            font-size: 0.8rem !important;
+          }
+          .grid-catalogo-album {
+            grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)) !important;
+            gap: 10px !important;
+          }
+          .tarjeta-pegatina {
+            width: 92px !important;
+            height: 105px !important;
+            border-radius: 18px !important;
+          }
+          .emoji-pegatina-txt {
+            font-size: 34px !important;
+          }
+        }
       `}</style>
 
       <button 
         onClick={onVolver}
+        className="btn-volver-album"
         style={{ 
           position: 'absolute', top: '25px', left: '25px', 
           width: '50px', height: '50px', borderRadius: '16px',
@@ -118,7 +154,7 @@ export default function AlbumPegatinas({ perfil, onVolver, onSeleccionarParaPega
         ❮
       </button>
 
-      <div style={{
+      <div className="badge-cabecera-album" style={{
         backgroundColor: 'rgba(255, 255, 255, 0.85)',
         padding: '12px 30px', borderRadius: '25px', backdropFilter: 'blur(10px)',
         marginBottom: '25px', border: '3px solid white', display: 'flex',
@@ -131,7 +167,7 @@ export default function AlbumPegatinas({ perfil, onVolver, onSeleccionarParaPega
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '20px', width: '100%', maxWidth: '600px', paddingBottom: '30px' }}>
+      <div className="grid-catalogo-album" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '20px', width: '100%', maxWidth: '600px', paddingBottom: '30px' }}>
         {catalogoPegatinas.map((pegatina) => {
           const desbloqueada = desbloqueadas.includes(pegatina.id)
 

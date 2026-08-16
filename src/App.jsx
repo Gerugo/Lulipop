@@ -99,24 +99,10 @@ function App() {
     }
 
     return (
-      <div style={{ padding: '50px', textAlign: 'center', fontFamily: 'sans-serif' }}>
-        <h2>¡Bienvenido a Lulipop! 🎉</h2>
-        <p>Sesión iniciada con: <strong>{session.user.email}</strong></p>
-        
-        <button 
-          onClick={() => supabase.auth.signOut()} 
-          style={{ marginTop: '10px', padding: '8px 16px', cursor: 'pointer', backgroundColor: '#f4f4f4', border: '1px solid #ddd', borderRadius: '5px' }}
-        >
-          Cerrar Sesión
-        </button>
-
-        <hr style={{ margin: '40px 0', border: '1px solid #eee' }} />
-        
-        <Perfiles 
-          session={session} 
-          onSeleccionarPerfil={seleccionarPerfil} 
-        />
-      </div>
+      <Perfiles 
+        session={session} 
+        onSeleccionarPerfil={seleccionarPerfil} 
+      />
     )
   }
 

@@ -235,30 +235,71 @@ export default function JuegoArte({ perfil, onVolver }) {
         @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap');
         
         .btn-toolbar {
-          width: 55px;
-          height: 55px;
-          border-radius: 18px;
+          width: 50px;
+          height: 50px;
+          border-radius: 16px;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 24px;
+          font-size: 22px;
           cursor: pointer;
           background: white;
-          box-shadow: 0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.1);
+          box-shadow: 0 5px 0 #E0E0E0, 0 8px 12px rgba(0,0,0,0.1);
           transition: transform 0.1s;
         }
         .btn-toolbar:active {
-          transform: translateY(6px);
+          transform: translateY(4px);
         }
         @keyframes latidoEstelar {
           0% { transform: scale(0.9); }
           50% { transform: scale(1.1); }
           100% { transform: scale(0.9); }
         }
+
+        @media (max-height: 550px) {
+          .btn-volver-arte {
+            top: 10px !important;
+            left: 10px !important;
+            width: 40px !important;
+            height: 40px !important;
+            font-size: 18px !important;
+            border-radius: 12px !important;
+          }
+          .titulo-arte-txt {
+            font-size: 1.1rem !important;
+            margin: 0 0 4px 0 !important;
+          }
+          .card-lienzo-arte {
+            padding: 4px !important;
+            border-radius: 18px !important;
+            margin-bottom: 6px !important;
+          }
+          .canvas-arte-elem {
+            max-height: 50vh !important;
+            width: auto !important;
+            max-width: 80vw !important;
+          }
+          .toolbar-arte-panel {
+            padding: 6px 12px !important;
+            gap: 8px !important;
+            border-radius: 18px !important;
+          }
+          .swatch-color-arte {
+            width: 28px !important;
+            height: 28px !important;
+          }
+          .btn-toolbar {
+            width: 38px !important;
+            height: 38px !important;
+            font-size: 18px !important;
+            border-radius: 12px !important;
+          }
+        }
       `}</style>
 
       <button 
         onClick={handleBack}
+        className="btn-volver-arte"
         style={{ 
           position: 'absolute', top: '20px', left: '20px', 
           width: '50px', height: '50px', borderRadius: '16px',
@@ -275,17 +316,17 @@ export default function JuegoArte({ perfil, onVolver }) {
       {!victoria ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '700px' }}>
           
-          <h2 style={{ color: 'white', fontSize: '1.6rem', margin: '0 0 15px 0', textShadow: '0 2px 5px rgba(0,0,0,0.2)' }}>
+          <h2 className="titulo-arte-txt" style={{ color: 'white', fontSize: '1.5rem', margin: '0 0 10px 0', textShadow: '0 2px 5px rgba(0,0,0,0.2)' }}>
             {nivel.emoji} {nivel.descripcion}
           </h2>
 
-          <div style={{
+          <div className="card-lienzo-arte" style={{
             backgroundColor: 'white',
-            borderRadius: '30px',
-            padding: '10px',
+            borderRadius: '26px',
+            padding: '8px',
             boxShadow: '0 15px 35px rgba(0,0,0,0.2)',
             border: '4px solid white',
-            marginBottom: '15px'
+            marginBottom: '10px'
           }}>
             <canvas 
               ref={canvasRef}
@@ -297,23 +338,26 @@ export default function JuegoArte({ perfil, onVolver }) {
               onTouchStart={iniciarTrazo}
               onTouchMove={trazar}
               onTouchEnd={terminarTrazo}
+              className="canvas-arte-elem"
               style={{
-                borderRadius: '20px',
+                borderRadius: '18px',
                 cursor: herramienta === 'sello' ? 'copy' : 'crosshair',
                 display: 'block',
                 touchAction: 'none',
-                backgroundColor: '#FFF'
+                backgroundColor: '#FFF',
+                maxWidth: '90vw',
+                height: 'auto'
               }}
             />
           </div>
 
-          <div style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.85)',
-            padding: '12px 20px',
-            borderRadius: '25px',
+          <div className="toolbar-arte-panel" style={{
+            backgroundColor: 'rgba(255, 255, 255, 0.88)',
+            padding: '10px 18px',
+            borderRadius: '24px',
             backdropFilter: 'blur(10px)',
             display: 'flex',
-            gap: '15px',
+            gap: '12px',
             alignItems: 'center',
             justifyContent: 'center',
             flexWrap: 'wrap',
@@ -327,9 +371,10 @@ export default function JuegoArte({ perfil, onVolver }) {
               <div 
                 key={c}
                 onClick={() => { setColorActual(c); setHerramienta('pincel'); }}
+                className="swatch-color-arte"
                 style={{
-                  width: '40px',
-                  height: '40px',
+                  width: '36px',
+                  height: '36px',
                   borderRadius: '50%',
                   backgroundColor: c,
                   cursor: 'pointer',

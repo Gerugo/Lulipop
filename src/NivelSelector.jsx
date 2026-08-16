@@ -1,17 +1,16 @@
 import fondoImg from './fondo-lulipop.png'
 
 // Pantalla común de "elige tu nivel" que usan todos los juegos de Lulipop.
-// niveles: [{ id, nombre, descripcion, emoji, color, sombra }]
-// mejores: { [nivelId]: estrellas (0-3) } — viene de useMejoresNiveles
+// Totalmente responsiva para pantallas móviles horizontales y verticales.
 export default function NivelSelector({ onVolver, emojiJuego, titulo, subtitulo, niveles, mejores = {}, onSeleccionar }) {
   return (
-    <div style={{
+    <div className="selector-nivel-raiz" style={{
       minHeight: '100dvh', width: '100vw',
       backgroundImage: `url(${fondoImg})`,
       backgroundSize: 'cover', backgroundPosition: 'center',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       fontFamily: '"Fredoka", sans-serif', position: 'absolute', top: 0, left: 0, zIndex: 10,
-      overflow: 'hidden', userSelect: 'none', padding: '20px', boxSizing: 'border-box'
+      overflowY: 'auto', userSelect: 'none', padding: '16px', boxSizing: 'border-box'
     }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700;900&display=swap');
@@ -24,43 +23,135 @@ export default function NivelSelector({ onVolver, emojiJuego, titulo, subtitulo,
         .glass-panel {
           background: rgba(255, 255, 255, 0.85);
           backdrop-filter: blur(15px);
-          border: 6px solid white;
-          border-radius: 32px;
+          -webkit-backdrop-filter: blur(15px);
+          border: 5px solid white;
+          border-radius: 28px;
           box-shadow: 0 15px 30px rgba(0,0,0,0.12);
         }
 
-        .btn-nivel { cursor: pointer; transition: transform 0.15s cubic-bezier(0.4,0,0.2,1); border: 4px solid rgba(255,255,255,0.9); }
-        .btn-nivel:active { transform: translateY(6px) scale(0.97); }
+        .btn-nivel { 
+          cursor: pointer; 
+          transition: transform 0.15s cubic-bezier(0.4,0,0.2,1); 
+          border: 4px solid rgba(255,255,255,0.9); 
+        }
+        .btn-nivel:active { transform: translateY(4px) scale(0.97); }
+
+        .btn-volver-selector {
+          position: absolute; 
+          top: 20px; 
+          left: 20px;
+          width: 55px; 
+          height: 55px; 
+          border-radius: 18px;
+          background-color: #FFFFFF; 
+          color: #FF5E62; 
+          border: none;
+          font-size: 24px; 
+          cursor: pointer;
+          box-shadow: 0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15);
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          z-index: 30;
+        }
+
+        .layout-selector {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          width: 100%;
+          max-width: 500px;
+        }
+
+        .lista-niveles {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+          width: 100%;
+        }
+
+        /* Adaptación a pantallas de baja altura (móviles en horizontal) */
+        @media (max-height: 550px) {
+          .selector-nivel-raiz {
+            padding: 10px 16px;
+            justify-content: center;
+          }
+          .btn-volver-selector {
+            top: 10px;
+            left: 12px;
+            width: 44px;
+            height: 44px;
+            font-size: 20px;
+            border-radius: 14px;
+          }
+          .layout-selector {
+            max-width: 820px;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+          }
+          .col-info-selector {
+            flex: 0 0 200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+          }
+          .emoji-juego-selector {
+            font-size: 48px !important;
+          }
+          .titulo-juego-selector {
+            font-size: 1.4rem !important;
+            margin: 4px 0 2px !important;
+          }
+          .subtitulo-juego-selector {
+            font-size: 0.85rem !important;
+            margin: 0 !important;
+          }
+          .lista-niveles {
+            flex: 1;
+            gap: 8px;
+          }
+          .btn-nivel {
+            padding: 8px 14px !important;
+            border-radius: 18px !important;
+          }
+          .icono-nivel-caja {
+            width: 42px !important;
+            height: 42px !important;
+            font-size: 22px !important;
+            border-radius: 12px !important;
+          }
+          .nombre-nivel-txt {
+            font-size: 1.05rem !important;
+          }
+          .desc-nivel-txt {
+            font-size: 0.8rem !important;
+          }
+        }
       `}</style>
 
-      <button
-        onClick={onVolver}
-        style={{
-          position: 'absolute', top: '25px', left: '25px',
-          width: '60px', height: '60px', borderRadius: '20px',
-          backgroundColor: '#FFFFFF', color: '#FF5E62', border: 'none',
-          fontSize: '26px', cursor: 'pointer',
-          boxShadow: '0 8px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20
-        }}
-      >
+      <button onClick={onVolver} className="btn-volver-selector">
         ❮
       </button>
 
-      <div className="anim-pop" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '520px' }}>
-        <div style={{ fontSize: '68px', filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.2))', animation: 'flotarSel 3s ease-in-out infinite' }}>
-          {emojiJuego}
+      <div className="anim-pop layout-selector">
+        <div className="col-info-selector">
+          <div className="emoji-juego-selector" style={{ fontSize: '64px', filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.2))', animation: 'flotarSel 3s ease-in-out infinite' }}>
+            {emojiJuego}
+          </div>
+          <h2 className="titulo-juego-selector" style={{ color: '#334155', fontSize: '1.8rem', margin: '8px 0 2px', fontWeight: '900', textAlign: 'center', textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
+            {titulo}
+          </h2>
+          {subtitulo && (
+            <p className="subtitulo-juego-selector" style={{ color: '#64748b', fontSize: '1rem', margin: '0 0 16px', fontWeight: '700', textAlign: 'center' }}>
+              {subtitulo}
+            </p>
+          )}
         </div>
-        <h2 style={{ color: '#334155', fontSize: '1.9rem', margin: '10px 0 2px', fontWeight: '900', textAlign: 'center', textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
-          {titulo}
-        </h2>
-        {subtitulo && (
-          <p style={{ color: '#64748b', fontSize: '1.05rem', margin: '0 0 25px', fontWeight: '700', textAlign: 'center' }}>
-            {subtitulo}
-          </p>
-        )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%', marginTop: subtitulo ? 0 : '20px' }}>
+        <div className="lista-niveles">
           {niveles.map((n) => {
             const estrellas = mejores[n.id] || 0
             return (
@@ -69,24 +160,24 @@ export default function NivelSelector({ onVolver, emojiJuego, titulo, subtitulo,
                 className="btn-nivel glass-panel"
                 onClick={() => onSeleccionar(n.id)}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: '18px', padding: '14px 20px',
+                  display: 'flex', alignItems: 'center', gap: '14px', padding: '12px 18px',
                   textAlign: 'left', width: '100%', boxSizing: 'border-box'
                 }}
               >
-                <div style={{
-                  width: '58px', height: '58px', borderRadius: '18px', flexShrink: 0,
-                  backgroundColor: n.color, boxShadow: `0 6px 0 ${n.sombra}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px'
+                <div className="icono-nivel-caja" style={{
+                  width: '52px', height: '52px', borderRadius: '16px', flexShrink: 0,
+                  backgroundColor: n.color, boxShadow: `0 5px 0 ${n.sombra}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px'
                 }}>
                   {n.emoji}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '1.25rem', fontWeight: '900', color: '#334155' }}>{n.nombre}</div>
+                  <div className="nombre-nivel-txt" style={{ fontSize: '1.15rem', fontWeight: '900', color: '#334155' }}>{n.nombre}</div>
                   {n.descripcion && (
-                    <div style={{ fontSize: '0.9rem', color: '#94a3b8', fontWeight: '700' }}>{n.descripcion}</div>
+                    <div className="desc-nivel-txt" style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: '700' }}>{n.descripcion}</div>
                   )}
                 </div>
-                <div style={{ fontSize: '1.1rem', flexShrink: 0, letterSpacing: '1px' }}>
+                <div style={{ fontSize: '1.05rem', flexShrink: 0, letterSpacing: '1px' }}>
                   {[1, 2, 3].map((i) => (
                     <span key={i}>{i <= estrellas ? '⭐' : '☆'}</span>
                   ))}

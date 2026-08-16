@@ -439,11 +439,59 @@ export default function JuegoTrazo({ perfil, onVolver }) {
         
         .anim-estrella { animation: rotaEstrella 3s linear infinite; }
         @keyframes rotaEstrella { 100% { transform: rotate(360deg); } }
+
+        @media (max-height: 550px) {
+          .btn-header-trazo {
+            width: 40px !important;
+            height: 40px !important;
+            font-size: 18px !important;
+            border-radius: 12px !important;
+          }
+          .header-barra-trazo {
+            top: 8px !important;
+            left: 10px !important;
+            right: 10px !important;
+          }
+          .marcador-trazo {
+            top: 8px !important;
+            padding: 4px 16px !important;
+            font-size: 1.1rem !important;
+            border-radius: 18px !important;
+          }
+          .badge-progreso-trazo {
+            top: 45px !important;
+            padding: 2px 10px !important;
+          }
+          .letras-indicador-trazo {
+            top: 70px !important;
+          }
+          .caja-letra-trazo {
+            width: 28px !important;
+            height: 28px !important;
+            font-size: 15px !important;
+            border-radius: 8px !important;
+          }
+          .barra-inferior-trazo {
+            bottom: 6px !important;
+            padding: 6px 12px !important;
+            gap: 8px !important;
+            border-radius: 20px !important;
+          }
+          .swatch-color-trazo {
+            width: 26px !important;
+            height: 26px !important;
+          }
+          .btn-abc-trazo {
+            padding: 6px 14px !important;
+            font-size: 14px !important;
+            border-radius: 16px !important;
+          }
+        }
       `}</style>
 
       {/* INDICADOR DE PROGRESO DEL NIVEL */}
       {!modoLibre && !nivelCompletoTotal && (
-        <div style={{
+        <div className="badge-progreso-trazo" style={{
           position: 'absolute', top: '90px', left: '50%', transform: 'translateX(-50%)',
           backgroundColor: 'rgba(255, 255, 255, 0.9)', padding: '6px 16px', borderRadius: '20px',
           border: '3px solid white', boxShadow: '0 8px 16px rgba(0,0,0,0.12)',
@@ -464,12 +512,12 @@ export default function JuegoTrazo({ perfil, onVolver }) {
 
       {/* INDICADOR VISUAL DE LETRAS */}
       {textoActual.length > 1 && (
-        <div style={{
+        <div className="letras-indicador-trazo" style={{
           position: 'absolute', top: '140px', left: '50%', transform: 'translateX(-50%)',
           display: 'flex', gap: '8px', zIndex: 20, pointerEvents: 'none'
         }}>
           {textoActual.split('').map((letra, idx) => (
-            <div key={idx} style={{
+            <div key={idx} className="caja-letra-trazo" style={{
               width: '40px', height: '40px', borderRadius: '12px',
               backgroundColor: idx < indiceLetra ? '#43e97b' : idx === indiceLetra ? '#FFD166' : 'rgba(255,255,255,0.85)',
               color: idx === indiceLetra ? '#7A5C00' : idx < indiceLetra ? 'white' : '#64748b',
@@ -582,7 +630,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
       )}
 
       {/* MARCADOR SUPERIOR */}
-      <div style={{
+      <div className="marcador-trazo" style={{
         position: 'absolute', top: '25px', left: '50%', transform: 'translateX(-50%)',
         backgroundColor: 'rgba(255, 255, 255, 0.95)', padding: '12px 30px',
         borderRadius: '30px', border: '4px solid white',
@@ -601,11 +649,11 @@ export default function JuegoTrazo({ perfil, onVolver }) {
       />
 
       {/* BOTONES SUPERIORES */}
-      <div style={{ 
+      <div className="header-barra-trazo" style={{ 
         position: 'absolute', top: '25px', left: '20px', right: '20px', 
         display: 'flex', justifyContent: 'space-between', zIndex: 10, pointerEvents: 'none' 
       }}>
-        <button onClick={handleBack} style={{
+        <button onClick={handleBack} className="btn-header-trazo" style={{
           width: '55px', height: '55px', borderRadius: '18px',
           backgroundColor: '#FFFFFF', color: '#FF5E62', border: 'none', 
           fontSize: '24px', cursor: 'pointer', pointerEvents: 'auto',
@@ -613,7 +661,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>❮</button>
 
-        <button onClick={inicializarCanvas} style={{
+        <button onClick={inicializarCanvas} className="btn-header-trazo" style={{
           height: '55px', padding: '0 20px', borderRadius: '18px',
           backgroundColor: '#FFFFFF', color: '#333', border: 'none', 
           fontSize: '22px', fontWeight: '900', cursor: 'pointer', pointerEvents: 'auto',
@@ -623,7 +671,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
       </div>
 
       {/* MENÚ INFERIOR */}
-      <div style={{
+      <div className="barra-inferior-trazo" style={{
         position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)',
         backgroundColor: 'rgba(255, 255, 255, 0.9)', padding: '15px 20px',
         borderRadius: '35px', backdropFilter: 'blur(20px)', border: '4px solid white',
@@ -633,7 +681,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
       }}>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
           {colores.map(c => (
-            <div key={c.id} onClick={() => setColorTrazo(c.id)} style={{
+            <div key={c.id} onClick={() => setColorTrazo(c.id)} className="swatch-color-trazo" style={{
               width: '42px', height: '42px', borderRadius: '50%', backgroundColor: c.id, 
               cursor: 'pointer', border: colorTrazo === c.id ? '4px solid white' : '3px solid rgba(255,255,255,0.8)',
               boxShadow: colorTrazo === c.id ? `0 0 18px ${c.id}` : `0 4px 0 ${c.shadow}`,
@@ -642,7 +690,7 @@ export default function JuegoTrazo({ perfil, onVolver }) {
             }} />
           ))}
         </div>
-        <button onClick={() => setMostrarMenu(true)} style={{
+        <button onClick={() => setMostrarMenu(true)} className="btn-abc-trazo" style={{
           backgroundColor: '#FFD166', color: '#7A5C00', border: 'none',
           padding: '12px 22px', borderRadius: '25px', fontSize: '20px',
           fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
