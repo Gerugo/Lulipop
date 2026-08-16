@@ -202,20 +202,22 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
 
   return (
     <div className="perfiles-contenedor-raiz" style={{ 
-      minHeight: '100dvh', 
+      position: 'fixed',
+      top: 0, left: 0, right: 0, bottom: 0,
       width: '100vw',
+      height: '100%',
+      maxHeight: '100dvh',
       backgroundImage: `url(${fondoImg})`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
-      position: 'absolute',
-      top: 0, left: 0,
       boxSizing: 'border-box',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       fontFamily: '"Fredoka", sans-serif',
       overflowY: 'auto',
-      WebkitOverflowScrolling: 'touch'
+      WebkitOverflowScrolling: 'touch',
+      padding: '16px 20px 90px 20px'
     }}>
       
       <style>{`
@@ -229,13 +231,10 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
           50% { transform: translateY(-5px); }
         }
 
-        .perfiles-contenedor-raiz {
-          padding: 16px 20px;
-        }
-
         .glass-panel {
-          background: rgba(255, 255, 255, 0.82);
+          background: rgba(255, 255, 255, 0.88);
           backdrop-filter: blur(15px);
+          -webkit-backdrop-filter: blur(15px);
           border: 4px solid rgba(255, 255, 255, 0.95);
           border-radius: 30px;
           box-shadow: 0 15px 35px rgba(0,0,0,0.12);
@@ -302,19 +301,28 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
           background-color: white;
         }
 
-        /* AJUSTES PARA DISPOSITIVOS HORIZONTALES / BAJA ALTURA */
-        @media (max-height: 550px) {
+        /* AJUSTES PARA DISPOSITIVOS MÓVILES (HORIZONTAL Y VERTICAL) */
+        @media (max-height: 650px), (max-width: 600px) {
           .perfiles-contenedor-raiz {
-            padding: 8px 16px 20px 16px;
+            padding: 8px 14px 90px 14px !important;
           }
           .cabecera-perfiles {
-            margin-bottom: 6px;
+            margin-bottom: 6px !important;
           }
           .logo-img-perfiles {
-            width: 90px;
+            width: 80px !important;
           }
           .panel-principal-perfiles {
-            padding: 14px 18px !important;
+            padding: 12px 14px !important;
+          }
+          .panel-formulario-perfil {
+            padding: 14px 16px !important;
+            border-radius: 24px !important;
+            margin-bottom: 24px !important;
+          }
+          .titulo-formulario-perfil {
+            font-size: 1.2rem !important;
+            margin-bottom: 10px !important;
           }
           .titulo-perfiles {
             font-size: 1.3rem !important;
@@ -343,6 +351,31 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
             font-size: 0.85rem !important;
             margin-top: 6px !important;
             border-radius: 14px !important;
+          }
+          .input-moderno {
+            padding: 9px 12px !important;
+            font-size: 0.95rem !important;
+            border-radius: 12px !important;
+          }
+          .btn-limite-minutos {
+            padding: 4px 8px !important;
+            font-size: 0.75rem !important;
+            border-radius: 10px !important;
+          }
+          .avatar-picker-item {
+            font-size: 26px !important;
+            padding: 3px !important;
+            border-radius: 12px !important;
+          }
+          .btn-submit-perfil {
+            padding: 12px 16px !important;
+            font-size: 1.05rem !important;
+            border-radius: 16px !important;
+          }
+          .btn-cancelar-perfil {
+            padding: 12px 14px !important;
+            font-size: 0.95rem !important;
+            border-radius: 16px !important;
           }
         }
       `}</style>
@@ -498,13 +531,13 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
 
         {/* 2. FORMULARIO PARA AÑADIR O EDITAR NIÑOS */}
         {perfiles.length === 0 || mostrarFormulario ? (
-          <div className="glass-panel anim-fade-in" style={{ padding: '22px 24px', width: '100%', maxWidth: '520px', boxSizing: 'border-box' }}>
-            <h3 style={{ margin: '0 0 16px 0', color: '#1E293B', fontSize: '1.4rem', fontWeight: '900', textAlign: 'center' }}>
+          <div className="glass-panel panel-formulario-perfil anim-fade-in" style={{ padding: '20px 22px', width: '100%', maxWidth: '520px', boxSizing: 'border-box', marginBottom: '24px' }}>
+            <h3 className="titulo-formulario-perfil" style={{ margin: '0 0 14px 0', color: '#1E293B', fontSize: '1.35rem', fontWeight: '900', textAlign: 'center' }}>
               {perfilEditando ? `Editar a ${perfilEditando.nombre} ✏️` : (perfiles.length === 0 ? '¡Crea el primer explorador! 🚀' : 'Añadir Nuevo Explorador 🚀')}
             </h3>
             
-            <form onSubmit={guardarPerfil} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ display: 'flex', gap: '12px' }}>
+            <form onSubmit={guardarPerfil} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', gap: '10px' }}>
                 <div style={{ flex: 2 }}>
                   <label style={{ fontWeight: '900', color: '#334155', marginLeft: '4px', marginBottom: '4px', display: 'block', fontSize: '0.9rem' }}>Nombre</label>
                   <input type="text" placeholder="Ej. Mateo" value={nombre} onChange={(e) => setNombre(e.target.value)} className="input-moderno" required />
@@ -532,6 +565,7 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
                       key={op.etiqueta}
                       type="button"
                       onClick={() => setLimiteMinutos(op.valor)}
+                      className="btn-limite-minutos"
                       style={{
                         padding: '6px 12px', borderRadius: '12px', cursor: 'pointer',
                         fontFamily: '"Fredoka", sans-serif', fontWeight: '800', fontSize: '0.85rem',
@@ -547,16 +581,17 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
               </div>
 
               <div style={{ textAlign: 'center' }}>
-                <p style={{ margin: '0 0 8px 0', fontWeight: '900', color: '#334155', fontSize: '0.95rem' }}>Elige un Avatar:</p>
-                <div style={{ display: 'flex', gap: '8px', fontSize: '32px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <p style={{ margin: '0 0 6px 0', fontWeight: '900', color: '#334155', fontSize: '0.92rem' }}>Elige un Avatar:</p>
+                <div style={{ display: 'flex', gap: '6px', fontSize: '30px', justifyContent: 'center', flexWrap: 'wrap' }}>
                   {avataresDisponibles.map((emoji) => (
                     <span 
-                      key={emoji} onClick={() => setAvatarSeleccionado(emoji)} 
+                      key={emoji} onClick={() => setAvatarSeleccionado(emoji)}
+                      className="avatar-picker-item"
                       style={{ 
-                        cursor: 'pointer', padding: '6px', 
+                        cursor: 'pointer', padding: '5px', 
                         backgroundColor: avatarSeleccionado === emoji ? 'white' : 'rgba(255,255,255,0.5)',
                         border: avatarSeleccionado === emoji ? '3px solid #a18cd1' : '3px solid transparent', 
-                        borderRadius: '18px', transition: 'all 0.2s',
+                        borderRadius: '16px', transition: 'all 0.2s',
                         transform: avatarSeleccionado === emoji ? 'scale(1.15)' : 'scale(1)',
                         boxShadow: avatarSeleccionado === emoji ? '0 6px 12px rgba(0,0,0,0.12)' : 'none'
                       }}
@@ -571,7 +606,8 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
                 {perfiles.length > 0 && (
                   <button 
                     type="button" onClick={() => { setMostrarFormulario(false); setPerfilEditando(null); }}
-                    style={{ flex: 1, backgroundColor: '#FFFFFF', color: '#64748b', padding: '10px', border: '2px solid #E2E8F0', borderRadius: '18px', cursor: 'pointer', fontSize: '0.95rem', fontWeight: '900', boxShadow: '0 4px 0 #CBD5E1', fontFamily: '"Fredoka", sans-serif' }}
+                    className="btn-cancelar-perfil"
+                    style={{ flex: 1, backgroundColor: '#FFFFFF', color: '#64748b', padding: '12px', border: '2px solid #E2E8F0', borderRadius: '18px', cursor: 'pointer', fontSize: '1rem', fontWeight: '900', boxShadow: '0 4px 0 #CBD5E1', fontFamily: '"Fredoka", sans-serif' }}
                   >
                     Cancelar
                   </button>
@@ -579,9 +615,10 @@ export default function Perfiles({ session, onSeleccionarPerfil }) {
                 <button 
                   type="submit" 
                   disabled={guardandoPerfil}
-                  style={{ flex: 2, backgroundColor: '#4ade80', color: 'white', padding: '10px', border: '2px solid white', borderRadius: '18px', cursor: 'pointer', fontSize: '1.05rem', fontWeight: '900', boxShadow: '0 5px 0 #27ae60', fontFamily: '"Fredoka", sans-serif' }}
+                  className="btn-submit-perfil"
+                  style={{ flex: 2, backgroundColor: '#4ade80', color: 'white', padding: '12px', border: '2px solid white', borderRadius: '18px', cursor: 'pointer', fontSize: '1.1rem', fontWeight: '900', boxShadow: '0 5px 0 #27ae60', fontFamily: '"Fredoka", sans-serif' }}
                 >
-                  {guardandoPerfil ? 'Guardando...' : (perfilEditando ? '¡Guardar cambios! ✨' : '¡Guardar! ✨')}
+                  {guardandoPerfil ? 'Guardando... ⏳' : (perfilEditando ? '¡Guardar cambios! ✨' : '¡Crear explorador! 🚀')}
                 </button>
               </div>
             </form>

@@ -30,16 +30,17 @@ export default function Auth() {
 
   return (
     <div className="auth-contenedor-raiz" style={{
-      minHeight: '100dvh',
+      position: 'fixed',
+      top: 0, left: 0, right: 0, bottom: 0,
       width: '100vw',
+      height: '100%',
+      maxHeight: '100dvh',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
       fontFamily: '"Fredoka", sans-serif',
-      position: 'absolute',
-      top: 0, left: 0,
-      padding: '16px',
+      padding: '16px 16px 60px 16px',
       boxSizing: 'border-box',
       overflowY: 'auto',
       WebkitOverflowScrolling: 'touch'
