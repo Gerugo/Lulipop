@@ -413,25 +413,24 @@ export default function JuegoEspacio({ perfil, onVolver }) {
           100% { opacity: 0.35; transform: scale(0.9); }
         }
 
-        /* ESTRELLA FUGAZ */
+        /* ESTRELLA FUGAZ 3D CON COLA ARCOÍRIS */
         .estrella-fugaz-anim {
           position: absolute;
-          top: 15%;
-          left: -100px;
-          width: 90px;
-          height: 3px;
-          background: linear-gradient(90deg, #FFFFFF, rgba(255, 209, 102, 0.8), transparent);
-          border-radius: 50%;
-          transform: rotate(-30deg);
-          animation: disparoFugaz 7s ease-in-out infinite;
-          opacity: 0;
+          width: clamp(140px, 22vw, 220px);
+          height: auto;
           pointer-events: none;
+          z-index: 5;
+          transform: rotate(18deg);
+          animation: vueloFugazSuave 12s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+          opacity: 0;
+          filter: drop-shadow(0 0 16px rgba(255, 209, 102, 0.7));
         }
-        @keyframes disparoFugaz {
-          0% { left: -100px; top: 12%; opacity: 0; }
-          10% { opacity: 1; }
-          25% { left: 110vw; top: 45%; opacity: 0; }
-          100% { left: 110vw; top: 45%; opacity: 0; }
+        @keyframes vueloFugazSuave {
+          0% { left: -220px; top: 10%; opacity: 0; transform: rotate(18deg) scale(0.7); }
+          5% { opacity: 1; transform: rotate(18deg) scale(1); }
+          35% { left: 105vw; top: 48%; opacity: 1; transform: rotate(18deg) scale(1); }
+          38% { left: 115vw; top: 52%; opacity: 0; transform: rotate(18deg) scale(0.8); }
+          100% { left: 115vw; top: 52%; opacity: 0; }
         }
 
         .anim-pop { animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
@@ -483,6 +482,7 @@ export default function JuegoEspacio({ perfil, onVolver }) {
           .badge-cabecera-espacio { padding: 4px 14px !important; font-size: 0.95rem !important; border-radius: 16px !important; }
           .nave-recolector { width: 90px !important; height: 90px !important; }
           .alien-aterrizaje { width: 75px !important; height: 75px !important; }
+          .estrella-fugaz-anim { width: clamp(100px, 18vw, 150px) !important; }
         }
       `}</style>
 
@@ -502,9 +502,22 @@ export default function JuegoEspacio({ perfil, onVolver }) {
       <div className="estrella-fondo" style={{ top: '75%', left: '60%', width: '5px', height: '5px', animationDelay: '1.5s', backgroundColor: '#FFD166' }} />
       <div className="estrella-fondo" style={{ top: '18%', left: '35%', width: '6px', height: '6px', animationDelay: '0.4s' }} />
 
-      {/* ESTRELLA FUGAZ ANIMADA */}
-      <div className="estrella-fugaz-anim" />
-      <div className="estrella-fugaz-anim" style={{ animationDelay: '3.5s', top: '35%' }} />
+      {/* ESTRELLA FUGAZ 3D ANIMADA CON COLA CORRECTA */}
+      <div className="estrella-fugaz-anim">
+        <img 
+          src={`${baseUrl}assets/estrella-fugaz.png`} 
+          alt="Estrella Fugaz" 
+          style={{ width: '100%', height: 'auto', display: 'block' }} 
+        />
+      </div>
+
+      <div className="estrella-fugaz-anim" style={{ animationDelay: '6s', top: '30%' }}>
+        <img 
+          src={`${baseUrl}assets/estrella-fugaz.png`} 
+          alt="Estrella Fugaz" 
+          style={{ width: '100%', height: 'auto', display: 'block' }} 
+        />
+      </div>
 
       {/* PARTÍCULAS FLOTANTES */}
       {particulas.map(p => (
