@@ -491,11 +491,11 @@ export default function JuegoMusica({ perfil, onVolver }) {
           border: '6px solid white', boxShadow: '0 20px 40px rgba(0,0,0,0.15)', maxWidth: '580px', width: '100%',
           textAlign: 'center', zIndex: 30, boxSizing: 'border-box'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '6px' }}>
             <img 
-              src={`${baseUrl}assets/mascota_musica.jpg`} 
-              alt="Mascota Musical"
-              style={{ width: '95px', height: '95px', borderRadius: '24px', border: '4px solid white', boxShadow: '0 8px 18px rgba(0,0,0,0.15)', objectFit: 'cover' }}
+              src={`${baseUrl}assets/icono-musica.png`} 
+              alt="Piano Mágico"
+              style={{ width: '105px', height: '105px', objectFit: 'contain', filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.15))' }}
             />
           </div>
           <h2 style={{ color: '#1E293B', fontSize: '1.8rem', fontWeight: '900', margin: '4px 0 6px 0' }}>

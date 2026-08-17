@@ -327,7 +327,7 @@ export default function MundoLulipop({ perfil, onVolver }) {
         </div>
 
         <div className="menu-btn-3d" onClick={() => setJuegoActivo('musica')} title="Piano Mágico" style={{ backgroundColor: '#FF6B81', boxShadow: 'inset 0px 4px 0px #FFA4B2, 0px 5px 0px #D9385E' }}>
-          <img src={getAssetUrl('piano_clay.jpg')} alt="Música" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '15px' }} onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
+          <img src={getAssetUrl('icono-musica.png')} alt="Música" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
           <span style={{ display: 'none', fontSize: '32px' }}>🎹</span>
         </div>
 
