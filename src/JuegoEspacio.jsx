@@ -377,7 +377,7 @@ export default function JuegoEspacio({ perfil, onVolver }) {
   return (
     <div className="juego-espacio-raiz" style={{
       height: '100dvh', minHeight: '100dvh', width: '100vw',
-      background: 'radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%)',
+      background: 'radial-gradient(circle at 50% 20%, #2e1065 0%, #1e1b4b 45%, #0f172a 100%)',
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10,
       display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
       alignItems: 'center', fontFamily: '"Fredoka", sans-serif',
@@ -385,6 +385,54 @@ export default function JuegoEspacio({ perfil, onVolver }) {
     }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700;900&display=swap');
+
+        /* ANIMACIONES DE NEBULOSA Y ESTRELLAS */
+        .nebulosa-globo {
+          position: absolute;
+          border-radius: 50%;
+          filter: blur(70px);
+          opacity: 0.45;
+          pointer-events: none;
+          animation: flotarNebulosa 8s ease-in-out infinite alternate;
+        }
+        @keyframes flotarNebulosa {
+          0% { transform: translate(0, 0) scale(1); }
+          100% { transform: translate(25px, -20px) scale(1.15); }
+        }
+
+        .estrella-fondo {
+          position: absolute;
+          border-radius: 50%;
+          background-color: white;
+          pointer-events: none;
+          animation: parpadeoEstrella 3s ease-in-out infinite alternate;
+        }
+        @keyframes parpadeoEstrella {
+          0% { opacity: 0.25; transform: scale(0.8); }
+          50% { opacity: 1; transform: scale(1.4); filter: drop-shadow(0 0 6px #FFF); }
+          100% { opacity: 0.35; transform: scale(0.9); }
+        }
+
+        /* ESTRELLA FUGAZ */
+        .estrella-fugaz-anim {
+          position: absolute;
+          top: 15%;
+          left: -100px;
+          width: 90px;
+          height: 3px;
+          background: linear-gradient(90deg, #FFFFFF, rgba(255, 209, 102, 0.8), transparent);
+          border-radius: 50%;
+          transform: rotate(-30deg);
+          animation: disparoFugaz 7s ease-in-out infinite;
+          opacity: 0;
+          pointer-events: none;
+        }
+        @keyframes disparoFugaz {
+          0% { left: -100px; top: 12%; opacity: 0; }
+          10% { opacity: 1; }
+          25% { left: 110vw; top: 45%; opacity: 0; }
+          100% { left: 110vw; top: 45%; opacity: 0; }
+        }
 
         .anim-pop { animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
         @keyframes popIn { 0% { transform: scale(0.85); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
@@ -437,6 +485,26 @@ export default function JuegoEspacio({ perfil, onVolver }) {
           .alien-aterrizaje { width: 75px !important; height: 75px !important; }
         }
       `}</style>
+
+      {/* NEBULOSAS MÁGICAS DE COLORES EN EL FONDO */}
+      <div className="nebulosa-globo" style={{ width: '320px', height: '320px', backgroundColor: '#EC4899', top: '-60px', left: '-50px' }} />
+      <div className="nebulosa-globo" style={{ width: '380px', height: '380px', backgroundColor: '#8B5CF6', bottom: '-80px', right: '-60px', animationDelay: '-3s' }} />
+      <div className="nebulosa-globo" style={{ width: '280px', height: '280px', backgroundColor: '#06B6D4', top: '30%', right: '15%', opacity: 0.35, animationDelay: '-5s' }} />
+      <div className="nebulosa-globo" style={{ width: '220px', height: '220px', backgroundColor: '#F59E0B', bottom: '15%', left: '20%', opacity: 0.25, animationDelay: '-2s' }} />
+
+      {/* ESTRELLAS TITILANTES DECORATIVAS EN EL FONDO */}
+      <div className="estrella-fondo" style={{ top: '12%', left: '15%', width: '5px', height: '5px', animationDelay: '0s' }} />
+      <div className="estrella-fondo" style={{ top: '22%', left: '80%', width: '7px', height: '7px', animationDelay: '1.2s', backgroundColor: '#FFD166' }} />
+      <div className="estrella-fondo" style={{ top: '45%', left: '10%', width: '6px', height: '6px', animationDelay: '0.6s' }} />
+      <div className="estrella-fondo" style={{ top: '65%', left: '88%', width: '5px', height: '5px', animationDelay: '1.8s', backgroundColor: '#F472B6' }} />
+      <div className="estrella-fondo" style={{ top: '80%', left: '25%', width: '6px', height: '6px', animationDelay: '0.9s', backgroundColor: '#38BDF8' }} />
+      <div className="estrella-fondo" style={{ top: '30%', left: '48%', width: '4px', height: '4px', animationDelay: '2.1s' }} />
+      <div className="estrella-fondo" style={{ top: '75%', left: '60%', width: '5px', height: '5px', animationDelay: '1.5s', backgroundColor: '#FFD166' }} />
+      <div className="estrella-fondo" style={{ top: '18%', left: '35%', width: '6px', height: '6px', animationDelay: '0.4s' }} />
+
+      {/* ESTRELLA FUGAZ ANIMADA */}
+      <div className="estrella-fugaz-anim" />
+      <div className="estrella-fugaz-anim" style={{ animationDelay: '3.5s', top: '35%' }} />
 
       {/* PARTÍCULAS FLOTANTES */}
       {particulas.map(p => (
