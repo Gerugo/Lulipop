@@ -16,6 +16,7 @@ const JuegoCocina = lazy(() => import('./JuegoCocina'))
 const JuegoConstructor3D = lazy(() => import('./JuegoConstructor3D'))
 const JuegoRunner = lazy(() => import('./JuegoRunner'))
 const JuegoMusica = lazy(() => import('./JuegoMusica'))
+const JuegoEspacio = lazy(() => import('./JuegoEspacio'))
 
 function CargandoJuego() {
   return (
@@ -108,6 +109,7 @@ export default function MundoLulipop({ perfil, onVolver }) {
         {juegoActivo === 'constructor3d' && <JuegoConstructor3D perfil={perfil} onVolver={() => setJuegoActivo(null)} />}
         {juegoActivo === 'runner' && <JuegoRunner perfil={perfil} onVolver={() => setJuegoActivo(null)} />}
         {juegoActivo === 'musica' && <JuegoMusica perfil={perfil} onVolver={() => setJuegoActivo(null)} />}
+        {juegoActivo === 'espacio' && <JuegoEspacio perfil={perfil} onVolver={() => setJuegoActivo(null)} />}
       </Suspense>
     )
   }
@@ -329,6 +331,11 @@ export default function MundoLulipop({ perfil, onVolver }) {
         <div className="menu-btn-3d" onClick={() => setJuegoActivo('musica')} title="Piano Mágico" style={{ backgroundColor: '#FF6B81', boxShadow: 'inset 0px 4px 0px #FFA4B2, 0px 5px 0px #D9385E' }}>
           <img src={getAssetUrl('icono-musica.png')} alt="Música" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
           <span style={{ display: 'none', fontSize: '32px' }}>🎹</span>
+        </div>
+
+        <div className="menu-btn-3d" onClick={() => setJuegoActivo('espacio')} title="Aventura Espacial" style={{ backgroundColor: '#38ef7d', boxShadow: 'inset 0px 4px 0px #70f5a2, 0px 5px 0px #11998e' }}>
+          <img src={getAssetUrl('icono-espacio.png')} alt="Espacio" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }} />
+          <span style={{ display: 'none', fontSize: '32px' }}>🚀</span>
         </div>
 
       </div>
