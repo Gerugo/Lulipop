@@ -41,7 +41,7 @@ const CONSTELACIONES = [
   },
   {
     id: 'cohete',
-    nombre: 'Cohete Espacial',
+    nombre: 'Cohete Estelar',
     emoji: '🚀',
     puntos: [
       { x: 50, y: 15, label: '1' },
@@ -102,7 +102,7 @@ export default function JuegoEspacio({ perfil, onVolver }) {
   const META_GEMAS = 12
 
   // Estado Nivel 3 (Aterrizaje)
-  const [alturaNave, setAlturaNave] = useState(15) // % desde arriba
+  const [pasoAterrizaje, setPasoAterrizaje] = useState(0) // 0 a 4
   const [aterrizado, setAterrizado] = useState(false)
   const [propulsion, setPropulsion] = useState(false)
 
@@ -154,16 +154,16 @@ export default function JuegoEspacio({ perfil, onVolver }) {
 
       osc.type = 'sawtooth'
       osc.frequency.setValueAtTime(110, now)
-      osc.frequency.linearRampToValueAtTime(180, now + 0.25)
+      osc.frequency.linearRampToValueAtTime(220, now + 0.3)
 
-      gain.gain.setValueAtTime(0.3, now)
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35)
+      gain.gain.setValueAtTime(0.35, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4)
 
       osc.connect(gain)
       gain.connect(ctx.destination)
 
       osc.start(now)
-      osc.stop(now + 0.4)
+      osc.stop(now + 0.45)
     } catch { /* continuar */ }
   }, [getAudioContext])
 
@@ -197,7 +197,6 @@ export default function JuegoEspacio({ perfil, onVolver }) {
   const tocarEstrella = (index, e) => {
     const constActual = CONSTELACIONES[indiceConstelacion]
     if (index === pasoEstrella) {
-      // Nota de escala pentatónica en Do
       const notas = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00]
       const freq = notas[index % notas.length]
       reproducirCampana(freq)
@@ -217,7 +216,6 @@ export default function JuegoEspacio({ perfil, onVolver }) {
       }
 
       if (nuevoPaso >= constActual.puntos.length) {
-        // Cerrar el polígono
         setLineasDibujadas(prev => [...prev, {
           desde: constActual.puntos[constActual.puntos.length - 1],
           hasta: constActual.puntos[0]
@@ -242,29 +240,50 @@ export default function JuegoEspacio({ perfil, onVolver }) {
   }
 
   // --- LÓGICA NIVEL 2: RECOLECTOR DE GEMAS ---
+  // Inicializar gemas inmediatamente al entrar
+  useEffect(() => {
+    if (nivelId !== 'recolector') return
+
+    const tipos = ['💎', '⭐', '🍭', '✨', '🪐']
+    const iniciales = [
+      { id: ++gemaIdRef.current, x: 20, y: 15, emoji: tipos[0] },
+      { id: ++gemaIdRef.current, x: 50, y: 30, emoji: tipos[1] },
+      { id: ++gemaIdRef.current, x: 80, y: 10, emoji: tipos[2] },
+      { id: ++gemaIdRef.current, x: 35, y: 48, emoji: tipos[3] },
+      { id: ++gemaIdRef.current, x: 65, y: 62, emoji: tipos[4] }
+    ]
+    setGemas(iniciales)
+  }, [nivelId])
+
+  // Bucle continuo de movimiento y spawn de gemas
   useEffect(() => {
     if (nivelId !== 'recolector' || victoria) return
 
+    const tipos = ['💎', '⭐', '🍭', '✨', '🪐']
+
     const intervaloGemas = setInterval(() => {
       const gId = ++gemaIdRef.current
-      setGemas(prev => [
-        ...prev,
-        {
-          id: gId,
-          x: Math.random() * 80 + 10,
-          y: -10,
-          emoji: ['💎', '⭐', '🍭', '✨', '🪐'][Math.floor(Math.random() * 5)]
-        }
-      ])
-    }, 1100)
+      setGemas(prev => {
+        if (prev.length >= 8) return prev
+        return [
+          ...prev,
+          {
+            id: gId,
+            x: Math.random() * 75 + 12,
+            y: -8,
+            emoji: tipos[Math.floor(Math.random() * tipos.length)]
+          }
+        ]
+      })
+    }, 700)
 
     const intervaloMovimiento = setInterval(() => {
       setGemas(prev => {
         const actualizadas = []
         for (const g of prev) {
-          const ny = g.y + 4.5
-          // Detección de colisión con la nave espacial (naveX +- 14%, y ~ 75%)
-          if (ny >= 70 && ny <= 88 && Math.abs(g.x - naveX) < 16) {
+          const ny = g.y + 0.9 // Descenso suave y relajado
+          // Detección de choque con la nave (nave en Y ~ 75%)
+          if (ny >= 65 && ny <= 88 && Math.abs(g.x - naveX) < 18) {
             reproducirCampana(587.33)
             setGemasRecogidas(c => {
               const nuevo = c + 1
@@ -274,13 +293,13 @@ export default function JuegoEspacio({ perfil, onVolver }) {
               return nuevo
             })
             setPuntos(p => p + 10)
-          } else if (ny < 105) {
+          } else if (ny < 102) {
             actualizadas.push({ ...g, y: ny })
           }
         }
         return actualizadas
       })
-    }, 50)
+    }, 40)
 
     return () => {
       clearInterval(intervaloGemas)
@@ -288,22 +307,41 @@ export default function JuegoEspacio({ perfil, onVolver }) {
     }
   }, [nivelId, victoria, naveX, reproducirCampana, ganarNivel])
 
+  // Atrapado directo al pulsar sobre una estrella
+  const atraparGemaDirecta = (g, e) => {
+    e.stopPropagation()
+    reproducirCampana(659.25)
+    setGemas(prev => prev.filter(x => x.id !== g.id))
+    lanzarParticula(e.clientX || window.innerWidth / 2, e.clientY || window.innerHeight / 2, g.emoji)
+    setGemasRecogidas(c => {
+      const nuevo = c + 1
+      if (nuevo >= META_GEMAS) {
+        ganarNivel()
+      }
+      return nuevo
+    })
+    setPuntos(p => p + 10)
+  }
+
   // --- LÓGICA NIVEL 3: ATERRIZAJE ---
-  const impulsarNave = () => {
+  const alturasNavePorPaso = [10, 26, 42, 58, 70] // % de altura de descenso
+  const alturaActualNave = alturasNavePorPaso[pasoAterrizaje] || 10
+
+  const descenderNave = () => {
     if (aterrizado || victoria) return
     reproducirMotor()
     setPropulsion(true)
-    setTimeout(() => setPropulsion(false), 200)
+    setTimeout(() => setPropulsion(false), 250)
 
-    setAlturaNave(prev => {
-      const nueva = prev + 12
-      if (nueva >= 68) {
-        setAterrizado(true)
-        setTimeout(() => ganarNivel(), 900)
-        return 72
-      }
-      return nueva
-    })
+    const siguientePaso = pasoAterrizaje + 1
+    setPasoAterrizaje(siguientePaso)
+
+    if (siguientePaso >= 4) {
+      setAterrizado(true)
+      setTimeout(() => {
+        ganarNivel()
+      }, 1000)
+    }
   }
 
   const iniciarNivel = (id) => {
@@ -313,10 +351,10 @@ export default function JuegoEspacio({ perfil, onVolver }) {
     setLineasDibujadas([])
     setIndiceConstelacion(0)
     setConstelacionCompletada(false)
-    setGemas([])
     setGemasRecogidas(0)
-    setAlturaNave(15)
+    setPasoAterrizaje(0)
     setAterrizado(false)
+    setNaveX(50)
   }
 
   // SELECTOR DE NIVELES
@@ -371,7 +409,7 @@ export default function JuegoEspacio({ perfil, onVolver }) {
         .particula-espacio {
           position: fixed;
           pointer-events: none;
-          font-size: 32px;
+          font-size: 34px;
           animation: subirParticula 0.8s ease-out forwards;
           z-index: 100;
         }
@@ -382,7 +420,12 @@ export default function JuegoEspacio({ perfil, onVolver }) {
 
         @keyframes flotarAlien {
           0%, 100% { transform: translateY(0) rotate(-3deg); }
-          50% { transform: translateY(-12px) rotate(3deg); }
+          50% { transform: translateY(-10px) rotate(3deg); }
+        }
+
+        @keyframes rayoTractorAnim {
+          0%, 100% { opacity: 0.5; transform: scaleX(1); }
+          50% { opacity: 0.85; transform: scaleX(1.15); }
         }
 
         @media (max-height: 550px) {
@@ -390,8 +433,8 @@ export default function JuegoEspacio({ perfil, onVolver }) {
           .header-barra-espacio { margin-bottom: 4px !important; }
           .btn-header-espacio { width: 40px !important; height: 40px !important; font-size: 18px !important; border-radius: 12px !important; }
           .badge-cabecera-espacio { padding: 4px 14px !important; font-size: 0.95rem !important; border-radius: 16px !important; }
-          .nave-recolector { width: 65px !important; height: 65px !important; }
-          .alien-aterrizaje { width: 85px !important; height: 85px !important; }
+          .nave-recolector { width: 90px !important; height: 90px !important; }
+          .alien-aterrizaje { width: 75px !important; height: 75px !important; }
         }
       `}</style>
 
@@ -439,7 +482,9 @@ export default function JuegoEspacio({ perfil, onVolver }) {
           {nivelId === 'aterrizaje' && (
             <>
               <span style={{ fontSize: '24px' }}>🪐</span>
-              <span style={{ fontWeight: '900', color: '#1E293B', fontSize: '1.15rem' }}>¡Aterriza en el Planeta Dulce!</span>
+              <span style={{ fontWeight: '900', color: '#1E293B', fontSize: '1.15rem' }}>
+                {aterrizado ? '¡Aterrizaje Exitoso!' : `Descenso: ${pasoAterrizaje}/4`}
+              </span>
             </>
           )}
         </div>
@@ -456,7 +501,6 @@ export default function JuegoEspacio({ perfil, onVolver }) {
       {/* --- NIVEL 1: CONSTELACIONES --- */}
       {nivelId === 'constelaciones' && (
         <div style={{ position: 'relative', width: '100%', maxWidth: '650px', height: 'clamp(260px, 60vh, 480px)', margin: 'auto', zIndex: 15 }}>
-          {/* SVG PARA LÍNEAS DE LA CONSTELACIÓN */}
           <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
             {lineasDibujadas.map((l, i) => (
               <line 
@@ -470,7 +514,6 @@ export default function JuegoEspacio({ perfil, onVolver }) {
             ))}
           </svg>
 
-          {/* ESTRELLAS INTERACTIVAS */}
           {constActual.puntos.map((pt, idx) => {
             const esActiva = idx === pasoEstrella
             const esVisitada = idx < pasoEstrella || constelacionCompletada
@@ -505,96 +548,130 @@ export default function JuegoEspacio({ perfil, onVolver }) {
           onPointerMove={(e) => {
             const rect = e.currentTarget.getBoundingClientRect()
             const x = ((e.clientX - rect.left) / rect.width) * 100
-            setNaveX(Math.max(10, Math.min(90, x)))
+            setNaveX(Math.max(12, Math.min(88, x)))
           }}
           onTouchMove={(e) => {
             if (e.touches && e.touches[0]) {
               const rect = e.currentTarget.getBoundingClientRect()
               const x = ((e.touches[0].clientX - rect.left) / rect.width) * 100
-              setNaveX(Math.max(10, Math.min(90, x)))
+              setNaveX(Math.max(12, Math.min(88, x)))
             }
           }}
-          style={{ position: 'relative', width: '100%', maxWidth: '750px', height: 'clamp(260px, 68vh, 520px)', margin: 'auto', overflow: 'hidden', touchAction: 'none' }}
+          style={{ position: 'relative', width: '100%', maxWidth: '850px', height: 'clamp(260px, 70vh, 520px)', margin: 'auto', overflow: 'hidden', touchAction: 'none' }}
         >
+          {/* INSTRUCCIÓN VISUAL */}
+          <div style={{ position: 'absolute', top: '10px', width: '100%', textAlign: 'center', pointerEvents: 'none', color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.95rem', fontWeight: '700' }}>
+            ✨ ¡Mueve el cohete o toca las estrellas flotantes para atraparlas! ✨
+          </div>
+
           {/* GEMAS FLOTANTES */}
           {gemas.map(g => (
             <div 
               key={g.id}
+              onClick={(e) => atraparGemaDirecta(g, e)}
               style={{
                 position: 'absolute', left: `${g.x}%`, top: `${g.y}%`,
-                transform: 'translate(-50%, -50%)', fontSize: '38px',
-                filter: 'drop-shadow(0 0 12px rgba(255,255,255,0.8))'
+                transform: 'translate(-50%, -50%)', fontSize: '42px', cursor: 'pointer',
+                filter: 'drop-shadow(0 0 14px rgba(255,255,255,0.9))',
+                transition: 'transform 0.1s', zIndex: 12
               }}
             >
               {g.emoji}
             </div>
           ))}
 
-          {/* COHETE ESPACIAL CONTROLABLE */}
+          {/* COHETE ESPACIAL CONTROLABLE (GRANDE Y LUMINOSO) */}
           <div 
             className="nave-recolector"
             style={{
-              position: 'absolute', left: `${naveX}%`, bottom: '20px',
-              transform: 'translateX(-50%)', width: '90px', height: '90px',
-              transition: 'left 0.05s ease-out'
+              position: 'absolute', left: `${naveX}%`, bottom: '15px',
+              transform: 'translateX(-50%)', width: 'clamp(100px, 20vw, 135px)', height: 'clamp(100px, 20vw, 135px)',
+              transition: 'left 0.05s ease-out', pointerEvents: 'none', zIndex: 15
             }}
           >
+            {/* RAYO TRACTOR DE LUZ */}
+            <div style={{
+              position: 'absolute', bottom: '60%', left: '50%', transform: 'translateX(-50%)',
+              width: '140px', height: '180px',
+              background: 'linear-gradient(to top, rgba(79, 172, 254, 0.35), rgba(79, 172, 254, 0))',
+              clipPath: 'polygon(30% 100%, 70% 100%, 100% 0%, 0% 0%)',
+              animation: 'rayoTractorAnim 1.8s ease-in-out infinite'
+            }} />
+
             <img 
               src={`${baseUrl}assets/cohete.png`} 
               alt="Cohete"
-              style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 0 18px #4facfe)' }}
+              style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 0 20px #4facfe)' }}
             />
           </div>
         </div>
       )}
 
-      {/* --- NIVEL 3: ATERRIZAJE EN EL PLANETA --- */}
+      {/* --- NIVEL 3: ATERRIZAJE EN EL PLANETA (ESPACIOSO Y SIN SOLAPAMIENTOS) --- */}
       {nivelId === 'aterrizaje' && (
-        <div style={{ position: 'relative', width: '100%', maxWidth: '650px', height: 'clamp(280px, 70vh, 520px)', margin: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{
+          position: 'relative', width: '100%', maxWidth: '850px', height: 'clamp(280px, 72vh, 520px)',
+          margin: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between'
+        }}>
           {/* NAVE DESCENDIENDO */}
           <div style={{
-            position: 'absolute', top: `${alturaNave}%`, left: '50%',
-            transform: 'translateX(-50%)', width: '95px', height: '95px',
-            transition: 'top 0.25s cubic-bezier(0.2, 0.8, 0.4, 1)'
+            position: 'absolute', top: `${alturaActualNave}%`, left: '50%',
+            transform: 'translateX(-50%)', width: 'clamp(95px, 18vw, 130px)', height: 'clamp(95px, 18vw, 130px)',
+            transition: 'top 0.4s cubic-bezier(0.2, 0.8, 0.4, 1)', zIndex: 18
           }}>
             <img 
               src={`${baseUrl}assets/cohete.png`} 
               alt="Cohete"
-              style={{ width: '100%', height: '100%', objectFit: 'contain', filter: propulsion ? 'drop-shadow(0 15px 25px #FF6B81)' : 'drop-shadow(0 6px 12px rgba(0,0,0,0.3))' }}
+              style={{ width: '100%', height: '100%', objectFit: 'contain', filter: propulsion ? 'drop-shadow(0 15px 25px #FF6B81) drop-shadow(0 0 30px #FFD166)' : 'drop-shadow(0 6px 14px rgba(0,0,0,0.4))' }}
             />
-          </div>
-
-          {/* PLANETA Y MARCIANITO */}
-          <div style={{ position: 'absolute', bottom: '0px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            {aterrizado && (
-              <div className="anim-pop alien-aterrizaje" style={{ width: '110px', height: '110px', animation: 'flotarAlien 2.5s ease-in-out infinite', marginBottom: '-25px', zIndex: 15 }}>
-                <img 
-                  src={`${baseUrl}assets/alien.png`} 
-                  alt="Marcianito Lulipop"
-                  style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.3))' }}
-                />
+            {propulsion && (
+              <div style={{ position: 'absolute', bottom: '-20px', left: '50%', transform: 'translateX(-50%)', fontSize: '32px' }}>
+                🔥
               </div>
             )}
+          </div>
+
+          {/* ESCENARIO INFERIOR: PLANETA Y MARCIANITO */}
+          <div style={{
+            position: 'absolute', bottom: '0px', width: '100%',
+            display: 'flex', justifyContent: 'center', alignItems: 'flex-end', gap: '14px', zIndex: 10
+          }}>
+            {/* MARCIANITO ANFITRIÓN */}
+            <div className="anim-pop alien-aterrizaje" style={{ width: 'clamp(85px, 16vw, 115px)', height: 'clamp(85px, 16vw, 115px)', animation: 'flotarAlien 2.5s ease-in-out infinite', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ backgroundColor: 'white', color: '#1E293B', padding: '3px 8px', borderRadius: '12px', fontSize: '0.78rem', fontWeight: '900', boxShadow: '0 4px 10px rgba(0,0,0,0.2)', marginBottom: '4px', whiteSpace: 'nowrap' }}>
+                {aterrizado ? '¡Hurra! 🎉' : '¡Aterriza aquí! 👋'}
+              </div>
+              <img 
+                src={`${baseUrl}assets/alien.png`} 
+                alt="Marcianito Lulipop"
+                style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.3))' }}
+              />
+            </div>
+
+            {/* PLANETA DE CARAMELO */}
             <img 
               src={`${baseUrl}assets/planeta.png`} 
               alt="Planeta Dulce"
-              style={{ width: 'clamp(190px, 45vw, 290px)', objectFit: 'contain', filter: 'drop-shadow(0 0 25px rgba(255, 107, 129, 0.4))' }}
+              style={{ width: 'clamp(170px, 35vw, 260px)', objectFit: 'contain', filter: 'drop-shadow(0 0 25px rgba(255, 107, 129, 0.4))' }}
             />
           </div>
 
-          {/* BOTÓN DE PROPULSIÓN / ATERRIZAJE */}
+          {/* BOTÓN FLOTANTE DE CONTROL DE MOTOR (SEPARADO Y CLARO) */}
           {!aterrizado && (
-            <button
-              onClick={impulsarNave}
-              style={{
-                position: 'absolute', bottom: '20px', backgroundColor: '#FF6B81', color: 'white',
-                border: '4px solid white', borderRadius: '30px', padding: '14px 28px',
-                fontFamily: '"Fredoka", sans-serif', fontWeight: '900', fontSize: '1.25rem',
-                cursor: 'pointer', boxShadow: '0 8px 0 #D9385E, 0 15px 25px rgba(0,0,0,0.3)', zIndex: 30
-              }}
-            >
-              🔥 ¡Encender Motor!
-            </button>
+            <div style={{ position: 'absolute', top: '15px', right: '15px', zIndex: 25 }}>
+              <button
+                onClick={descenderNave}
+                style={{
+                  backgroundColor: '#FF6B81', color: 'white',
+                  border: '3px solid white', borderRadius: '24px', padding: '12px 22px',
+                  fontFamily: '"Fredoka", sans-serif', fontWeight: '900', fontSize: '1.1rem',
+                  cursor: 'pointer', boxShadow: '0 6px 0 #D9385E, 0 10px 20px rgba(0,0,0,0.3)',
+                  display: 'flex', alignItems: 'center', gap: '8px'
+                }}
+              >
+                🔥 ¡Frenar y Aterrizar!
+              </button>
+            </div>
           )}
         </div>
       )}
