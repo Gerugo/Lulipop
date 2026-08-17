@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from './supabaseClient'
 import fondoImg from './fondo-lulipop.png'
 import useMejoresNiveles from './useMejoresNiveles'
+import NivelSelector from './NivelSelector'
 
 const baseUrl = import.meta.env.BASE_URL
 
@@ -301,15 +302,41 @@ export default function JuegoMusica({ perfil, onVolver }) {
     ? cancionSeleccionada.notas[pasoCancion] 
     : null
 
+  // PANTALLA DE SELECCIÓN DE CANCIONES (100% Adaptada a móviles)
+  if (modo === 'selector_canciones') {
+    return (
+      <NivelSelector
+        onVolver={() => setModo('menu')}
+        emojiJuego="🎵"
+        titulo="Cancionero Mágico"
+        subtitulo="Elige tu canción"
+        niveles={CANCIONES.map(c => ({
+          id: c.id,
+          nombre: c.titulo,
+          descripcion: c.nivel,
+          emoji: c.emoji,
+          color: c.color,
+          sombra: c.sombra
+        }))}
+        mejores={mejores}
+        onSeleccionar={(id) => {
+          const c = CANCIONES.find(x => x.id === id)
+          if (c) empezarCancion(c)
+        }}
+      />
+    )
+  }
+
   return (
     <div className="juego-musica-raiz" style={{
       height: '100dvh', minHeight: '100dvh', width: '100vw',
       backgroundImage: `url(${fondoImg})`,
       backgroundSize: 'cover', backgroundPosition: 'center',
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10,
-      display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+      display: 'flex', flexDirection: 'column',
+      justifyContent: modo === 'menu' ? 'center' : 'space-between',
       alignItems: 'center', fontFamily: '"Fredoka", sans-serif',
-      boxSizing: 'border-box', padding: '14px', overflow: 'hidden', userSelect: 'none'
+      boxSizing: 'border-box', padding: '14px', overflowY: modo === 'menu' ? 'auto' : 'hidden', userSelect: 'none'
     }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700;900&display=swap');
@@ -370,10 +397,10 @@ export default function JuegoMusica({ perfil, onVolver }) {
         /* MEDIA QUERIES RESPONSIVAS MÓVIL */
         @media (max-height: 550px) {
           .juego-musica-raiz {
-            padding: 8px 12px !important;
+            padding: 6px 12px !important;
           }
           .header-barra-musica {
-            margin-bottom: 6px !important;
+            margin-bottom: 4px !important;
           }
           .btn-header-musica {
             width: 40px !important;
@@ -387,20 +414,55 @@ export default function JuegoMusica({ perfil, onVolver }) {
             border-radius: 18px !important;
           }
           .tecla-piano-3d {
-            height: clamp(120px, 50vh, 200px) !important;
-            border-radius: 18px !important;
-            padding-bottom: 10px !important;
+            height: clamp(110px, 48vh, 180px) !important;
+            border-radius: 16px !important;
+            padding-bottom: 8px !important;
           }
           .emoji-tecla {
-            font-size: 20px !important;
+            font-size: 18px !important;
           }
           .nombre-tecla {
-            font-size: 1.1rem !important;
+            font-size: 1.05rem !important;
           }
           .btn-instrumento-item {
-            padding: 4px 10px !important;
+            padding: 3px 8px !important;
+            font-size: 0.78rem !important;
+            border-radius: 12px !important;
+          }
+          .modal-menu-musica {
+            padding: 10px 16px !important;
+            max-width: 520px !important;
+            border-radius: 22px !important;
+          }
+          .icono-menu-piano {
+            width: 50px !important;
+            height: 50px !important;
+          }
+          .titulo-menu-musica {
+            font-size: 1.2rem !important;
+            margin: 2px 0 !important;
+          }
+          .subtitulo-menu-musica {
             font-size: 0.82rem !important;
-            border-radius: 14px !important;
+            margin-bottom: 8px !important;
+          }
+          .grid-modos-musica {
+            gap: 10px !important;
+          }
+          .card-modo-musica {
+            padding: 8px 12px !important;
+            border-radius: 16px !important;
+          }
+          .card-modo-musica h3 {
+            font-size: 1.05rem !important;
+            margin-bottom: 2px !important;
+          }
+          .card-modo-musica p {
+            font-size: 0.75rem !important;
+          }
+          .emoji-modo-musica {
+            font-size: 26px !important;
+            margin-bottom: 2px !important;
           }
         }
       `}</style>
@@ -486,99 +548,60 @@ export default function JuegoMusica({ perfil, onVolver }) {
 
       {/* PANTALLA PRINCIPAL: MENÚ DE ELECCIÓN DE MODO */}
       {modo === 'menu' && (
-        <div className="anim-pop" style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.92)', borderRadius: '35px', padding: '24px 28px',
+        <div className="anim-pop modal-menu-musica" style={{
+          backgroundColor: 'rgba(255, 255, 255, 0.92)', borderRadius: '35px', padding: '22px 26px',
           border: '6px solid white', boxShadow: '0 20px 40px rgba(0,0,0,0.15)', maxWidth: '580px', width: '100%',
-          textAlign: 'center', zIndex: 30, boxSizing: 'border-box'
+          textAlign: 'center', zIndex: 30, boxSizing: 'border-box', maxHeight: 'calc(100dvh - 80px)', overflowY: 'auto'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '6px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '4px' }}>
             <img 
               src={`${baseUrl}assets/icono-musica.png`} 
               alt="Piano Mágico"
-              style={{ width: '105px', height: '105px', objectFit: 'contain', filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.15))' }}
+              className="icono-menu-piano"
+              style={{ width: '90px', height: '90px', objectFit: 'contain', filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.15))' }}
             />
           </div>
-          <h2 style={{ color: '#1E293B', fontSize: '1.8rem', fontWeight: '900', margin: '4px 0 6px 0' }}>
+          <h2 className="titulo-menu-musica" style={{ color: '#1E293B', fontSize: '1.7rem', fontWeight: '900', margin: '4px 0 4px 0' }}>
             🎹 Piano & Música Mágica
           </h2>
-          <p style={{ color: '#64748B', fontSize: '1rem', fontWeight: '600', margin: '0 0 20px 0' }}>
+          <p className="subtitulo-menu-musica" style={{ color: '#64748B', fontSize: '0.95rem', fontWeight: '600', margin: '0 0 16px 0' }}>
             ¿Qué aventura musical quieres vivir hoy? ✨
           </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+          <div className="grid-modos-musica" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
             {/* MODO LIBRE */}
             <div 
               onClick={() => setModo('libre')}
+              className="card-modo-musica"
               style={{
                 backgroundColor: '#EFF6FF', border: '4px solid #3B82F6', borderRadius: '24px',
-                padding: '16px', cursor: 'pointer', transition: 'transform 0.15s',
+                padding: '16px 12px', cursor: 'pointer', transition: 'transform 0.15s',
                 boxShadow: '0 8px 0 #2563EB, 0 12px 20px rgba(0,0,0,0.1)'
               }}
               onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
               onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
             >
-              <div style={{ fontSize: '42px', marginBottom: '4px' }}>🌈🎹</div>
-              <h3 style={{ color: '#1E40AF', margin: '0 0 4px 0', fontSize: '1.25rem', fontWeight: '900' }}>Toca Libre</h3>
-              <p style={{ color: '#60A5FA', fontSize: '0.85rem', margin: 0, fontWeight: '700' }}>¡Crea tus canciones y grábalas!</p>
+              <div className="emoji-modo-musica" style={{ fontSize: '38px', marginBottom: '4px' }}>🌈🎹</div>
+              <h3 style={{ color: '#1E40AF', margin: '0 0 4px 0', fontSize: '1.2rem', fontWeight: '900' }}>Toca Libre</h3>
+              <p style={{ color: '#60A5FA', fontSize: '0.82rem', margin: 0, fontWeight: '700' }}>¡Crea tus canciones y grábalas!</p>
             </div>
 
             {/* MODO CANCIONES */}
             <div 
               onClick={() => setModo('selector_canciones')}
+              className="card-modo-musica"
               style={{
                 backgroundColor: '#FEF3C7', border: '4px solid #F59E0B', borderRadius: '24px',
-                padding: '16px', cursor: 'pointer', transition: 'transform 0.15s',
+                padding: '16px 12px', cursor: 'pointer', transition: 'transform 0.15s',
                 boxShadow: '0 8px 0 #D97706, 0 12px 20px rgba(0,0,0,0.1)'
               }}
               onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
               onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
             >
-              <div style={{ fontSize: '42px', marginBottom: '4px' }}>⭐🎵</div>
-              <h3 style={{ color: '#92400E', margin: '0 0 4px 0', fontSize: '1.25rem', fontWeight: '900' }}>Cancionero</h3>
-              <p style={{ color: '#FBBF24', fontSize: '0.85rem', margin: 0, fontWeight: '700' }}>Aprende canciones guiadas</p>
+              <div className="emoji-modo-musica" style={{ fontSize: '38px', marginBottom: '4px' }}>⭐🎵</div>
+              <h3 style={{ color: '#92400E', margin: '0 0 4px 0', fontSize: '1.2rem', fontWeight: '900' }}>Cancionero</h3>
+              <p style={{ color: '#FBBF24', fontSize: '0.82rem', margin: 0, fontWeight: '700' }}>Aprende canciones guiadas</p>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* SELECTOR DE CANCIONES */}
-      {modo === 'selector_canciones' && (
-        <div className="anim-pop" style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.94)', borderRadius: '35px', padding: '24px',
-          border: '6px solid white', boxShadow: '0 20px 40px rgba(0,0,0,0.15)', maxWidth: '620px', width: '100%',
-          textAlign: 'center', zIndex: 30, boxSizing: 'border-box'
-        }}>
-          <h2 style={{ color: '#1E293B', fontSize: '1.6rem', fontWeight: '900', margin: '0 0 14px 0' }}>
-            Elige una canción para aprender 📖✨
-          </h2>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '14px' }}>
-            {CANCIONES.map(c => {
-              const estrellasObtenidas = mejores[c.id] || 0
-              return (
-                <div 
-                  key={c.id}
-                  onClick={() => empezarCancion(c)}
-                  style={{
-                    backgroundColor: 'white', border: `4px solid ${c.color}`, borderRadius: '24px',
-                    padding: '16px 12px', cursor: 'pointer', transition: 'all 0.15s',
-                    boxShadow: `0 8px 0 ${c.sombra}, 0 10px 15px rgba(0,0,0,0.08)`,
-                    display: 'flex', flexDirection: 'column', alignItems: 'center'
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
-                  onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-                >
-                  <span style={{ fontSize: '42px', marginBottom: '6px' }}>{c.emoji}</span>
-                  <h4 style={{ color: '#334155', margin: '0 0 4px 0', fontSize: '1.05rem', fontWeight: '900' }}>{c.titulo}</h4>
-                  <span style={{ backgroundColor: c.color, color: 'white', padding: '2px 10px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: '900', marginBottom: '8px' }}>
-                    {c.nivel}
-                  </span>
-                  <div style={{ fontSize: '1.1rem' }}>
-                    {'⭐'.repeat(estrellasObtenidas)}{'☆'.repeat(3 - estrellasObtenidas)}
-                  </div>
-                </div>
-              )
-            })}
           </div>
         </div>
       )}
