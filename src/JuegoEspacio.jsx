@@ -56,6 +56,52 @@ const CONSTELACIONES = [
   }
 ]
 
+// CIRCUITOS DEL LABERINTO EN LOS ANILLOS (NIVEL 3)
+const CIRCUITOS_ANILLOS = [
+  {
+    id: 'circuito1',
+    nombre: 'Anillo de Caramelo',
+    puntos: [
+      { x: 12, y: 22 },
+      { x: 28, y: 22 },
+      { x: 45, y: 24 },
+      { x: 62, y: 32 },
+      { x: 78, y: 48 },
+      { x: 75, y: 70 },
+      { x: 58, y: 80 },
+      { x: 38, y: 80 },
+      { x: 22, y: 72 }
+    ],
+    llaves: [
+      { id: 1, x: 45, y: 24, recogida: false },
+      { id: 2, x: 78, y: 48, recogida: false },
+      { id: 3, x: 58, y: 80, recogida: false }
+    ],
+    meta: { x: 22, y: 72 }
+  },
+  {
+    id: 'circuito2',
+    nombre: 'Espiral de Saturno',
+    puntos: [
+      { x: 82, y: 18 },
+      { x: 60, y: 18 },
+      { x: 35, y: 25 },
+      { x: 18, y: 45 },
+      { x: 25, y: 72 },
+      { x: 50, y: 82 },
+      { x: 78, y: 75 },
+      { x: 82, y: 50 },
+      { x: 55, y: 48 }
+    ],
+    llaves: [
+      { id: 1, x: 35, y: 25, recogida: false },
+      { id: 2, x: 25, y: 72, recogida: false },
+      { id: 3, x: 78, y: 75, recogida: false }
+    ],
+    meta: { x: 55, y: 48 }
+  }
+]
+
 const NIVELES = [
   {
     id: 'constelaciones',
@@ -74,9 +120,9 @@ const NIVELES = [
     sombra: '#0083B0'
   },
   {
-    id: 'aterrizaje',
-    nombre: '3. Planeta Caramelo',
-    descripcion: 'Aterriza y conoce al amigo Marcianito',
+    id: 'anillos',
+    nombre: '3. Anillos de Saturno',
+    descripcion: 'Pilota por el laberinto y recoge las llaves',
     emoji: '🪐',
     color: '#FF6B81',
     sombra: '#D9385E'
@@ -101,10 +147,12 @@ export default function JuegoEspacio({ perfil, onVolver }) {
   const [gemasRecogidas, setGemasRecogidas] = useState(0)
   const META_GEMAS = 12
 
-  // Estado Nivel 3 (Aterrizaje)
-  const [pasoAterrizaje, setPasoAterrizaje] = useState(0) // 0 a 4
-  const [aterrizado, setAterrizado] = useState(false)
-  const [propulsion, setPropulsion] = useState(false)
+  // Estado Nivel 3 (Anillos y Laberinto Cósmico)
+  const [indiceCircuito, setIndiceCircuito] = useState(0)
+  const [posNaveCircuito, setPosNaveCircuito] = useState({ x: 12, y: 22 })
+  const [llavesCircuito, setLlavesCircuito] = useState([])
+  const [arrastrandoNave, setArrastrandoNave] = useState(false)
+  const [llegadaMeta, setLlegadaMeta] = useState(false)
 
   const particulaIdRef = useRef(0)
   const gemaIdRef = useRef(0)
@@ -142,28 +190,6 @@ export default function JuegoEspacio({ perfil, onVolver }) {
 
       osc.start(now)
       osc.stop(now + 0.85)
-    } catch { /* continuar */ }
-  }, [getAudioContext])
-
-  const reproducirMotor = useCallback(() => {
-    try {
-      const ctx = getAudioContext()
-      const now = ctx.currentTime
-      const osc = ctx.createOscillator()
-      const gain = ctx.createGain()
-
-      osc.type = 'sawtooth'
-      osc.frequency.setValueAtTime(110, now)
-      osc.frequency.linearRampToValueAtTime(220, now + 0.3)
-
-      gain.gain.setValueAtTime(0.35, now)
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4)
-
-      osc.connect(gain)
-      gain.connect(ctx.destination)
-
-      osc.start(now)
-      osc.stop(now + 0.45)
     } catch { /* continuar */ }
   }, [getAudioContext])
 
@@ -240,22 +266,7 @@ export default function JuegoEspacio({ perfil, onVolver }) {
   }
 
   // --- LÓGICA NIVEL 2: RECOLECTOR DE GEMAS ---
-  // Inicializar gemas inmediatamente al entrar
-  useEffect(() => {
-    if (nivelId !== 'recolector') return
 
-    const tipos = ['💎', '⭐', '🍭', '✨', '🪐']
-    const iniciales = [
-      { id: ++gemaIdRef.current, x: 20, y: 15, emoji: tipos[0] },
-      { id: ++gemaIdRef.current, x: 50, y: 30, emoji: tipos[1] },
-      { id: ++gemaIdRef.current, x: 80, y: 10, emoji: tipos[2] },
-      { id: ++gemaIdRef.current, x: 35, y: 48, emoji: tipos[3] },
-      { id: ++gemaIdRef.current, x: 65, y: 62, emoji: tipos[4] }
-    ]
-    setGemas(iniciales)
-  }, [nivelId])
-
-  // Bucle continuo de movimiento y spawn de gemas
   useEffect(() => {
     if (nivelId !== 'recolector' || victoria) return
 
@@ -281,8 +292,7 @@ export default function JuegoEspacio({ perfil, onVolver }) {
       setGemas(prev => {
         const actualizadas = []
         for (const g of prev) {
-          const ny = g.y + 0.9 // Descenso suave y relajado
-          // Detección de choque con la nave (nave en Y ~ 75%)
+          const ny = g.y + 0.9
           if (ny >= 65 && ny <= 88 && Math.abs(g.x - naveX) < 18) {
             reproducirCampana(587.33)
             setGemasRecogidas(c => {
@@ -307,7 +317,6 @@ export default function JuegoEspacio({ perfil, onVolver }) {
     }
   }, [nivelId, victoria, naveX, reproducirCampana, ganarNivel])
 
-  // Atrapado directo al pulsar sobre una estrella
   const atraparGemaDirecta = (g, e) => {
     e.stopPropagation()
     reproducirCampana(659.25)
@@ -323,24 +332,60 @@ export default function JuegoEspacio({ perfil, onVolver }) {
     setPuntos(p => p + 10)
   }
 
-  // --- LÓGICA NIVEL 3: ATERRIZAJE ---
-  const alturasNavePorPaso = [10, 26, 42, 58, 70] // % de altura de descenso
-  const alturaActualNave = alturasNavePorPaso[pasoAterrizaje] || 10
+  // --- LÓGICA NIVEL 3: ANILLOS Y LABERINTO CÓSMICO ---
+  const circuitoActual = CIRCUITOS_ANILLOS[indiceCircuito] || CIRCUITOS_ANILLOS[0]
 
-  const descenderNave = () => {
-    if (aterrizado || victoria) return
-    reproducirMotor()
-    setPropulsion(true)
-    setTimeout(() => setPropulsion(false), 250)
+  const iniciarCircuito = useCallback((indice) => {
+    const c = CIRCUITOS_ANILLOS[indice] || CIRCUITOS_ANILLOS[0]
+    setIndiceCircuito(indice)
+    setPosNaveCircuito({ ...c.puntos[0] })
+    setLlavesCircuito(c.llaves.map(l => ({ ...l, recogida: false })))
+    setLlegadaMeta(false)
+  }, [])
 
-    const siguientePaso = pasoAterrizaje + 1
-    setPasoAterrizaje(siguientePaso)
+  const moverNaveCircuito = (e) => {
+    if (!arrastrandoNave || llegadaMeta || victoria) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    const touch = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0])
+    const clientX = touch ? touch.clientX : (e.clientX ?? 0)
+    const clientY = touch ? touch.clientY : (e.clientY ?? 0)
 
-    if (siguientePaso >= 4) {
-      setAterrizado(true)
+    const x = Math.max(5, Math.min(95, ((clientX - rect.left) / rect.width) * 100))
+    const y = Math.max(5, Math.min(95, ((clientY - rect.top) / rect.height) * 100))
+
+    setPosNaveCircuito({ x, y })
+
+    // Verificar si recoge llaves
+    setLlavesCircuito(prev => prev.map(k => {
+      if (!k.recogida) {
+        const dist = Math.hypot(k.x - x, k.y - y)
+        if (dist < 12) {
+          reproducirCampana(783.99)
+          lanzarParticula(clientX, clientY, '🔑')
+          setPuntos(p => p + 15)
+          return { ...k, recogida: true }
+        }
+      }
+      return k
+    }))
+
+    // Verificar si llega a la meta
+    const distMeta = Math.hypot(circuitoActual.meta.x - x, circuitoActual.meta.y - y)
+    const todasLlavesRecogidas = llavesCircuito.every(k => k.recogida)
+
+    if (distMeta < 14 && todasLlavesRecogidas && !llegadaMeta) {
+      setLlegadaMeta(true)
+      reproducirCampana(1046.50)
+      lanzarParticula(clientX, clientY, '🎉')
+      setPuntos(p => p + 30)
+
       setTimeout(() => {
-        ganarNivel()
-      }, 1000)
+        if (indiceCircuito + 1 < CIRCUITOS_ANILLOS.length) {
+          iniciarCircuito(indiceCircuito + 1)
+        } else {
+          ganarNivel()
+        }
+      }, 1200)
     }
   }
 
@@ -352,9 +397,29 @@ export default function JuegoEspacio({ perfil, onVolver }) {
     setIndiceConstelacion(0)
     setConstelacionCompletada(false)
     setGemasRecogidas(0)
-    setPasoAterrizaje(0)
-    setAterrizado(false)
     setNaveX(50)
+
+    if (id === 'recolector') {
+      const tipos = ['💎', '⭐', '🍭', '✨', '🪐']
+      const iniciales = [
+        { id: ++gemaIdRef.current, x: 20, y: 15, emoji: tipos[0] },
+        { id: ++gemaIdRef.current, x: 50, y: 30, emoji: tipos[1] },
+        { id: ++gemaIdRef.current, x: 80, y: 10, emoji: tipos[2] },
+        { id: ++gemaIdRef.current, x: 35, y: 48, emoji: tipos[3] },
+        { id: ++gemaIdRef.current, x: 65, y: 62, emoji: tipos[4] }
+      ]
+      setGemas(iniciales)
+    } else if (id === 'anillos') {
+      iniciarCircuito(0)
+    }
+  }
+
+  // Generar path SVG para el circuito
+  const generarSvgPath = (pts) => {
+    if (!pts || pts.length === 0) return ''
+    return pts.reduce((acc, p, i) => {
+      return i === 0 ? `M ${p.x} ${p.y}` : `${acc} L ${p.x} ${p.y}`
+    }, '')
   }
 
   // SELECTOR DE NIVELES
@@ -373,6 +438,7 @@ export default function JuegoEspacio({ perfil, onVolver }) {
   }
 
   const constActual = CONSTELACIONES[indiceConstelacion]
+  const numLlavesRecogidas = llavesCircuito.filter(k => k.recogida).length
 
   return (
     <div className="juego-espacio-raiz" style={{
@@ -463,6 +529,14 @@ export default function JuegoEspacio({ perfil, onVolver }) {
         @keyframes subirParticula {
           0% { transform: translate(-50%, -50%) translateY(0) scale(0.5); opacity: 1; }
           100% { transform: translate(-50%, -50%) translateY(-80px) scale(1.4); opacity: 0; }
+        }
+
+        .llave-brillante {
+          animation: pulsoLlave 1.2s ease-in-out infinite alternate;
+        }
+        @keyframes pulsoLlave {
+          0% { transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 0 8px #FFD166); }
+          100% { transform: translate(-50%, -50%) scale(1.25); filter: drop-shadow(0 0 20px #FFF) drop-shadow(0 0 30px #FFD166); }
         }
 
         @keyframes flotarAlien {
@@ -560,11 +634,14 @@ export default function JuegoEspacio({ perfil, onVolver }) {
               <span style={{ fontWeight: '900', color: '#1E293B', fontSize: '1.15rem' }}>Gemas: {gemasRecogidas} / {META_GEMAS}</span>
             </>
           )}
-          {nivelId === 'aterrizaje' && (
+          {nivelId === 'anillos' && (
             <>
               <span style={{ fontSize: '24px' }}>🪐</span>
               <span style={{ fontWeight: '900', color: '#1E293B', fontSize: '1.15rem' }}>
-                {aterrizado ? '¡Aterrizaje Exitoso!' : `Descenso: ${pasoAterrizaje}/4`}
+                Llaves: {numLlavesRecogidas} / 3 🔑
+              </span>
+              <span style={{ backgroundColor: '#FF6B81', color: 'white', padding: '2px 8px', borderRadius: '12px', fontSize: '0.82rem', fontWeight: '900' }}>
+                {indiceCircuito + 1}/{CIRCUITOS_ANILLOS.length}
               </span>
             </>
           )}
@@ -640,12 +717,10 @@ export default function JuegoEspacio({ perfil, onVolver }) {
           }}
           style={{ position: 'relative', width: '100%', maxWidth: '850px', height: 'clamp(260px, 70vh, 520px)', margin: 'auto', overflow: 'hidden', touchAction: 'none' }}
         >
-          {/* INSTRUCCIÓN VISUAL */}
           <div style={{ position: 'absolute', top: '10px', width: '100%', textAlign: 'center', pointerEvents: 'none', color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.95rem', fontWeight: '700' }}>
             ✨ ¡Mueve el cohete o toca las estrellas flotantes para atraparlas! ✨
           </div>
 
-          {/* GEMAS FLOTANTES */}
           {gemas.map(g => (
             <div 
               key={g.id}
@@ -661,7 +736,6 @@ export default function JuegoEspacio({ perfil, onVolver }) {
             </div>
           ))}
 
-          {/* COHETE ESPACIAL CONTROLABLE (GRANDE Y LUMINOSO) */}
           <div 
             className="nave-recolector"
             style={{
@@ -670,7 +744,6 @@ export default function JuegoEspacio({ perfil, onVolver }) {
               transition: 'left 0.05s ease-out', pointerEvents: 'none', zIndex: 15
             }}
           >
-            {/* RAYO TRACTOR DE LUZ */}
             <div style={{
               position: 'absolute', bottom: '60%', left: '50%', transform: 'translateX(-50%)',
               width: '140px', height: '180px',
@@ -688,72 +761,139 @@ export default function JuegoEspacio({ perfil, onVolver }) {
         </div>
       )}
 
-      {/* --- NIVEL 3: ATERRIZAJE EN EL PLANETA (ESPACIOSO Y SIN SOLAPAMIENTOS) --- */}
-      {nivelId === 'aterrizaje' && (
-        <div style={{
-          position: 'relative', width: '100%', maxWidth: '850px', height: 'clamp(280px, 72vh, 520px)',
-          margin: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between'
-        }}>
-          {/* NAVE DESCENDIENDO */}
+      {/* --- NIVEL 3: ANILLOS DE SATURNO & LABERINTO CÓSMICO --- */}
+      {nivelId === 'anillos' && (
+        <div 
+          onPointerDown={(e) => {
+            setArrastrandoNave(true)
+            moverNaveCircuito(e)
+          }}
+          onPointerMove={moverNaveCircuito}
+          onPointerUp={() => setArrastrandoNave(false)}
+          onTouchStart={(e) => {
+            setArrastrandoNave(true)
+            moverNaveCircuito(e)
+          }}
+          onTouchMove={moverNaveCircuito}
+          onTouchEnd={() => setArrastrandoNave(false)}
+          style={{
+            position: 'relative', width: '100%', maxWidth: '850px',
+            height: 'clamp(280px, 72vh, 520px)', margin: 'auto',
+            overflow: 'hidden', touchAction: 'none', cursor: 'grab'
+          }}
+        >
+          {/* INSTRUCCIÓN VISUAL */}
+          <div style={{ position: 'absolute', top: '6px', width: '100%', textAlign: 'center', pointerEvents: 'none', color: 'rgba(255, 255, 255, 0.85)', fontSize: '0.95rem', fontWeight: '700', zIndex: 30 }}>
+            ✨ ¡Guía el cohete con el dedo por el sendero, recoge las 3 llaves 🔑 y llega a la base! ✨
+          </div>
+
+          {/* PLANETA Y DECORACIÓN DE FONDO */}
           <div style={{
-            position: 'absolute', top: `${alturaActualNave}%`, left: '50%',
-            transform: 'translateX(-50%)', width: 'clamp(95px, 18vw, 130px)', height: 'clamp(95px, 18vw, 130px)',
-            transition: 'top 0.4s cubic-bezier(0.2, 0.8, 0.4, 1)', zIndex: 18
+            position: 'absolute', top: '50%', left: '50%',
+            transform: 'translate(-50%, -50%)', opacity: 0.28, pointerEvents: 'none', zIndex: 2
           }}>
+            <img 
+              src={`${baseUrl}assets/planeta.png`} 
+              alt="Saturno"
+              style={{ width: 'clamp(220px, 45vw, 360px)', objectFit: 'contain', filter: 'drop-shadow(0 0 35px rgba(255, 107, 129, 0.6))' }}
+            />
+          </div>
+
+          {/* SVG DEL CIRCUITO / LABERINTO CÓSMICO */}
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 5 }}>
+            {/* Halo exterior del sendero */}
+            <path 
+              d={generarSvgPath(circuitoActual.puntos)}
+              fill="none"
+              stroke="rgba(255, 107, 129, 0.25)"
+              strokeWidth="10"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            {/* Sendero luminoso */}
+            <path 
+              d={generarSvgPath(circuitoActual.puntos)}
+              fill="none"
+              stroke="rgba(255, 209, 102, 0.7)"
+              strokeWidth="4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeDasharray="2, 4"
+            />
+          </svg>
+
+          {/* PUNTOS GUÍA / CHECKPOINTS */}
+          {circuitoActual.puntos.map((p, idx) => (
+            <div 
+              key={idx}
+              style={{
+                position: 'absolute', left: `${p.x}%`, top: `${p.y}%`,
+                transform: 'translate(-50%, -50%)', width: '12px', height: '12px',
+                borderRadius: '50%', backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                boxShadow: '0 0 8px #FFD166', pointerEvents: 'none', zIndex: 6
+              }}
+            />
+          ))}
+
+          {/* LLAVES MÁGICAS EN EL SENDERO */}
+          {llavesCircuito.map(k => !k.recogida && (
+            <div 
+              key={k.id}
+              className="llave-brillante"
+              style={{
+                position: 'absolute', left: `${k.x}%`, top: `${k.y}%`,
+                fontSize: '36px', zIndex: 12, pointerEvents: 'none'
+              }}
+            >
+              🔑
+            </div>
+          ))}
+
+          {/* META FINAL: CÚPULA CON MARCIANITO */}
+          <div 
+            style={{
+              position: 'absolute', left: `${circuitoActual.meta.x}%`, top: `${circuitoActual.meta.y}%`,
+              transform: 'translate(-50%, -50%)', display: 'flex', flexDirection: 'column',
+              alignItems: 'center', zIndex: 14, pointerEvents: 'none'
+            }}
+          >
+            <div style={{
+              backgroundColor: llegadaMeta ? '#38ef7d' : 'rgba(255, 255, 255, 0.92)',
+              color: llegadaMeta ? 'white' : '#1E293B',
+              padding: '3px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '900',
+              boxShadow: '0 4px 10px rgba(0,0,0,0.2)', marginBottom: '2px', whiteSpace: 'nowrap'
+            }}>
+              {llegadaMeta ? '¡Bienvenido! 🎉' : numLlavesRecogidas === 3 ? '¡Cúpula Abierta! 🚪' : '¡Necesitas 3 🔑!'}
+            </div>
+
+            <div className={llegadaMeta ? 'anim-pop' : ''} style={{ width: 'clamp(65px, 14vw, 90px)', height: 'clamp(65px, 14vw, 90px)', animation: 'flotarAlien 2.5s ease-in-out infinite' }}>
+              <img 
+                src={`${baseUrl}assets/alien.png`} 
+                alt="Alien Base"
+                style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 6px 12px rgba(0,0,0,0.3))' }}
+              />
+            </div>
+          </div>
+
+          {/* COHETE ESPACIAL GUIABLE */}
+          <div 
+            style={{
+              position: 'absolute', left: `${posNaveCircuito.x}%`, top: `${posNaveCircuito.y}%`,
+              transform: 'translate(-50%, -50%)',
+              width: 'clamp(75px, 15vw, 105px)', height: 'clamp(75px, 15vw, 105px)',
+              pointerEvents: 'none', zIndex: 20,
+              transition: arrastrandoNave ? 'none' : 'left 0.2s, top 0.2s'
+            }}
+          >
             <img 
               src={`${baseUrl}assets/cohete.png`} 
               alt="Cohete"
-              style={{ width: '100%', height: '100%', objectFit: 'contain', filter: propulsion ? 'drop-shadow(0 15px 25px #FF6B81) drop-shadow(0 0 30px #FFD166)' : 'drop-shadow(0 6px 14px rgba(0,0,0,0.4))' }}
-            />
-            {propulsion && (
-              <div style={{ position: 'absolute', bottom: '-20px', left: '50%', transform: 'translateX(-50%)', fontSize: '32px' }}>
-                🔥
-              </div>
-            )}
-          </div>
-
-          {/* ESCENARIO INFERIOR: PLANETA Y MARCIANITO */}
-          <div style={{
-            position: 'absolute', bottom: '0px', width: '100%',
-            display: 'flex', justifyContent: 'center', alignItems: 'flex-end', gap: '14px', zIndex: 10
-          }}>
-            {/* MARCIANITO ANFITRIÓN */}
-            <div className="anim-pop alien-aterrizaje" style={{ width: 'clamp(85px, 16vw, 115px)', height: 'clamp(85px, 16vw, 115px)', animation: 'flotarAlien 2.5s ease-in-out infinite', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <div style={{ backgroundColor: 'white', color: '#1E293B', padding: '3px 8px', borderRadius: '12px', fontSize: '0.78rem', fontWeight: '900', boxShadow: '0 4px 10px rgba(0,0,0,0.2)', marginBottom: '4px', whiteSpace: 'nowrap' }}>
-                {aterrizado ? '¡Hurra! 🎉' : '¡Aterriza aquí! 👋'}
-              </div>
-              <img 
-                src={`${baseUrl}assets/alien.png`} 
-                alt="Marcianito Lulipop"
-                style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.3))' }}
-              />
-            </div>
-
-            {/* PLANETA DE CARAMELO */}
-            <img 
-              src={`${baseUrl}assets/planeta.png`} 
-              alt="Planeta Dulce"
-              style={{ width: 'clamp(170px, 35vw, 260px)', objectFit: 'contain', filter: 'drop-shadow(0 0 25px rgba(255, 107, 129, 0.4))' }}
+              style={{
+                width: '100%', height: '100%', objectFit: 'contain',
+                filter: 'drop-shadow(0 0 16px #FF6B81) drop-shadow(0 0 25px #FFD166)'
+              }}
             />
           </div>
-
-          {/* BOTÓN FLOTANTE DE CONTROL DE MOTOR (SEPARADO Y CLARO) */}
-          {!aterrizado && (
-            <div style={{ position: 'absolute', top: '15px', right: '15px', zIndex: 25 }}>
-              <button
-                onClick={descenderNave}
-                style={{
-                  backgroundColor: '#FF6B81', color: 'white',
-                  border: '3px solid white', borderRadius: '24px', padding: '12px 22px',
-                  fontFamily: '"Fredoka", sans-serif', fontWeight: '900', fontSize: '1.1rem',
-                  cursor: 'pointer', boxShadow: '0 6px 0 #D9385E, 0 10px 20px rgba(0,0,0,0.3)',
-                  display: 'flex', alignItems: 'center', gap: '8px'
-                }}
-              >
-                🔥 ¡Frenar y Aterrizar!
-              </button>
-            </div>
-          )}
         </div>
       )}
 
