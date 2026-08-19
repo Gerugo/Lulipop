@@ -6,7 +6,7 @@ import NivelSelector from './NivelSelector'
 
 const baseUrl = import.meta.env.BASE_URL
 
-// NOTAS MUSICALES (Escala de Do Mayor)
+// NOTAS MUSICALES (Escala de Do Mayor Diatónica)
 const NOTAS = [
   { id: 'DO', nombre: 'DO', notaTxt: 'C4', freq: 261.63, color: '#FF5E62', sombra: '#D9385E', emoji: '🍎', tecla: '1' },
   { id: 'RE', nombre: 'RE', notaTxt: 'D4', freq: 293.66, color: '#FF9F43', sombra: '#E58E26', emoji: '🍊', tecla: '2' },
@@ -26,34 +26,123 @@ const INSTRUMENTOS = [
   { id: 'campanas', nombre: 'Campanitas', emoji: '✨', color: '#9B5DE5' }
 ]
 
-// CANCIONES GUIADAS
+// CANCIONERO COMPLETO CON 8 CANCIONES INFANTILES TRADICIONALES
 const CANCIONES = [
   {
     id: 'estrellita',
     titulo: 'Estrellita dónde estás',
     emoji: '⭐',
-    nivel: 'Fácil',
+    nivel: 'Fácil • 42 notas',
     color: '#FFD166',
     sombra: '#CCAC00',
-    notas: ['DO', 'DO', 'SOL', 'SOL', 'LA', 'LA', 'SOL', 'FA', 'FA', 'MI', 'MI', 'RE', 'RE', 'DO']
+    notas: [
+      'DO', 'DO', 'SOL', 'SOL', 'LA', 'LA', 'SOL',
+      'FA', 'FA', 'MI', 'MI', 'RE', 'RE', 'DO',
+      'SOL', 'SOL', 'FA', 'FA', 'MI', 'MI', 'RE',
+      'SOL', 'SOL', 'FA', 'FA', 'MI', 'MI', 'RE',
+      'DO', 'DO', 'SOL', 'SOL', 'LA', 'LA', 'SOL',
+      'FA', 'FA', 'MI', 'MI', 'RE', 'RE', 'DO'
+    ]
   },
   {
     id: 'cumpleanos',
     titulo: 'Cumpleaños Feliz',
     emoji: '🎂',
-    nivel: 'Medio',
+    nivel: 'Medio • 24 notas',
     color: '#FF9F43',
     sombra: '#E58E26',
-    notas: ['DO', 'DO', 'RE', 'DO', 'FA', 'MI', 'DO', 'DO', 'RE', 'DO', 'SOL', 'FA']
+    notas: [
+      'DO', 'DO', 'RE', 'DO', 'FA', 'MI',
+      'DO', 'DO', 'RE', 'DO', 'SOL', 'FA',
+      'DO', 'DO', 'DO2', 'LA', 'FA', 'MI', 'RE',
+      'LA', 'LA', 'FA', 'SOL', 'FA'
+    ]
   },
   {
     id: 'pollitos',
     titulo: 'Los Pollitos Dicen',
     emoji: '🐣',
-    nivel: 'Difícil',
+    nivel: 'Fácil • 44 notas',
     color: '#1DD1A1',
     sombra: '#10AC84',
-    notas: ['DO', 'RE', 'MI', 'FA', 'SOL', 'SOL', 'LA', 'LA', 'LA', 'LA', 'SOL', 'FA', 'FA', 'MI', 'MI', 'RE', 'RE', 'DO']
+    notas: [
+      'DO', 'RE', 'MI', 'FA', 'SOL', 'SOL', 'LA', 'LA', 'SOL',
+      'FA', 'FA', 'MI', 'MI', 'RE', 'RE', 'DO',
+      'DO', 'RE', 'MI', 'FA', 'SOL', 'SOL', 'LA', 'LA', 'SOL',
+      'FA', 'FA', 'MI', 'MI', 'RE', 'RE', 'DO',
+      'SOL', 'SOL', 'LA', 'LA', 'FA', 'FA', 'SOL', 'SOL',
+      'MI', 'MI', 'FA', 'FA', 'RE', 'RE', 'DO'
+    ]
+  },
+  {
+    id: 'alegria',
+    titulo: 'Himno de la Alegría',
+    emoji: '🎶',
+    nivel: 'Medio • 60 notas',
+    color: '#4facfe',
+    sombra: '#0083B0',
+    notas: [
+      'MI', 'MI', 'FA', 'SOL', 'SOL', 'FA', 'MI', 'RE', 'DO', 'DO', 'RE', 'MI', 'MI', 'RE', 'RE',
+      'MI', 'MI', 'FA', 'SOL', 'SOL', 'FA', 'MI', 'RE', 'DO', 'DO', 'RE', 'MI', 'RE', 'DO', 'DO',
+      'RE', 'RE', 'MI', 'DO', 'RE', 'MI', 'FA', 'MI', 'DO', 'RE', 'MI', 'FA', 'MI', 'RE', 'DO', 'RE',
+      'MI', 'MI', 'FA', 'SOL', 'SOL', 'FA', 'MI', 'RE', 'DO', 'DO', 'RE', 'MI', 'RE', 'DO', 'DO'
+    ]
+  },
+  {
+    id: 'martinillo',
+    titulo: 'Martinillo (Fray Santiago)',
+    emoji: '🔔',
+    nivel: 'Fácil • 32 notas',
+    color: '#9B5DE5',
+    sombra: '#7B3CC4',
+    notas: [
+      'DO', 'RE', 'MI', 'DO', 'DO', 'RE', 'MI', 'DO',
+      'MI', 'FA', 'SOL', 'MI', 'FA', 'SOL',
+      'SOL', 'LA', 'SOL', 'FA', 'MI', 'DO', 'SOL', 'LA', 'SOL', 'FA', 'MI', 'DO',
+      'DO', 'SOL', 'DO', 'DO', 'SOL', 'DO'
+    ]
+  },
+  {
+    id: 'barquito',
+    titulo: 'Rema Tu Barquito',
+    emoji: '🚣',
+    nivel: 'Medio • 27 notas',
+    color: '#54A0FF',
+    sombra: '#2E86DE',
+    notas: [
+      'DO', 'DO', 'DO', 'RE', 'MI', 'MI', 'RE', 'MI', 'FA', 'SOL',
+      'DO2', 'DO2', 'DO2', 'SOL', 'SOL', 'SOL', 'MI', 'MI', 'MI', 'DO', 'DO', 'DO',
+      'SOL', 'FA', 'MI', 'RE', 'DO'
+    ]
+  },
+  {
+    id: 'vacalola',
+    titulo: 'La Vaca Lola',
+    emoji: '🐮',
+    nivel: 'Fácil • 36 notas',
+    color: '#FF6B81',
+    sombra: '#D9385E',
+    notas: [
+      'DO', 'DO', 'DO', 'RE', 'MI', 'DO', 'DO', 'DO', 'RE', 'MI',
+      'SOL', 'SOL', 'SOL', 'FA', 'MI', 'FA', 'FA', 'FA', 'MI', 'RE',
+      'DO', 'DO', 'DO', 'RE', 'MI', 'DO', 'DO', 'DO', 'RE', 'MI',
+      'SOL', 'SOL', 'FA', 'MI', 'RE', 'DO'
+    ]
+  },
+  {
+    id: 'lechera',
+    titulo: 'Tengo una Vaca Lechera',
+    emoji: '🥛',
+    nivel: 'Avanzado • 37 notas',
+    color: '#38ef7d',
+    sombra: '#11998e',
+    notas: [
+      'DO', 'MI', 'SOL', 'DO', 'MI', 'SOL', 'SOL',
+      'LA', 'SOL', 'FA', 'MI', 'FA', 'SOL', 'MI',
+      'DO', 'MI', 'SOL', 'DO', 'MI', 'SOL', 'SOL',
+      'LA', 'SOL', 'FA', 'MI', 'FA', 'RE', 'DO',
+      'SOL', 'DO2', 'SOL', 'MI', 'SOL', 'DO2', 'SOL', 'MI', 'DO'
+    ]
   }
 ]
 
@@ -67,16 +156,16 @@ export default function JuegoMusica({ perfil, onVolver }) {
   const [teclaPulsada, setTeclaPulsada] = useState(null)
   const [particulas, setParticulas] = useState([])
   
-  // Grabadora
+  // Grabadora y auto-demostración
   const [grabando, setGrabando] = useState(false)
   const [reproduciendo, setReproduciendo] = useState(false)
   const [grabacion, setGrabacion] = useState([])
   const tiempoInicioGrabacion = useRef(null)
+  const timerDemoRef = useRef([])
 
   const audioCtxRef = useRef(null)
   const { mejores, guardarMejorNivel } = useMejoresNiveles('musica', perfil?.id)
 
-  // Obtener o inicializar AudioContext tras interacción del usuario
   const getAudioContext = useCallback(() => {
     if (!audioCtxRef.current) {
       const AudioCtx = window.AudioContext || window.webkitAudioContext
@@ -95,7 +184,6 @@ export default function JuegoMusica({ perfil, onVolver }) {
       const now = ctx.currentTime
 
       if (tipoInstrumento === 'piano') {
-        // PIANO: Onda triangular con decaimiento cálido natural
         const osc = ctx.createOscillator()
         const oscArmonico = ctx.createOscillator()
         const gainNode = ctx.createGain()
@@ -124,7 +212,6 @@ export default function JuegoMusica({ perfil, onVolver }) {
         oscArmonico.stop(now + 0.65)
       } 
       else if (tipoInstrumento === 'xilofono') {
-        // XILÓFONO: Ataque brillante percusivo y cuerpo resonante
         const osc = ctx.createOscillator()
         const oscMetal = ctx.createOscillator()
         const gainNode = ctx.createGain()
@@ -148,55 +235,61 @@ export default function JuegoMusica({ perfil, onVolver }) {
         oscMetal.stop(now + 0.3)
       } 
       else if (tipoInstrumento === 'animales') {
-        // GATITO MIAU: Modulación de frecuencia con curva vocal juguetona
         const osc = ctx.createOscillator()
         const gainNode = ctx.createGain()
 
-        osc.type = 'sawtooth'
-        // Pitch bend característico del miau (sube y baja ligeramente)
+        osc.type = 'triangle'
         osc.frequency.setValueAtTime(freq * 0.9, now)
-        osc.frequency.exponentialRampToValueAtTime(freq * 1.35, now + 0.18)
-        osc.frequency.exponentialRampToValueAtTime(freq * 1.05, now + 0.5)
+        osc.frequency.linearRampToValueAtTime(freq * 1.3, now + 0.15)
+        osc.frequency.linearRampToValueAtTime(freq * 0.85, now + 0.4)
 
-        // Filtro pasa bajos para suavizar el timbre
-        const filter = ctx.createBiquadFilter()
-        filter.type = 'lowpass'
-        filter.frequency.setValueAtTime(1400, now)
+        gainNode.gain.setValueAtTime(0.7, now)
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.45)
 
-        gainNode.gain.setValueAtTime(0.55, now)
-        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.55)
-
-        osc.connect(filter)
-        filter.connect(gainNode)
+        osc.connect(gainNode)
         gainNode.connect(ctx.destination)
 
         osc.start(now)
-        osc.stop(now + 0.6)
+        osc.stop(now + 0.5)
       } 
       else if (tipoInstrumento === 'campanas') {
-        // CAMPANITAS MÁGICAS: Arpegio armónico resplandeciente
-        [1, 2.01, 3.02, 4.05].forEach((mult, idx) => {
-          const osc = ctx.createOscillator()
-          const gain = ctx.createGain()
-          osc.type = 'sine'
-          osc.frequency.setValueAtTime(freq * mult, now)
-          gain.gain.setValueAtTime(0.3 / (idx + 1), now)
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.4)
-          osc.connect(gain)
-          gain.connect(ctx.destination)
-          osc.start(now)
-          osc.stop(now + 1.45)
-        })
+        const osc1 = ctx.createOscillator()
+        const osc2 = ctx.createOscillator()
+        const osc3 = ctx.createOscillator()
+        const gainNode = ctx.createGain()
+
+        osc1.type = 'sine'
+        osc2.type = 'sine'
+        osc3.type = 'sine'
+
+        osc1.frequency.setValueAtTime(freq, now)
+        osc2.frequency.setValueAtTime(freq * 2.75, now)
+        osc3.frequency.setValueAtTime(freq * 5.4, now)
+
+        gainNode.gain.setValueAtTime(0.6, now)
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 1.6)
+
+        osc1.connect(gainNode)
+        osc2.connect(gainNode)
+        osc3.connect(gainNode)
+        gainNode.connect(ctx.destination)
+
+        osc1.start(now)
+        osc2.start(now)
+        osc3.start(now)
+        osc1.stop(now + 1.65)
+        osc2.stop(now + 0.9)
+        osc3.stop(now + 0.5)
       }
-    } catch (e) {
-      console.warn("Audio Context error:", e)
+    } catch {
+      // Audio fallback silencioso
     }
   }, [getAudioContext, instrumento])
 
-  // CREAR PARTÍCULAS DE NOTAS FLOTANTES
+  // LANZADOR DE PARTÍCULAS
   const lanzarParticula = (x, y, emoji) => {
     const id = Date.now() + Math.random()
-    const emojisNotas = ['🎵', '🎶', '⭐', '✨', '💖', '🌈']
+    const emojisNotas = ['🎵', '🎶', '⭐', '✨', '💖', '🌈', '🍓', '🍋']
     const icono = emoji || emojisNotas[Math.floor(Math.random() * emojisNotas.length)]
     
     setParticulas(prev => [...prev, { id, x, y, icono }])
@@ -211,20 +304,17 @@ export default function JuegoMusica({ perfil, onVolver }) {
     setTeclaPulsada(notaObj.id)
     setTimeout(() => setTeclaPulsada(null), 250)
 
-    // Partícula en la posición tocada
     if (e) {
       const clientX = e.clientX !== undefined ? e.clientX : (e.touches && e.touches[0] ? e.touches[0].clientX : window.innerWidth / 2)
       const clientY = e.clientY !== undefined ? e.clientY : (e.touches && e.touches[0] ? e.touches[0].clientY : window.innerHeight / 2)
       lanzarParticula(clientX, clientY, notaObj.emoji)
     }
 
-    // Si estamos grabando en modo libre
     if (grabando) {
       const offsetMs = Date.now() - tiempoInicioGrabacion.current
       setGrabacion(prev => [...prev, { nota: notaObj, tiempo: offsetMs }])
     }
 
-    // Si estamos en modo cancionero guiado
     if (modo === 'canciones' && cancionSeleccionada && !victoria) {
       const notaEsperada = cancionSeleccionada.notas[pasoCancion]
       if (notaObj.id === notaEsperada) {
@@ -232,7 +322,6 @@ export default function JuegoMusica({ perfil, onVolver }) {
         const siguientePaso = pasoCancion + 1
         
         if (siguientePaso >= cancionSeleccionada.notas.length) {
-          // Victoria al completar la canción
           setPasoCancion(siguientePaso)
           setTimeout(() => {
             setVictoria(true)
@@ -250,7 +339,7 @@ export default function JuegoMusica({ perfil, onVolver }) {
     }
   }
 
-  // CONTROL DE GRABACIÓN
+  // CONTROL DE GRABACIÓN MODO LIBRE
   const toggleGrabar = () => {
     if (grabando) {
       setGrabando(false)
@@ -278,6 +367,37 @@ export default function JuegoMusica({ perfil, onVolver }) {
     })
   }
 
+  // AUTO-DEMOSTRACIÓN DE LA CANCIÓN COMPLETA
+  const reproducirDemoCancion = () => {
+    if (!cancionSeleccionada || reproduciendo) return
+    setReproduciendo(true)
+    timerDemoRef.current.forEach(t => clearTimeout(t))
+    timerDemoRef.current = []
+
+    cancionSeleccionada.notas.forEach((notaId, index) => {
+      const t = setTimeout(() => {
+        const notaObj = NOTAS.find(n => n.id === notaId)
+        if (notaObj) {
+          reproducirTono(notaObj.freq)
+          setTeclaPulsada(notaObj.id)
+          setTimeout(() => setTeclaPulsada(null), 220)
+        }
+
+        if (index === cancionSeleccionada.notas.length - 1) {
+          setTimeout(() => setReproduciendo(false), 600)
+        }
+      }, index * 380)
+      timerDemoRef.current.push(t)
+    })
+  }
+
+  const detenerDemoCancion = () => {
+    timerDemoRef.current.forEach(t => clearTimeout(t))
+    timerDemoRef.current = []
+    setReproduciendo(false)
+    setTeclaPulsada(null)
+  }
+
   // ATAJOS DE TECLADO (1 a 8)
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -292,6 +412,7 @@ export default function JuegoMusica({ perfil, onVolver }) {
 
   // REINICIAR CANCIÓN
   const empezarCancion = (cancion) => {
+    detenerDemoCancion()
     setCancionSeleccionada(cancion)
     setPasoCancion(0)
     setVictoria(false)
@@ -309,7 +430,7 @@ export default function JuegoMusica({ perfil, onVolver }) {
         onVolver={() => setModo('menu')}
         emojiJuego="🎵"
         titulo="Cancionero Mágico"
-        subtitulo="Elige tu canción"
+        subtitulo="Elige tu canción completa favorita"
         niveles={CANCIONES.map(c => ({
           id: c.id,
           nombre: c.titulo,
@@ -326,6 +447,15 @@ export default function JuegoMusica({ perfil, onVolver }) {
       />
     )
   }
+
+  // Notas que vienen a continuación para la cinta musical
+  const proximasNotas = cancionSeleccionada && modo === 'canciones'
+    ? cancionSeleccionada.notas.slice(pasoCancion, pasoCancion + 5).map(id => NOTAS.find(n => n.id === id))
+    : []
+
+  const progresoCancion = cancionSeleccionada
+    ? Math.round((pasoCancion / cancionSeleccionada.notas.length) * 100)
+    : 0
 
   return (
     <div className="juego-musica-raiz" style={{
@@ -410,13 +540,13 @@ export default function JuegoMusica({ perfil, onVolver }) {
           }
           .badge-cabecera-musica {
             padding: 4px 14px !important;
-            font-size: 1rem !important;
+            font-size: 0.95rem !important;
             border-radius: 18px !important;
           }
           .tecla-piano-3d {
-            height: clamp(110px, 48vh, 180px) !important;
+            height: clamp(100px, 44vh, 160px) !important;
             border-radius: 16px !important;
-            padding-bottom: 8px !important;
+            padding-bottom: 6px !important;
           }
           .emoji-tecla {
             font-size: 18px !important;
@@ -449,20 +579,9 @@ export default function JuegoMusica({ perfil, onVolver }) {
           .grid-modos-musica {
             gap: 10px !important;
           }
-          .card-modo-musica {
-            padding: 8px 12px !important;
-            border-radius: 16px !important;
-          }
-          .card-modo-musica h3 {
-            font-size: 1.05rem !important;
-            margin-bottom: 2px !important;
-          }
-          .card-modo-musica p {
-            font-size: 0.75rem !important;
-          }
-          .emoji-modo-musica {
-            font-size: 26px !important;
-            margin-bottom: 2px !important;
+          .cinta-notas-guia {
+            margin: 2px 0 !important;
+            padding: 4px 10px !important;
           }
         }
       `}</style>
@@ -475,9 +594,10 @@ export default function JuegoMusica({ perfil, onVolver }) {
       ))}
 
       {/* BARRA SUPERIOR */}
-      <div className="header-barra-musica" style={{ width: '100%', maxWidth: '900px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 20 }}>
+      <div className="header-barra-musica" style={{ width: '100%', maxWidth: '950px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 20 }}>
         <button 
           onClick={() => {
+            detenerDemoCancion()
             if (modo !== 'menu') setModo('menu')
             else onVolver()
           }}
@@ -494,14 +614,26 @@ export default function JuegoMusica({ perfil, onVolver }) {
 
         {modo === 'canciones' && cancionSeleccionada && (
           <div className="badge-cabecera-musica" style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.9)', padding: '8px 22px', borderRadius: '25px',
+            backgroundColor: 'rgba(255, 255, 255, 0.92)', padding: '6px 18px', borderRadius: '25px',
             border: '4px solid white', boxShadow: '0 8px 20px rgba(0,0,0,0.12)', display: 'flex', alignItems: 'center', gap: '8px'
           }}>
-            <span style={{ fontSize: '24px' }}>{cancionSeleccionada.emoji}</span>
-            <span style={{ fontWeight: '900', color: '#334155', fontSize: '1.15rem' }}>{cancionSeleccionada.titulo}</span>
-            <span style={{ backgroundColor: '#FFD166', color: '#7A5C00', padding: '2px 8px', borderRadius: '12px', fontSize: '0.85rem', fontWeight: '900' }}>
-              {pasoCancion} / {cancionSeleccionada.notas.length}
+            <span style={{ fontSize: '22px' }}>{cancionSeleccionada.emoji}</span>
+            <span style={{ fontWeight: '900', color: '#334155', fontSize: '1.05rem' }}>{cancionSeleccionada.titulo}</span>
+            <span style={{ backgroundColor: '#FFD166', color: '#7A5C00', padding: '2px 8px', borderRadius: '12px', fontSize: '0.82rem', fontWeight: '900' }}>
+              {pasoCancion}/{cancionSeleccionada.notas.length} ({progresoCancion}%)
             </span>
+            <button
+              onClick={reproduciendo ? detenerDemoCancion : reproducirDemoCancion}
+              style={{
+                backgroundColor: reproduciendo ? '#FF4757' : '#38ef7d',
+                color: 'white', border: 'none', borderRadius: '14px',
+                padding: '4px 10px', fontSize: '0.78rem', fontWeight: '900',
+                cursor: 'pointer', fontFamily: '"Fredoka", sans-serif',
+                boxShadow: '0 3px 0 rgba(0,0,0,0.15)'
+              }}
+            >
+              {reproduciendo ? '⏹️ Parar' : '▶️ Oír Melodía'}
+            </button>
           </div>
         )}
 
@@ -599,10 +731,39 @@ export default function JuegoMusica({ perfil, onVolver }) {
               onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
             >
               <div className="emoji-modo-musica" style={{ fontSize: '38px', marginBottom: '4px' }}>⭐🎵</div>
-              <h3 style={{ color: '#92400E', margin: '0 0 4px 0', fontSize: '1.2rem', fontWeight: '900' }}>Cancionero</h3>
-              <p style={{ color: '#FBBF24', fontSize: '0.82rem', margin: 0, fontWeight: '700' }}>Aprende canciones guiadas</p>
+              <h3 style={{ color: '#92400E', margin: '0 0 4px 0', fontSize: '1.2rem', fontWeight: '900' }}>Cancionero (8)</h3>
+              <p style={{ color: '#FBBF24', fontSize: '0.82rem', margin: 0, fontWeight: '700' }}>Aprende canciones completas</p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* CINTA DE PRÓXIMAS NOTAS EN MODO CANCIONES */}
+      {modo === 'canciones' && cancionSeleccionada && (
+        <div className="cinta-notas-guia" style={{
+          backgroundColor: 'rgba(255, 255, 255, 0.88)', padding: '6px 16px', borderRadius: '24px',
+          border: '3px solid white', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center',
+          gap: '8px', zIndex: 15, boxShadow: '0 6px 16px rgba(0,0,0,0.1)'
+        }}>
+          <span style={{ fontSize: '0.85rem', fontWeight: '900', color: '#475569' }}>Siguiente nota:</span>
+          {proximasNotas.map((n, idx) => (
+            <div
+              key={idx}
+              style={{
+                backgroundColor: idx === 0 ? n?.color : 'rgba(255, 255, 255, 0.7)',
+                color: idx === 0 ? 'white' : '#475569',
+                border: idx === 0 ? '3px solid white' : '2px solid rgba(0,0,0,0.05)',
+                borderRadius: '16px', padding: '4px 12px', display: 'flex', alignItems: 'center', gap: '4px',
+                fontWeight: '900', fontSize: idx === 0 ? '1.1rem' : '0.85rem',
+                transform: idx === 0 ? 'scale(1.12)' : 'scale(0.92)',
+                boxShadow: idx === 0 ? '0 4px 10px rgba(0,0,0,0.15)' : 'none',
+                transition: 'all 0.2s'
+              }}
+            >
+              <span>{n?.emoji}</span>
+              <span>{n?.nombre}</span>
+            </div>
+          ))}
         </div>
       )}
 
@@ -692,7 +853,7 @@ export default function JuegoMusica({ perfil, onVolver }) {
               ¡Eres un Gran Músico!
             </h2>
             <p style={{ color: '#64748B', fontSize: '1.05rem', margin: '0 0 14px 0', fontWeight: '700' }}>
-              Completaste <b>{cancionSeleccionada?.titulo}</b> ✨
+              Completaste toda la canción <b>{cancionSeleccionada?.titulo}</b> ✨
             </p>
             <div style={{ fontSize: '2.4rem', marginBottom: '20px' }}>⭐⭐⭐</div>
 
