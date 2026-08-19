@@ -1,35 +1,50 @@
 import { useState, useRef } from 'react'
 import { supabase } from './supabaseClient'
 import fondoImg from './fondo-lulipop.png'
+import NivelSelector from './NivelSelector'
+import useMejoresNiveles from './useMejoresNiveles'
 
 const RECETAS = [
   {
     id: 'batido',
-    nombre: 'Batido Tropical',
-    emojiPlato: '🥤',
+    nombre: '1. Batido Tropical',
+    descripcion: '3 ingredientes dulces',
+    emoji: '🥤',
     color: '#FF9966',
-    sombraColor: '#D9534F',
+    sombra: '#D9534F',
     ingredientes: ['🍌', '🍓', '🥛'],
     decoys: ['🥕', '🧀', '🍕'],
   },
   {
     id: 'ensalada',
-    nombre: 'Ensalada Feliz',
-    emojiPlato: '🥗',
+    nombre: '2. Ensalada Feliz',
+    descripcion: '4 vegetales crujientes',
+    emoji: '🥗',
     color: '#43e97b',
-    sombraColor: '#27ae60',
+    sombra: '#27ae60',
     ingredientes: ['🍅', '🥒', '🧀', '🥬'],
     decoys: ['🍩', '🍫', '🍭'],
   },
   {
     id: 'pizza',
-    nombre: 'Pizza de Lulipop',
-    emojiPlato: '🍕',
+    nombre: '3. Pizza de Lulipop',
+    descripcion: '5 ingredientes deliciosos',
+    emoji: '🍕',
     color: '#FFD166',
-    sombraColor: '#CCAC00',
+    sombra: '#CCAC00',
     ingredientes: ['🍞', '🧀', '🍅', '🍄', '🫒'],
     decoys: ['🍦', '🍬', '🍇'],
   },
+  {
+    id: 'pastel',
+    nombre: '4. Pastelito Mágico',
+    descripcion: '4 ingredientes de repostería',
+    emoji: '🧁',
+    color: '#FF6B81',
+    sombra: '#D9385E',
+    ingredientes: ['🥚', '🥛', '🍓', '🍫'],
+    decoys: ['🥦', '🧅', '🧄'],
+  }
 ]
 
 function barajar(array) {
@@ -81,30 +96,27 @@ function useSonidos() {
 }
 
 export default function JuegoCocina({ perfil, onVolver }) {
+  const [recetaId, setRecetaId] = useState(null)
   const [recetaIndex, setRecetaIndex] = useState(0)
-  const [ingredientesTray, setIngredientesTray] = useState(() =>
-    barajar(
-      [...RECETAS[0].ingredientes, ...RECETAS[0].decoys].map((emoji, i) => ({ uid: `0-${i}-${emoji}`, emoji }))
-    )
-  )
+  const [ingredientesTray, setIngredientesTray] = useState([])
   const [recolectados, setRecolectados] = useState([])
   const [estadoMascota, setEstadoMascota] = useState('feliz') // feliz | duda | celebra
   const [mensaje, setMensaje] = useState('')
   const [recetaCompleta, setRecetaCompleta] = useState(false)
-  const [victoriaFinal, setVictoriaFinal] = useState(false)
-  const [guardando, setGuardando] = useState(false)
   const [ingredienteAnimando, setIngredienteAnimando] = useState(null)
 
   const baseUrl = import.meta.env.BASE_URL
-  const { sonidoAcierto, sonidoError, sonidoVictoriaReceta, sonidoVictoriaFinal } = useSonidos()
+  const { sonidoAcierto, sonidoError, sonidoVictoriaReceta } = useSonidos()
+  const { mejores, guardarMejorNivel } = useMejoresNiveles('cocina', perfil?.id)
 
-  const receta = RECETAS[recetaIndex]
+  const receta = RECETAS[recetaIndex] || RECETAS[0]
 
   const iniciarReceta = (idx) => {
-    const r = RECETAS[idx]
+    const r = RECETAS[idx] || RECETAS[0]
     const mezcla = barajar(
       [...r.ingredientes, ...r.decoys].map((emoji, i) => ({ uid: `${idx}-${i}-${emoji}`, emoji }))
     )
+    setRecetaId(r.id)
     setRecetaIndex(idx)
     setIngredientesTray(mezcla)
     setRecolectados([])
@@ -113,37 +125,27 @@ export default function JuegoCocina({ perfil, onVolver }) {
     setEstadoMascota('feliz')
   }
 
-  const guardarProgreso = async () => {
+  const guardarProgreso = async (rId) => {
     if (!perfil?.id) return
-    setGuardando(true)
+    guardarMejorNivel(rId, 3)
     try {
       await supabase.from('progreso_actividades').insert([
-        { perfil_id: perfil.id, padre_id: perfil.padre_id, actividad_id: 'juego_cocina', completado: true, estrellas: 3 }
+        { perfil_id: perfil.id, padre_id: perfil.padre_id, actividad_id: `cocina_${rId}`, completado: true, estrellas: 3 }
       ])
     } catch {
-      // Silencioso: no bloqueamos la diversión del niño por un fallo de red
+      // Silencioso
     }
-    setGuardando(false)
   }
 
   const completarReceta = () => {
     sonidoVictoriaReceta()
     setEstadoMascota('celebra')
     setRecetaCompleta(true)
-
-    setTimeout(() => {
-      if (recetaIndex < RECETAS.length - 1) {
-        iniciarReceta(recetaIndex + 1)
-      } else {
-        sonidoVictoriaFinal()
-        setVictoriaFinal(true)
-        guardarProgreso()
-      }
-    }, 2200)
+    guardarProgreso(receta.id)
   }
 
   const tocarIngrediente = (item) => {
-    if (recetaCompleta || victoriaFinal) return
+    if (recetaCompleta) return
 
     const yaEsNecesario = receta.ingredientes.includes(item.emoji)
     const yaRecolectado = recolectados.includes(item.emoji)
@@ -169,7 +171,7 @@ export default function JuegoCocina({ perfil, onVolver }) {
     } else if (!yaEsNecesario) {
       sonidoError()
       setEstadoMascota('duda')
-      setMensaje('¡Ese no toca! Prueba otro 😊')
+      setMensaje('¡Ese no es! 🤔')
       setTimeout(() => {
         setEstadoMascota('feliz')
         setMensaje('')
@@ -177,315 +179,237 @@ export default function JuegoCocina({ perfil, onVolver }) {
     }
   }
 
-  const reiniciarTodo = () => {
-    setVictoriaFinal(false)
-    iniciarReceta(0)
+  // SELECTOR DE RECETAS
+  if (!recetaId) {
+    return (
+      <NivelSelector
+        onVolver={onVolver}
+        emojiJuego="🍳"
+        titulo="Cocina Feliz"
+        subtitulo="Elige tu receta para cocinar"
+        niveles={RECETAS}
+        mejores={mejores}
+        onSeleccionar={(id) => {
+          const idx = RECETAS.findIndex(r => r.id === id)
+          if (idx !== -1) iniciarReceta(idx)
+        }}
+      />
+    )
   }
 
-  const emojiMascota = estadoMascota === 'celebra' ? '🎉' : estadoMascota === 'duda' ? '🤔' : '👨‍🍳'
+  const faltantes = receta.ingredientes.filter((ing) => !recolectados.includes(ing))
 
   return (
-    <div style={{
-      minHeight: '100dvh', width: '100vw',
-      backgroundImage: `url(${fondoImg})`,
-      backgroundSize: 'cover', backgroundPosition: 'center',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start',
-      fontFamily: '"Fredoka", sans-serif', position: 'absolute', top: 0, left: 0, zIndex: 10,
-      overflow: 'hidden', userSelect: 'none', padding: '20px', boxSizing: 'border-box'
-    }}>
+    <div
+      style={{
+        position: 'fixed', inset: 0,
+        width: '100vw', height: '100dvh', minHeight: '100dvh',
+        backgroundImage: `url(${fondoImg})`,
+        backgroundSize: 'cover', backgroundPosition: 'center',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between',
+        fontFamily: '"Fredoka", sans-serif',
+        userSelect: 'none', overflow: 'hidden', padding: '14px', boxSizing: 'border-box', zIndex: 10
+      }}
+    >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700;900&display=swap');
 
-        .anim-pop { animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-        @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .anim-pop { animation: popIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes popIn { 0% { transform: scale(0.85); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 
-        .anim-shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
-        @keyframes shake {
-          10%, 90% { transform: translate3d(-2px, 0, 0); }
-          20%, 80% { transform: translate3d(4px, 0, 0); }
-          30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
-          40%, 60% { transform: translate3d(6px, 0, 0); }
+        .anim-victoria { animation: victoriaBounce 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes victoriaBounce { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.15); } 100% { transform: scale(1); opacity: 1; } }
+
+        .anim-ingrediente-volando {
+          animation: volarHaciaOlla 0.42s ease-in forwards;
+        }
+        @keyframes volarHaciaOlla {
+          0% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.35) translateY(-25px); opacity: 0.9; }
+          100% { transform: scale(0.2) translateY(50px); opacity: 0; }
         }
 
-        .anim-victoria { animation: victoria 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-        @keyframes victoria {
-          0% { transform: scale(0); opacity: 0; }
-          50% { transform: scale(1.2); opacity: 1; }
-          100% { transform: scale(1); opacity: 1; }
+        .anim-burbujas-olla {
+          animation: hervor 1.4s ease-in-out infinite alternate;
+        }
+        @keyframes hervor {
+          0% { transform: scale(1); }
+          100% { transform: scale(1.04); }
         }
 
-        .anim-estrella { animation: rotaEstrella 3s linear infinite; }
-        @keyframes rotaEstrella { 100% { transform: rotate(360deg); } }
-
-        .anim-vuela-al-plato { animation: volarAlPlato 0.42s cubic-bezier(0.55, 0, 1, 0.45) forwards; }
-        @keyframes volarAlPlato {
-          0% { transform: scale(1) translateY(0); opacity: 1; }
-          100% { transform: scale(0.3) translateY(-120px); opacity: 0; }
+        .btn-ingrediente {
+          transition: transform 0.12s, box-shadow 0.12s;
+          cursor: pointer;
+          touch-action: manipulation;
+          -webkit-tap-highlight-color: transparent;
         }
-
-        .anim-flota-mascota { animation: flotarMascota 3.5s ease-in-out infinite; }
-        @keyframes flotarMascota {
-          0%, 100% { transform: translateY(0px) rotate(-2deg); }
-          50% { transform: translateY(-14px) rotate(2deg); }
-        }
-
-        .anim-slot-lleno { animation: slotLleno 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
-        @keyframes slotLleno { 0% { transform: scale(0); } 60% { transform: scale(1.3); } 100% { transform: scale(1); } }
-
-        .anim-confeti { animation: caeConfeti linear forwards; }
-        @keyframes caeConfeti {
-          0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
-          100% { transform: translateY(340px) rotate(360deg); opacity: 0; }
-        }
-
-        .glass-panel {
-          background: rgba(255, 255, 255, 0.85);
-          backdrop-filter: blur(15px);
-          border: 6px solid white;
-          border-radius: 40px;
-          box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-        }
-
-        .btn-header-cocina {
-          width: 55px; height: 55px; border-radius: 18px;
-          background-color: #FFFFFF; color: #FF5E62; border: none;
-          font-size: 24px; cursor: pointer;
-          box-shadow: 0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15);
-          display: flex; align-items: center; justify-content: center;
-        }
-
-        .panel-receta-cocina {
-          padding: 16px 20px;
-          width: 100%;
-          box-sizing: border-box;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 10px;
-          position: relative;
+        .btn-ingrediente:active {
+          transform: scale(0.92);
         }
 
         @media (max-height: 550px) {
-          .contenedor-juego-cocina {
-            padding: 8px 14px !important;
-          }
-          .btn-header-cocina {
-            width: 42px !important;
-            height: 42px !important;
-            font-size: 18px !important;
-            border-radius: 12px !important;
-          }
-          .badge-progreso-cocina {
-            padding: 4px 12px !important;
-            border-radius: 16px !important;
-          }
-          .area-juego-cocina {
-            margin-top: 4px !important;
-            max-width: 580px !important;
-          }
-          .titulo-receta-cocina {
-            font-size: 1.2rem !important;
-            margin: 2px 0 6px 0 !important;
-          }
-          .panel-receta-cocina {
-            padding: 6px 14px !important;
-            gap: 6px !important;
-            border-radius: 20px !important;
-          }
-          .slot-ingrediente-cocina {
-            width: 44px !important;
-            height: 44px !important;
-            font-size: 1.5rem !important;
-            border-radius: 14px !important;
-          }
-          .img-mascota-cocina {
-            width: 50px !important;
-          }
-          .btn-ingrediente {
-            width: 52px !important;
-            height: 52px !important;
-            font-size: 1.8rem !important;
-            border-radius: 16px !important;
-          }
-          .bandeja-ingredientes-cocina {
-            margin-top: 6px !important;
-            gap: 10px !important;
-          }
+          .btn-header-cocina { width: 40px !important; height: 40px !important; font-size: 18px !important; border-radius: 12px !important; }
+          .badge-cabecera-cocina { padding: 4px 14px !important; font-size: 0.95rem !important; border-radius: 16px !important; }
+          .olla-cocina-caja { width: 140px !important; height: 140px !important; }
+          .mascota-cocina-img { width: 90px !important; height: 90px !important; }
         }
       `}</style>
 
-      {/* HEADER */}
-      <div style={{ position: 'relative', width: '100%', maxWidth: '650px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 20 }}>
+      {/* HEADER SUPERIOR */}
+      <div style={{ width: '100%', maxWidth: '900px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 20 }}>
         <button
-          onClick={onVolver}
+          onClick={() => setRecetaId(null)}
           className="btn-header-cocina"
+          style={{
+            width: '52px', height: '52px', borderRadius: '18px',
+            backgroundColor: '#FFFFFF', color: '#FF5E62', border: 'none',
+            fontSize: '22px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 6px 0 #E0E0E0, 0 10px 15px rgba(0,0,0,0.15)'
+          }}
         >
           ❮
         </button>
 
-        {!victoriaFinal && (
-          <div className="glass-panel badge-progreso-cocina" style={{ padding: '6px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '18px' }}>{perfil?.avatar || '👦'}</span>
-            <div style={{ display: 'flex', gap: '6px' }}>
-              {RECETAS.map((r, idx) => (
-                <div key={r.id} style={{
-                  width: '14px', height: '14px', borderRadius: '50%',
-                  backgroundColor: idx < recetaIndex ? '#43e97b' : idx === recetaIndex ? '#FFD166' : '#E2E8F0',
-                  border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                  transform: idx === recetaIndex ? 'scale(1.25)' : 'scale(1)',
-                  transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
-                }} />
-              ))}
-            </div>
-          </div>
-        )}
+        <div className="badge-cabecera-cocina" style={{
+          backgroundColor: 'rgba(255, 255, 255, 0.92)', padding: '8px 22px', borderRadius: '25px',
+          border: '4px solid white', boxShadow: '0 8px 20px rgba(0,0,0,0.12)', display: 'flex', alignItems: 'center', gap: '8px'
+        }}>
+          <span style={{ fontSize: '24px' }}>{receta.emoji}</span>
+          <span style={{ fontWeight: '900', color: '#334155', fontSize: '1.15rem' }}>{receta.nombre}</span>
+          <span style={{ backgroundColor: '#FFD166', color: '#7A5C00', padding: '2px 8px', borderRadius: '12px', fontSize: '0.85rem', fontWeight: '900' }}>
+            {recolectados.length}/{receta.ingredientes.length}
+          </span>
+        </div>
+
+        <div style={{ width: '52px' }} />
       </div>
 
-      {!victoriaFinal ? (
-        <div className="anim-pop" key={receta.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: '600px', marginTop: '20px', flex: 1 }}>
-
-          <h2 style={{ color: '#334155', fontSize: '2rem', margin: '10px 0', fontWeight: '900', textAlign: 'center', textShadow: '0 2px 4px rgba(0,0,0,0.08)' }}>
-            {receta.emojiPlato} {receta.nombre}
-          </h2>
-
-          {/* TARJETA DE RECETA: plato con huecos a rellenar */}
-          <div className="glass-panel" style={{ padding: '20px 25px', width: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px', position: 'relative' }}>
-
-            <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', justifyContent: 'center' }}>
-              {receta.ingredientes.map((emoji, idx) => {
-                const relleno = recolectados.includes(emoji)
-                return (
-                  <div key={idx} className={relleno ? 'anim-slot-lleno' : ''} style={{
-                    width: '68px', height: '68px', borderRadius: '20px',
-                    backgroundColor: relleno ? receta.color : 'rgba(255,255,255,0.6)',
-                    border: `3px dashed ${relleno ? receta.color : '#CBD5E1'}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '2.2rem',
-                    boxShadow: relleno ? `0 8px 0 ${receta.sombraColor}` : 'none',
-                    transition: 'background-color 0.3s'
-                  }}>
-                    {relleno ? emoji : '❓'}
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Mascota cocinera */}
-            <div className="anim-flota-mascota" style={{ marginTop: '4px', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
-              <img
-                src={`${baseUrl}assets/mascota.png`}
-                alt="Mascota cocinera"
-                style={{ width: '110px', height: 'auto', filter: 'drop-shadow(0 12px 15px rgba(0,0,0,0.25))' }}
-                onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block' }}
-              />
-              <span style={{ display: 'none', fontSize: '90px' }}>{emojiMascota}</span>
-              <span style={{ position: 'absolute', top: '-14px', right: '-18px', fontSize: '34px' }}>
-                {estadoMascota === 'celebra' ? '🎉' : estadoMascota === 'duda' ? '🤔' : ''}
-              </span>
-            </div>
-
-            <div style={{ height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {mensaje && (
-                <div className="anim-pop" style={{
-                  backgroundColor: estadoMascota === 'duda' ? '#FEF2F2' : '#F0FDF4',
-                  padding: '8px 24px', borderRadius: '25px',
-                  border: `3px solid ${estadoMascota === 'duda' ? '#FF6B6B' : '#43e97b'}`,
-                  fontWeight: '800', fontSize: '1.1rem',
-                  color: estadoMascota === 'duda' ? '#DC2626' : '#16A34A'
-                }}>
-                  {mensaje}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* BANDEJA DE INGREDIENTES */}
-          <div style={{ marginTop: '20px', display: 'flex', gap: '18px', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '520px' }}>
-            {ingredientesTray.map((item) => (
-              <button
-                key={item.uid}
-                className={`btn-ingrediente ${ingredienteAnimando === item.uid ? 'anim-vuela-al-plato' : ''}`}
-                onClick={() => tocarIngrediente(item)}
-              >
-                {item.emoji}
-              </button>
-            ))}
-          </div>
-
-          {/* CELEBRACIÓN DE RECETA COMPLETADA */}
-          {recetaCompleta && (
+      {/* ZONA CENTRAL: OLLA MÁGICA Y MASCOTA */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px',
+        width: '100%', maxWidth: '750px', zIndex: 15, position: 'relative'
+      }}>
+        {/* MASCOTA CHEF */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          {mensaje && (
             <div className="anim-pop" style={{
-              position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-              backgroundColor: 'rgba(255,255,255,0.95)', padding: '30px 45px', borderRadius: '35px',
-              border: '5px solid #FFD166', boxShadow: '0 20px 40px rgba(0,0,0,0.25)',
-              textAlign: 'center', zIndex: 50
+              backgroundColor: 'white', padding: '4px 12px', borderRadius: '14px',
+              fontSize: '0.88rem', fontWeight: '900', color: '#1e293b', boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
+              marginBottom: '4px', whiteSpace: 'nowrap'
             }}>
-              <div style={{ fontSize: '4rem' }}>{receta.emojiPlato}</div>
-              <div style={{ fontSize: '1.6rem', fontWeight: '900', color: '#334155', marginTop: '8px' }}>
-                ¡{receta.nombre} lista! 🎉
-              </div>
-              <div style={{ fontSize: '1.8rem', marginTop: '6px' }}>⭐️⭐️⭐️</div>
+              {mensaje}
             </div>
           )}
-
+          <img
+            src={`${baseUrl}assets/mascota-${estadoMascota === 'celebra' ? 'celebra' : 'feliz'}.png`}
+            alt="Mascota Chef"
+            className="mascota-cocina-img"
+            style={{ width: '110px', height: '110px', objectFit: 'contain', filter: 'drop-shadow(0 6px 12px rgba(0,0,0,0.2))' }}
+            onError={(e) => {
+              e.currentTarget.src = `${baseUrl}assets/Logosinfondo.png`
+            }}
+          />
         </div>
-      ) : (
-        /* PANTALLA DE VICTORIA FINAL */
-        <div style={{
-          position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-          backgroundColor: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(15px)',
-          zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
+
+        {/* OLLA / TAZÓN DE PREPARACIÓN */}
+        <div className="olla-cocina-caja anim-burbujas-olla" style={{
+          width: 'clamp(160px, 32vw, 220px)', height: 'clamp(160px, 32vw, 220px)',
+          borderRadius: '50%', backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          border: `6px solid ${receta.color}`, boxShadow: `0 12px 0 ${receta.sombraColor}, 0 20px 30px rgba(0,0,0,0.15)`,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          position: 'relative'
         }}>
-          {Array.from({ length: 18 }).map((_, i) => (
-            <span key={i} className="anim-confeti" style={{
-              position: 'absolute', top: 0, left: `${(i * 100) / 18}%`,
-              fontSize: `${20 + (i % 3) * 8}px`,
-              animationDuration: `${1.6 + (i % 5) * 0.3}s`,
-              animationDelay: `${(i % 6) * 0.15}s`
-            }}>
-              {['🎉', '⭐️', '🎈', '✨'][i % 4]}
-            </span>
-          ))}
+          <div style={{ fontSize: '3rem', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.15))' }}>
+            {recetaCompleta ? receta.emojiPlato || receta.emoji : '🍲'}
+          </div>
+          <div style={{ display: 'flex', gap: '4px', marginTop: '6px', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '80%' }}>
+            {recolectados.map((emoji, idx) => (
+              <span key={idx} className="anim-pop" style={{ fontSize: '1.4rem' }}>{emoji}</span>
+            ))}
+          </div>
+        </div>
 
-          <div className="anim-victoria" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-            <div className="anim-estrella" style={{ fontSize: '110px', filter: 'drop-shadow(0 15px 20px rgba(0,0,0,0.3))' }}>👨‍🍳</div>
-            <h1 style={{
-              color: '#FFD166', fontSize: '3.4rem', margin: '15px 0 8px 0',
-              textShadow: '0 8px 0 #CCAC00, 0 15px 25px rgba(0,0,0,0.2)',
-              textTransform: 'uppercase', letterSpacing: '2px', fontWeight: '900'
-            }}>¡Chef estrella!</h1>
-            <p style={{
-              color: '#4facfe', fontSize: '1.5rem', fontWeight: '900', margin: '0 0 30px 0',
-              backgroundColor: 'white', padding: '12px 30px', borderRadius: '35px',
-              border: '4px solid #E0F2FE', boxShadow: '0 8px 0 #bae6fd'
-            }}>
-              ¡Preparaste las {RECETAS.length} recetas! 🍽️
+        {/* INGREDIENTES FALTANTES (GUÍA) */}
+        <div style={{
+          backgroundColor: 'rgba(255, 255, 255, 0.9)', padding: '8px 14px', borderRadius: '20px',
+          border: '3px solid white', display: 'flex', flexDirection: 'column', gap: '4px',
+          boxShadow: '0 8px 16px rgba(0,0,0,0.1)'
+        }}>
+          <span style={{ fontSize: '0.78rem', fontWeight: '900', color: '#64748b' }}>Faltan:</span>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            {faltantes.map((emoji, idx) => (
+              <span key={idx} style={{ fontSize: '1.6rem' }}>{emoji}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* BANDEJA INFERIOR DE INGREDIENTES */}
+      <div style={{
+        width: '100%', maxWidth: '800px', backgroundColor: 'rgba(255, 255, 255, 0.92)',
+        borderRadius: '28px', padding: '10px 16px', border: '4px solid white',
+        boxShadow: '0 10px 25px rgba(0,0,0,0.12)', display: 'flex', gap: '10px',
+        alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', zIndex: 20
+      }}>
+        {ingredientesTray.map((item) => {
+          const esAnimando = ingredienteAnimando === item.uid
+          return (
+            <button
+              key={item.uid}
+              onClick={() => tocarIngrediente(item)}
+              className={`btn-ingrediente ${esAnimando ? 'anim-ingrediente-volando' : ''}`}
+              style={{
+                width: 'clamp(52px, 11vw, 68px)', height: 'clamp(52px, 11vw, 68px)',
+                borderRadius: '20px', backgroundColor: 'white', border: '3px solid #E2E8F0',
+                fontSize: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 5px 0 #CBD5E1, 0 8px 12px rgba(0,0,0,0.08)'
+              }}
+            >
+              {item.emoji}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* MODAL DE VICTORIA AL COMPLETAR RECETA */}
+      {recetaCompleta && (
+        <div style={{
+          position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(10px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '20px'
+        }}>
+          <div className="anim-victoria" style={{
+            backgroundColor: 'white', borderRadius: '35px', padding: '30px 24px', maxWidth: '380px', width: '100%',
+            textAlign: 'center', border: '6px solid #FFD166', boxShadow: '0 25px 50px rgba(0,0,0,0.25)'
+          }}>
+            <div style={{ fontSize: '70px', marginBottom: '6px' }}>{receta.emoji}🎉</div>
+            <h2 style={{ color: '#1E293B', fontSize: '1.8rem', fontWeight: '900', margin: '0 0 6px 0' }}>
+              ¡Chef Estrella!
+            </h2>
+            <p style={{ color: '#64748B', fontSize: '1.05rem', margin: '0 0 14px 0', fontWeight: '700' }}>
+              ¡Completaste <b>{receta.nombre}</b>! 😋
             </p>
+            <div style={{ fontSize: '2.4rem', marginBottom: '20px' }}>⭐⭐⭐</div>
 
-            <div style={{ display: 'flex', gap: '15px' }}>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
               <button
-                onClick={reiniciarTodo}
+                onClick={() => iniciarReceta(recetaIndex)}
                 style={{
-                  padding: '16px 35px', fontSize: '1.3rem', fontWeight: '900',
-                  background: 'linear-gradient(135deg, #FFD166 0%, #FFB347 100%)', color: '#7A5C00',
-                  border: '4px solid white', borderRadius: '35px', cursor: 'pointer',
-                  boxShadow: '0 8px 0 #CCAC00, 0 16px 25px rgba(0,0,0,0.2)',
-                  fontFamily: '"Fredoka", sans-serif'
+                  flex: 1, backgroundColor: '#FFD166', color: '#7A5C00', border: '3px solid white',
+                  borderRadius: '20px', padding: '12px', fontWeight: '900', fontSize: '1.05rem', cursor: 'pointer',
+                  boxShadow: '0 6px 0 #CCAC00', fontFamily: '"Fredoka", sans-serif'
                 }}
               >
-                🔁 Cocinar de nuevo
+                🔁 Repetir
               </button>
               <button
-                onClick={onVolver}
+                onClick={() => setRecetaId(null)}
                 style={{
-                  padding: '16px 35px', fontSize: '1.3rem', fontWeight: '900',
-                  background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', color: 'white',
-                  border: '4px solid white', borderRadius: '35px', cursor: 'pointer',
-                  boxShadow: '0 8px 0 #27ae60, 0 16px 25px rgba(0,0,0,0.2)',
-                  fontFamily: '"Fredoka", sans-serif'
+                  flex: 1, backgroundColor: '#38ef7d', color: '#064e3b', border: '3px solid white',
+                  borderRadius: '20px', padding: '12px', fontWeight: '900', fontSize: '1.05rem', cursor: 'pointer',
+                  boxShadow: '0 6px 0 #11998e', fontFamily: '"Fredoka", sans-serif'
                 }}
               >
-                {guardando ? 'Guardando... ⏳' : '¡Continuar! 🚀'}
+                🍽️ Más recetas
               </button>
             </div>
           </div>
