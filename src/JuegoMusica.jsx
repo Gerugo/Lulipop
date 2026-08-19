@@ -22,12 +22,29 @@ const NOTAS = [
 const INSTRUMENTOS = [
   { id: 'piano', nombre: 'Piano Mágico', emoji: '🎹', color: '#FF5E62' },
   { id: 'xilofono', nombre: 'Xilófono', emoji: '🔔', color: '#FFD166' },
+  { id: 'frog', nombre: 'Crazy Frog', emoji: '🐸', color: '#10B981' },
   { id: 'animales', nombre: 'Gatito Miau', emoji: '🐱', color: '#1DD1A1' },
   { id: 'campanas', nombre: 'Campanitas', emoji: '✨', color: '#9B5DE5' }
 ]
 
-// CANCIONERO COMPLETO CON 8 CANCIONES INFANTILES TRADICIONALES
+// CANCIONERO COMPLETO CON 9 CANCIONES (INCLUYE CRAZY FROG)
 const CANCIONES = [
+  {
+    id: 'crazyfrog',
+    titulo: 'Crazy Frog (Axel F - Ring Ding)',
+    emoji: '🐸',
+    nivel: 'Divertido • 46 notas',
+    color: '#10B981',
+    sombra: '#059669',
+    notas: [
+      'RE', 'FA', 'RE', 'RE', 'SOL', 'RE', 'DO',
+      'RE', 'LA', 'RE', 'RE', 'DO2', 'LA', 'FA',
+      'RE', 'LA', 'DO2', 'RE', 'DO', 'DO', 'LA', 'MI', 'RE',
+      'RE', 'FA', 'RE', 'RE', 'SOL', 'RE', 'DO',
+      'RE', 'LA', 'RE', 'RE', 'DO2', 'LA', 'FA',
+      'RE', 'LA', 'DO2', 'RE', 'DO', 'DO', 'LA', 'MI', 'RE'
+    ]
+  },
   {
     id: 'estrellita',
     titulo: 'Estrellita dónde estás',
@@ -234,6 +251,39 @@ export default function JuegoMusica({ perfil, onVolver }) {
         osc.stop(now + 0.75)
         oscMetal.stop(now + 0.3)
       } 
+      else if (tipoInstrumento === 'frog') {
+        // CRAZY FROG SYNTH: Onda Sawtooth + Square con modulación formántica retro ("Ring-ding-ding!")
+        const osc = ctx.createOscillator()
+        const osc2 = ctx.createOscillator()
+        const filter = ctx.createBiquadFilter()
+        const gainNode = ctx.createGain()
+
+        osc.type = 'sawtooth'
+        osc.frequency.setValueAtTime(freq * 1.5, now)
+        osc.frequency.exponentialRampToValueAtTime(freq, now + 0.04)
+
+        osc2.type = 'square'
+        osc2.frequency.setValueAtTime(freq * 1.51, now)
+        osc2.frequency.exponentialRampToValueAtTime(freq, now + 0.04)
+
+        filter.type = 'bandpass'
+        filter.frequency.setValueAtTime(1400, now)
+        filter.frequency.exponentialRampToValueAtTime(800, now + 0.15)
+        filter.Q.setValueAtTime(4.0, now)
+
+        gainNode.gain.setValueAtTime(0.85, now)
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.38)
+
+        osc.connect(filter)
+        osc2.connect(filter)
+        filter.connect(gainNode)
+        gainNode.connect(ctx.destination)
+
+        osc.start(now)
+        osc2.start(now)
+        osc.stop(now + 0.4)
+        osc2.stop(now + 0.4)
+      }
       else if (tipoInstrumento === 'animales') {
         const osc = ctx.createOscillator()
         const gainNode = ctx.createGain()
@@ -416,6 +466,9 @@ export default function JuegoMusica({ perfil, onVolver }) {
     setCancionSeleccionada(cancion)
     setPasoCancion(0)
     setVictoria(false)
+    if (cancion.id === 'crazyfrog') {
+      setInstrumento('frog')
+    }
     setModo('canciones')
   }
 
